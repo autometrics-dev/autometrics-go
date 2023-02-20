@@ -45,7 +45,7 @@ func randomErrorHandler(w http.ResponseWriter, _ *http.Request) error {
 func errorable(handler func(w http.ResponseWriter, r *http.Request) error) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if err := handler(w, r); err != nil {
-			log.Printf("failed to handle request: %v\n", err)
+			http.Error(w, err.Error(), http.StatusInternalServerError)
 		}
 	}
 }
