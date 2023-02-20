@@ -20,26 +20,24 @@ func main() {
 }
 
 //go:generate go run github.com/autometrics-dev/autometrics-go/cmd/autometrics
-func indexHandler(w http.ResponseWriter, _ *http.Request) error {
-	if _, err := fmt.Fprintf(w, "Hello, World!\n"); err != nil {
-		return err
-	}
-
-	return nil
+func indexHandler(w http.ResponseWriter, _ *http.Request) (err error) {
+	_, err = fmt.Fprintf(w, "Hello, World!\n")
+	return
 }
 
 var handlerError = errors.New("failed to handle request")
 
 //go:generate go run github.com/autometrics-dev/autometrics-go/cmd/autometrics
-func randomErrorHandler(w http.ResponseWriter, _ *http.Request) error {
+func randomErrorHandler(w http.ResponseWriter, _ *http.Request) (err error) {
 	isErr := rand.Intn(2) == 0
 
 	if isErr {
-		return handlerError
+		err = handlerError
 	} else {
 		w.WriteHeader(http.StatusOK)
-		return nil
 	}
+
+	return
 }
 
 func errorable(handler func(w http.ResponseWriter, r *http.Request) error) func(w http.ResponseWriter, r *http.Request) {
