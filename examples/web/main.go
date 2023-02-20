@@ -1,4 +1,4 @@
-package web
+package main
 
 import (
 	"errors"
@@ -15,6 +15,7 @@ func main() {
 	http.HandleFunc("/", indexHandler)
 	http.HandleFunc("/random-error", randomErrorHandler)
 
+	log.Println("binding on https://localhost:8080")
 	log.Fatal(http.ListenAndServe(":8080", nil))
 }
 
@@ -29,7 +30,7 @@ var handlerError = errors.New("failed to handle request")
 
 //go:generate go run github.com/autometrics-dev/autometrics-go/cmd/autometrics -o main.go main.go
 func randomErrorHandler(w http.ResponseWriter, _ *http.Request) {
-	isErr := rand.Intn(1) == 0
+	isErr := rand.Intn(2) == 0
 
 	if isErr {
 		http.Error(w, handlerError.Error(), http.StatusInternalServerError)
