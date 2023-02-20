@@ -17,7 +17,7 @@ func RouteHandler(args interface{}) error {
 Get metrics automatically generated changing your code to:
 ```go
 //go:generate go-autometrics
-func RouteHandler(args interface{}) err error { // Name the error return value
+func RouteHandler(args interface{}) (err error) { // Name the error return value
         defer RouteHandler_metrics()
         // Do stuff
         return nil
