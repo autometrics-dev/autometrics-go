@@ -7,10 +7,13 @@ import (
 	"math/rand"
 	"net/http"
 	"time"
+
+	"github.com/autometrics-dev/autometrics-go/pkg/autometrics"
 )
 
 func main() {
 	rand.Seed(time.Now().UnixNano())
+	autometrics.Init()
 
 	http.HandleFunc("/", errorable(indexHandler))
 	http.HandleFunc("/random-error", errorable(randomErrorHandler))
