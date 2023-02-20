@@ -18,7 +18,7 @@ func main() {
 	http.HandleFunc("/", errorable(indexHandler))
 	http.HandleFunc("/random-error", errorable(randomErrorHandler))
 
-	log.Println("binding on https://localhost:8080")
+	log.Println("binding on http://localhost:8080")
 	log.Fatal(http.ListenAndServe(":8080", nil))
 }
 

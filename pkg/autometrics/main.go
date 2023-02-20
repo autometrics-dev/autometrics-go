@@ -13,14 +13,26 @@ var FunctionCallsConcurrent *prometheus.Gauge
 func Init() {
 	functionCallsCounter := promauto.NewCounter(prometheus.CounterOpts{
 		Name: "function_calls_count",
+		ConstLabels: map[string]string{
+			"function": "",
+			"module":   "",
+		},
 	})
 
 	functionCallDuration := promauto.NewHistogram(prometheus.HistogramOpts{
 		Name: "function_calls_duration",
+		ConstLabels: map[string]string{
+			"function": "",
+			"module":   "",
+		},
 	})
 
 	functionCallsConcurrent := promauto.NewGauge(prometheus.GaugeOpts{
 		Name: "function_calls_concurrent",
+		ConstLabels: map[string]string{
+			"function": "",
+			"module":   "",
+		},
 	})
 
 	// need to do it in two steps so the variable isn't homeless: https://stackoverflow.com/a/10536096/11494565
