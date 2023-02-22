@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/autometrics-dev/autometrics-go/pkg/autometrics"
-	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
@@ -20,14 +19,11 @@ import (
 func main() {
 	rand.Seed(time.Now().UnixNano())
 
-	reg := prometheus.NewRegistry()
-	autometrics.Init(reg)
+	autometrics.Init(nil)
 
 	http.HandleFunc("/", errorable(indexHandler))
 	http.HandleFunc("/random-error", errorable(randomErrorHandler))
-
-	// Expose /metrics HTTP endpoint using the created custom registry.
-	http.Handle("/metrics", promhttp.HandlerFor(reg, promhttp.HandlerOpts{Registry: reg}))
+	http.Handle("/metrics", promhttp.Handler())
 
 	log.Println("binding on http://localhost:62086")
 	log.Fatal(http.ListenAndServe(":62086", nil))
@@ -59,6 +55,7 @@ func main() {
 //
 //autometrics:doc
 func indexHandler(w http.ResponseWriter, _ *http.Request) (err error) {
+        defer autometrics.Instrument(autometrics.PreInstrument(), &err)
 	_, err = fmt.Fprintf(w, "Hello, World!\n")
 	return
 }
@@ -91,6 +88,7 @@ var handlerError = errors.New("failed to handle request")
 //
 //autometrics:doc
 func randomErrorHandler(w http.ResponseWriter, _ *http.Request) (err error) {
+        defer autometrics.Instrument(autometrics.PreInstrument(), &err)
 	isErr := rand.Intn(2) == 0
 
 	if isErr {

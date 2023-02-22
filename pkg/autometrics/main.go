@@ -25,7 +25,9 @@ func Init(reg *prometheus.Registry) {
 		Name: "function_calls_concurrent",
 	}, []string{"function", "module"})
 
-	reg.MustRegister(FunctionCallsCount)
-	reg.MustRegister(FunctionCallsDuration)
-	reg.MustRegister(FunctionCallsConcurrent)
+	if reg != nil {
+		reg.MustRegister(FunctionCallsCount)
+		reg.MustRegister(FunctionCallsDuration)
+		reg.MustRegister(FunctionCallsConcurrent)
+	}
 }
