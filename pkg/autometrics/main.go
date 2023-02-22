@@ -6,43 +6,26 @@ import (
 )
 
 var (
-	FunctionCallsCount      *prometheus.Counter
-	FunctionCallsDuration   *prometheus.Histogram
-	FunctionCallsConcurrent *prometheus.Gauge
+	FunctionCallsCount      *prometheus.CounterVec
+	FunctionCallsDuration   *prometheus.HistogramVec
+	FunctionCallsConcurrent *prometheus.GaugeVec
 )
 
 // Init sets up the metrics required for autometrics' decorated functions
 func Init(reg *prometheus.Registry) {
-	functionCallsCounter := promauto.NewCounter(prometheus.CounterOpts{
+	FunctionCallsCount = promauto.NewCounterVec(prometheus.CounterOpts{
 		Name: "function_calls_count",
-		ConstLabels: map[string]string{
-			"function": "",
-			"module":   "",
-		},
-	})
+	}, []string{"function", "module", "result"})
 
-	functionCallDuration := promauto.NewHistogram(prometheus.HistogramOpts{
+	FunctionCallsDuration = promauto.NewHistogramVec(prometheus.HistogramOpts{
 		Name: "function_calls_duration",
-		ConstLabels: map[string]string{
-			"function": "",
-			"module":   "",
-		},
-	})
+	}, []string{"function", "module"})
 
-	functionCallsConcurrent := promauto.NewGauge(prometheus.GaugeOpts{
+	FunctionCallsConcurrent = promauto.NewGaugeVec(prometheus.GaugeOpts{
 		Name: "function_calls_concurrent",
-		ConstLabels: map[string]string{
-			"function": "",
-			"module":   "",
-		},
-	})
+	}, []string{"function", "module"})
 
-	reg.MustRegister(functionCallsCounter)
-	reg.MustRegister(functionCallDuration)
-	reg.MustRegister(functionCallsConcurrent)
-
-	// need to do it in two steps so the variable isn't homeless: https://stackoverflow.com/a/10536096/11494565
-	FunctionCallsCount = &functionCallsCounter
-	FunctionCallsDuration = &functionCallDuration
-	FunctionCallsConcurrent = &functionCallsConcurrent
+	reg.MustRegister(FunctionCallsCount)
+	reg.MustRegister(FunctionCallsDuration)
+	reg.MustRegister(FunctionCallsConcurrent)
 }
