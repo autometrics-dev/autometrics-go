@@ -3,13 +3,28 @@ package autometrics
 import (
 	"runtime"
 	"strings"
+	"time"
 )
 
-func Instrument() {
+func Instrument(startTime time.Time, err *error) {
+	method, module := callerInfo()
+	result := "ok"
+
+	if err != nil && *err != nil {
+		result = "error"
+	}
+
+	FunctionCallsCount.WithLabelValues(method, module, result).Inc()
+	FunctionCallsDuration.WithLabelValues(method, module).Observe(time.Since(startTime).Seconds())
+	FunctionCallsConcurrent.WithLabelValues(method, module).Dec()
+}
+
+func PreInstrument() time.Time {
 	method, module := callerInfo()
 
-	println(method)
-	println(module)
+	FunctionCallsConcurrent.WithLabelValues(method, module).Inc()
+
+	return time.Now()
 }
 
 // callerInfo returns the (method name, module name) of the function that called the function that called this function
