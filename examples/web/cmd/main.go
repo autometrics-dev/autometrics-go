@@ -55,7 +55,7 @@ func main() {
 //
 //autometrics:doc
 func indexHandler(w http.ResponseWriter, _ *http.Request) (err error) {
-        defer autometrics.Instrument(autometrics.PreInstrument(), &err)
+        defer autometrics.Instrument(autometrics.PreInstrument(), &err) //autometrics:defer-statement
 	_, err = fmt.Fprintf(w, "Hello, World!\n")
 	return
 }
@@ -88,7 +88,7 @@ var handlerError = errors.New("failed to handle request")
 //
 //autometrics:doc
 func randomErrorHandler(w http.ResponseWriter, _ *http.Request) (err error) {
-        defer autometrics.Instrument(autometrics.PreInstrument(), &err)
+        defer autometrics.Instrument(autometrics.PreInstrument(), &err) //autometrics:defer-statement
 	isErr := rand.Intn(2) == 0
 
 	if isErr {
