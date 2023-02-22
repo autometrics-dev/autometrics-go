@@ -4,6 +4,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/dave/dst"
+	"github.com/dave/dst/decorator"
 )
 
 // TestCommentDirective calls GenerateDocumentation on a
@@ -118,4 +120,252 @@ func main() {
 	}
 
 	assert.Equal(t, want, actual, "The generated source code is not as expected.")
+}
+
+func TestNamedReturnDetectionNothing(t *testing.T) {
+        // package statement is mandatory for decorator.Parse call
+	sourceCode := `
+package main
+
+func main() {
+	fmt.Println(hello) // line comment 3
+}
+`
+	want := ""
+
+	sourceAst, err := decorator.Parse(sourceCode)
+	if err != nil {
+		t.Fatalf("error parsing the source code: %s", err)
+	}
+
+	funcNode, ok := sourceAst.Decls[0].(*dst.FuncDecl)
+	if !ok {
+		t.Fatalf("First node of source code is not a function declaration")
+	}
+
+
+	actual, err := errorReturnValueName(funcNode)
+	if err != nil {
+		t.Fatalf("error getting the returned value name: %s", err)
+	}
+
+	assert.Equal(t, want, actual, "The return value doesn't match what's expected")
+
+}
+
+func TestNamedReturnDetectionNoError(t *testing.T) {
+        // package statement is mandatory for decorator.Parse call
+	sourceCode := `
+package main
+
+func main() int {
+	fmt.Println(hello) // line comment 3
+        return 0
+}
+`
+	want := ""
+
+	sourceAst, err := decorator.Parse(sourceCode)
+	if err != nil {
+		t.Fatalf("error parsing the source code: %s", err)
+	}
+
+	funcNode, ok := sourceAst.Decls[0].(*dst.FuncDecl)
+	if !ok {
+		t.Fatalf("First node of source code is not a function declaration")
+	}
+
+
+	actual, err := errorReturnValueName(funcNode)
+	if err != nil {
+		t.Fatalf("error getting the returned value name: %s", err)
+	}
+
+	assert.Equal(t, want, actual, "The return value doesn't match what's expected")
+
+}
+
+func TestNamedReturnDetectionUnnamedError(t *testing.T) {
+        // package statement is mandatory for decorator.Parse call
+	sourceCode := `
+package main
+
+func main() error {
+	fmt.Println(hello) // line comment 3
+        return nil
+}
+`
+	want := ""
+
+	sourceAst, err := decorator.Parse(sourceCode)
+	if err != nil {
+		t.Fatalf("error parsing the source code: %s", err)
+	}
+
+	funcNode, ok := sourceAst.Decls[0].(*dst.FuncDecl)
+	if !ok {
+		t.Fatalf("First node of source code is not a function declaration")
+	}
+
+
+	actual, err := errorReturnValueName(funcNode)
+	if err != nil {
+		t.Fatalf("error getting the returned value name: %s", err)
+	}
+
+	assert.Equal(t, want, actual, "The return value doesn't match what's expected")
+
+}
+
+func TestNamedReturnDetectionUnnamedPairError(t *testing.T) {
+        // package statement is mandatory for decorator.Parse call
+	sourceCode := `
+package main
+
+func main() (int, error) {
+	fmt.Println(hello) // line comment 3
+        return 0, nil
+}
+`
+	want := ""
+
+	sourceAst, err := decorator.Parse(sourceCode)
+	if err != nil {
+		t.Fatalf("error parsing the source code: %s", err)
+	}
+
+	funcNode, ok := sourceAst.Decls[0].(*dst.FuncDecl)
+	if !ok {
+		t.Fatalf("First node of source code is not a function declaration")
+	}
+
+
+	actual, err := errorReturnValueName(funcNode)
+	if err != nil {
+		t.Fatalf("error getting the returned value name: %s", err)
+	}
+
+	assert.Equal(t, want, actual, "The return value doesn't match what's expected")
+
+}
+
+func TestNamedReturnDetectionUnnamedPairNoError(t *testing.T) {
+        // package statement is mandatory for decorator.Parse call
+	sourceCode := `
+package main
+
+func main() (int, int) {
+	fmt.Println(hello) // line comment 3
+        return 0, 1
+}
+`
+	want := ""
+
+	sourceAst, err := decorator.Parse(sourceCode)
+	if err != nil {
+		t.Fatalf("error parsing the source code: %s", err)
+	}
+
+	funcNode, ok := sourceAst.Decls[0].(*dst.FuncDecl)
+	if !ok {
+		t.Fatalf("First node of source code is not a function declaration")
+	}
+
+
+	actual, err := errorReturnValueName(funcNode)
+	if err != nil {
+		t.Fatalf("error getting the returned value name: %s", err)
+	}
+
+	assert.Equal(t, want, actual, "The return value doesn't match what's expected")
+
+}
+
+func TestNamedReturnDetectionNamedError(t *testing.T) {
+        // package statement is mandatory for decorator.Parse call
+	sourceCode := `
+package main
+
+func main() (cannotGetLuckyCollision error) {
+	fmt.Println(hello) // line comment 3
+        return nil
+}
+`
+	want := "cannotGetLuckyCollision"
+
+	sourceAst, err := decorator.Parse(sourceCode)
+	if err != nil {
+		t.Fatalf("error parsing the source code: %s", err)
+	}
+
+	funcNode, ok := sourceAst.Decls[0].(*dst.FuncDecl)
+	if !ok {
+		t.Fatalf("First node of source code is not a function declaration")
+	}
+
+
+	actual, err := errorReturnValueName(funcNode)
+	if err != nil {
+		t.Fatalf("error getting the returned value name: %s", err)
+	}
+
+	assert.Equal(t, want, actual, "The return value doesn't match what's expected")
+
+}
+
+func TestNamedReturnDetectionNamedErrorInPair(t *testing.T) {
+        // package statement is mandatory for decorator.Parse call
+	sourceCode := `
+package main
+
+func main() (i int, cannotGetLuckyCollision error) {
+	fmt.Println(hello) // line comment 3
+        return nil
+}
+`
+	want := "cannotGetLuckyCollision"
+
+	sourceAst, err := decorator.Parse(sourceCode)
+	if err != nil {
+		t.Fatalf("error parsing the source code: %s", err)
+	}
+
+	funcNode, ok := sourceAst.Decls[0].(*dst.FuncDecl)
+	if !ok {
+		t.Fatalf("First node of source code is not a function declaration")
+	}
+
+
+	actual, err := errorReturnValueName(funcNode)
+	if err != nil {
+		t.Fatalf("error getting the returned value name: %s", err)
+	}
+
+	assert.Equal(t, want, actual, "The return value doesn't match what's expected")
+
+}
+
+func TestNamedReturnDetectionErrorsOnMultipleNamedErrors(t *testing.T) {
+        // package statement is mandatory for decorator.Parse call
+	sourceCode := `
+package main
+
+func main() (cannotGetLuckyCollision, otherError error) {
+	fmt.Println(hello) // line comment 3
+        return nil
+}
+`
+	sourceAst, err := decorator.Parse(sourceCode)
+	if err != nil {
+		t.Fatalf("error parsing the source code: %s", err)
+	}
+
+	funcNode, ok := sourceAst.Decls[0].(*dst.FuncDecl)
+	if !ok {
+		t.Fatalf("First node of source code is not a function declaration")
+	}
+
+
+	_, err = errorReturnValueName(funcNode)
+	assert.Error(t, err, "Calling the named return detection must fail if there are multiple error values.")
 }

@@ -161,3 +161,28 @@ func insertComments(inputArray []string, index int, values []string) []string {
 
 	return inputArray
 }
+
+// errorReturnValueName returns the name of the error return value if it exists.
+func errorReturnValueName(funcNode *dst.FuncDecl) (string, error) {
+	returnValues := funcNode.Type.Results
+	if returnValues == nil || returnValues.List == nil {
+		return "", nil
+	}
+
+	for _, field := range returnValues.List {
+		fieldType := field.Type
+		if spec, ok := fieldType.(*dst.Ident); ok {
+			if spec.Name == "error" {
+				// Assuming that the `error` type has 0 or 1 name before it.
+				if field.Names == nil {
+					return "", nil
+				} else if len(field.Names) > 1 {
+					return "", fmt.Errorf("expecting a single named `error` return value, got %d instead.", len(field.Names))
+				}
+				return field.Names[0].Name, nil
+			}
+		}
+	}
+
+	return "", nil
+}
