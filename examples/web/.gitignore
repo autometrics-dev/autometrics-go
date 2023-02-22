@@ -1,0 +1,5 @@
+# Local build of autometrics-dev/autometrics-go/cmd/autometrics
+autometrics
+
+# Local build of the example server
+web-server

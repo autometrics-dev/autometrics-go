@@ -5,12 +5,14 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promauto"
 )
 
-var FunctionCallsCount *prometheus.Counter
-var FunctionCallsDuration *prometheus.Histogram
-var FunctionCallsConcurrent *prometheus.Gauge
+var (
+	FunctionCallsCount      *prometheus.Counter
+	FunctionCallsDuration   *prometheus.Histogram
+	FunctionCallsConcurrent *prometheus.Gauge
+)
 
 // Init sets up the metrics required for autometrics' decorated functions
-func Init() {
+func Init(reg *prometheus.Registry) {
 	functionCallsCounter := promauto.NewCounter(prometheus.CounterOpts{
 		Name: "function_calls_count",
 		ConstLabels: map[string]string{
@@ -34,6 +36,10 @@ func Init() {
 			"module":   "",
 		},
 	})
+
+	reg.MustRegister(functionCallsCounter)
+	reg.MustRegister(functionCallDuration)
+	reg.MustRegister(functionCallsConcurrent)
 
 	// need to do it in two steps so the variable isn't homeless: https://stackoverflow.com/a/10536096/11494565
 	FunctionCallsCount = &functionCallsCounter

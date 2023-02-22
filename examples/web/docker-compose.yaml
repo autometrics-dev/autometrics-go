@@ -1,0 +1,41 @@
+version: "3.9"
+
+networks:
+  prom:
+
+services:
+  node-exporter:
+    image: prom/node-exporter:latest
+    container_name: node-exporter
+    restart: unless-stopped
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    expose:
+      - 9100
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    restart: unless-stopped
+    volumes:
+      - ./prometheus.yaml:/etc/prometheus/prometheus.yaml
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yaml'
+    expose:
+      - 9090
+    ports:
+      - "9090:9090"
+    depends_on:
+      - node-exporter
+      - web-server
+
+  web-server:
+    build: .
+    container_name: web-server
+    restart: unless-stopped
+    expose:
+      - 62086
+    ports:
+      - "62086:62086"
