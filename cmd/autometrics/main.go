@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"os"
 
@@ -9,7 +8,6 @@ import (
 )
 
 func main() {
-	fmt.Println(len(os.Args), os.Args)
 	fileName := os.Getenv("GOFILE")
 	promGenerator := doc.NewPrometheusDoc()
 	if err := doc.TransformFile(fileName, promGenerator); err != nil {
