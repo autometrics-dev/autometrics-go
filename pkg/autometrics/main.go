@@ -15,15 +15,15 @@ var (
 func Init(reg *prometheus.Registry) {
 	FunctionCallsCount = promauto.NewCounterVec(prometheus.CounterOpts{
 		Name: "function_calls_count",
-	}, []string{"function", "module", "result"})
+	}, []string{"function", "module", "caller", "result"})
 
 	FunctionCallsDuration = promauto.NewHistogramVec(prometheus.HistogramOpts{
 		Name: "function_calls_duration",
-	}, []string{"function", "module"})
+	}, []string{"function", "module", "caller"})
 
 	FunctionCallsConcurrent = promauto.NewGaugeVec(prometheus.GaugeOpts{
 		Name: "function_calls_concurrent",
-	}, []string{"function", "module"})
+	}, []string{"function", "module", "caller"})
 
 	if reg != nil {
 		reg.MustRegister(FunctionCallsCount)

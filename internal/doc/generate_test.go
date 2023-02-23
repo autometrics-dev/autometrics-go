@@ -42,8 +42,8 @@ func main() {
 		"//   - [Concurrent Calls](http://localhost:9090/graph?g0.expr=%23+Concurrent+calls+to+the+%60main%60+function%0A%0Asum+by+%28function%2C+module%29+function_calls_concurrent%7Bfunction%3D%22main%22%7D&g0.tab=0)\n" +
 		"//\n" +
 		"// Or, dig into the metrics of *functions called by* `main`\n" +
-		"//   - [Request Rate](http://localhost:9090/graph?g0.expr=%23+Rate+of+function+calls+emanating+from+%60main%60+function+per+second%2C+averaged+over+5+minute+windows%0A%0Asum+by+%28function%2C+module%29+%28rate%28function_calls_counter%7Bcaller%3D%22main%22%7D%5B5m%5D%29%29&g0.tab=0)\n" +
-		"//   - [Error Ratio](http://localhost:9090/graph?g0.expr=%23+Percentage+of+function+emanating+from+%60main%60+function+that+return+errors%2C+averaged+over+5+minute+windows%0A%0Asum+by+%28function%2C+module%29+%28rate%28function_calls_counter%7Bcaller%3D%22main%22%2Cresult%3D%22error%22%7D%5B5m%5D%29%29&g0.tab=0)\n" +
+		"//   - [Request Rate](http://localhost:9090/graph?g0.expr=%23+Rate+of+function+calls+emanating+from+%60main%60+function+per+second%2C+averaged+over+5+minute+windows%0A%0Asum+by+%28function%2C+module%29+%28rate%28function_calls_counter%7Bcaller%3D%22main.main%22%7D%5B5m%5D%29%29&g0.tab=0)\n" +
+		"//   - [Error Ratio](http://localhost:9090/graph?g0.expr=%23+Percentage+of+function+emanating+from+%60main%60+function+that+return+errors%2C+averaged+over+5+minute+windows%0A%0Asum+by+%28function%2C+module%29+%28rate%28function_calls_counter%7Bcaller%3D%22main.main%22%2Cresult%3D%22error%22%7D%5B5m%5D%29%29&g0.tab=0)\n" +
 		"//\n" +
 		"//\n" +
 		"//   autometrics:doc-end DO NOT EDIT\n" +
@@ -53,7 +53,7 @@ func main() {
 		"	fmt.Println(hello) // line comment 3\n" +
 		"}\n"
 
-	actual, err := GenerateDocumentation(sourceCode, NewPrometheusDoc())
+	actual, err := GenerateDocumentation(sourceCode, "main", NewPrometheusDoc())
 	if err != nil {
 		t.Fatalf("error generating the documentation: %s", err)
 	}
@@ -102,8 +102,8 @@ func main() {
 		"//   - [Concurrent Calls](http://localhost:9090/graph?g0.expr=%23+Concurrent+calls+to+the+%60main%60+function%0A%0Asum+by+%28function%2C+module%29+function_calls_concurrent%7Bfunction%3D%22main%22%7D&g0.tab=0)\n" +
 		"//\n" +
 		"// Or, dig into the metrics of *functions called by* `main`\n" +
-		"//   - [Request Rate](http://localhost:9090/graph?g0.expr=%23+Rate+of+function+calls+emanating+from+%60main%60+function+per+second%2C+averaged+over+5+minute+windows%0A%0Asum+by+%28function%2C+module%29+%28rate%28function_calls_counter%7Bcaller%3D%22main%22%7D%5B5m%5D%29%29&g0.tab=0)\n" +
-		"//   - [Error Ratio](http://localhost:9090/graph?g0.expr=%23+Percentage+of+function+emanating+from+%60main%60+function+that+return+errors%2C+averaged+over+5+minute+windows%0A%0Asum+by+%28function%2C+module%29+%28rate%28function_calls_counter%7Bcaller%3D%22main%22%2Cresult%3D%22error%22%7D%5B5m%5D%29%29&g0.tab=0)\n" +
+		"//   - [Request Rate](http://localhost:9090/graph?g0.expr=%23+Rate+of+function+calls+emanating+from+%60main%60+function+per+second%2C+averaged+over+5+minute+windows%0A%0Asum+by+%28function%2C+module%29+%28rate%28function_calls_counter%7Bcaller%3D%22main.main%22%7D%5B5m%5D%29%29&g0.tab=0)\n" +
+		"//   - [Error Ratio](http://localhost:9090/graph?g0.expr=%23+Percentage+of+function+emanating+from+%60main%60+function+that+return+errors%2C+averaged+over+5+minute+windows%0A%0Asum+by+%28function%2C+module%29+%28rate%28function_calls_counter%7Bcaller%3D%22main.main%22%2Cresult%3D%22error%22%7D%5B5m%5D%29%29&g0.tab=0)\n" +
 		"//\n" +
 		"//\n" +
 		"//   autometrics:doc-end DO NOT EDIT\n" +
@@ -113,7 +113,7 @@ func main() {
 		"	fmt.Println(hello) // line comment 3\n" +
 		"}\n"
 
-	actual, err := GenerateDocumentation(sourceCode, NewPrometheusDoc())
+	actual, err := GenerateDocumentation(sourceCode, "main", NewPrometheusDoc())
 	if err != nil {
 		t.Fatalf("error generating the documentation: %s", err)
 	}

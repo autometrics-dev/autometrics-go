@@ -10,14 +10,14 @@ import (
 )
 
 type AutometricsLinkCommentGenerator interface {
-	GenerateAutometricsComment(funcName string) []string
+	GenerateAutometricsComment(funcName, moduleName string) []string
 }
 
 // TransformFile takes a file path and generates the documentation
 // for the `//autometrics:doc` functions.
 //
-// It also replaces the file in place
-func TransformFile(path string, generator AutometricsLinkCommentGenerator) error {
+// It also replaces the file in place.
+func TransformFile(path, moduleName string, generator AutometricsLinkCommentGenerator) error {
 	cwd, err := os.Getwd()
 	if err != nil {
 		return fmt.Errorf("error getting a working directory: %w", err)
@@ -27,6 +27,7 @@ func TransformFile(path string, generator AutometricsLinkCommentGenerator) error
 	if err != nil {
 		return fmt.Errorf("error reading file information from %s: %w", path, err)
 	}
+
 	permissions := info.Mode()
 
 	sourceBytes, err := os.ReadFile(path)
@@ -40,7 +41,8 @@ func TransformFile(path string, generator AutometricsLinkCommentGenerator) error
 	}
 
 	sourceCode := string(sourceBytes)
-	transformedSource, err := GenerateDocumentation(sourceCode, generator)
+
+	transformedSource, err := GenerateDocumentation(sourceCode, moduleName, generator)
 	if err != nil {
 		return fmt.Errorf("error generating documentation: %w", err)
 	}
@@ -57,7 +59,7 @@ func TransformFile(path string, generator AutometricsLinkCommentGenerator) error
 // the documentation for the `//autometrics:doc` functions.
 //
 // It returns the new source code with augmented documentation.
-func GenerateDocumentation(sourceCode string, generator AutometricsLinkCommentGenerator) (string, error) {
+func GenerateDocumentation(sourceCode, moduleName string, generator AutometricsLinkCommentGenerator) (string, error) {
 	fileTree, err := decorator.Parse(sourceCode)
 	if err != nil {
 		return "", fmt.Errorf("error parsing source code: %w", err)
@@ -83,7 +85,7 @@ func GenerateDocumentation(sourceCode string, generator AutometricsLinkCommentGe
 			// Insert new autometrics comment
 			listIndex := hasAutometricsDocDirective(docComments)
 			if listIndex >= 0 {
-				autometricsComment := generateAutometricsComment(x.Name.Name, generator)
+				autometricsComment := generateAutometricsComment(x.Name.Name, moduleName, generator)
 				x.Decorations().Start.Replace(insertComments(docComments, listIndex, autometricsComment)...)
 			}
 		}
@@ -131,17 +133,18 @@ func autometricsDocEndDirective(commentGroup []string) int {
 	return -1
 }
 
-func generateAutometricsComment(funcName string, generator AutometricsLinkCommentGenerator) []string {
+func generateAutometricsComment(funcName, moduleName string, generator AutometricsLinkCommentGenerator) []string {
 	var ret []string
 	ret = append(ret, "//")
 	ret = append(ret, "//   autometrics:doc-start DO NOT EDIT")
 	ret = append(ret, "//")
 	ret = append(ret, "// # Autometrics")
 	ret = append(ret, "//")
-	ret = append(ret, generator.GenerateAutometricsComment(funcName)...)
+	ret = append(ret, generator.GenerateAutometricsComment(funcName, moduleName)...)
 	ret = append(ret, "//")
 	ret = append(ret, "//   autometrics:doc-end DO NOT EDIT")
 	ret = append(ret, "//")
+
 	return ret
 }
 
