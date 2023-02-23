@@ -9,8 +9,10 @@ import (
 
 func main() {
 	fileName := os.Getenv("GOFILE")
+	moduleName := os.Getenv("GOPACKAGE")
 	promGenerator := doc.NewPrometheusDoc()
-	if err := doc.TransformFile(fileName, promGenerator); err != nil {
+
+	if err := doc.TransformFile(fileName, moduleName, promGenerator); err != nil {
 		log.Fatalf("error transforming %s: %s", fileName, err)
 	}
 }

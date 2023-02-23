@@ -1,34 +1,54 @@
 package autometrics
 
 import (
+	"fmt"
 	"runtime"
 	"strings"
 	"time"
 )
 
+// Instrument called in a defer statement wraps the body of a function
+// with automatic instrumentation.
+//
+// The first argument SHOULD be a call to PreInstrument so that
+// the "concurrent calls" gauge is correctly setup.
 func Instrument(startTime time.Time, err *error) {
-	method, module := callerInfo()
+	method, module, parentMethod, parentModule := callerInfo()
 	result := "ok"
 
 	if err != nil && *err != nil {
 		result = "error"
 	}
 
-	FunctionCallsCount.WithLabelValues(method, module, result).Inc()
-	FunctionCallsDuration.WithLabelValues(method, module).Observe(time.Since(startTime).Seconds())
-	FunctionCallsConcurrent.WithLabelValues(method, module).Dec()
+	FunctionCallsCount.WithLabelValues(method, module, fmt.Sprintf("%s.%s", parentModule, parentMethod), result).Inc()
+	FunctionCallsDuration.WithLabelValues(method, module, fmt.Sprintf("%s.%s", parentModule, parentMethod)).Observe(time.Since(startTime).Seconds())
+	FunctionCallsConcurrent.WithLabelValues(method, module, fmt.Sprintf("%s.%s", parentModule, parentMethod)).Dec()
 }
 
+// PreInstrument runs the "before wrappee" part of instrumentation.
+//
+// It is meant to be called as the first argument to Instrument in a
+// defer call.
 func PreInstrument() time.Time {
-	method, module := callerInfo()
+	method, module, parentMethod, parentModule := callerInfo()
 
-	FunctionCallsConcurrent.WithLabelValues(method, module).Inc()
+	FunctionCallsConcurrent.WithLabelValues(method, module, fmt.Sprintf("%s.%s", parentModule, parentMethod)).Inc()
 
 	return time.Now()
 }
 
-// callerInfo returns the (method name, module name) of the function that called the function that called this function
-func callerInfo() (string, string) {
+// callerInfo returns the (method name, module name) of the function that called the function that called this function.
+//
+// It also returns the information about its grandparent.
+//
+// The module name and the parent module names are cropped to their last part, because the generator we use
+// only has access to the last "package" name in `GOPACKAGE` environment variable.
+//
+// If there is a way to obtain programmatically the fully qualified package name in go-generate arguments,
+// then we can lift this artificial limitation here and use the full "module name" from the caller information.
+// Currently this compromise is the only way to have the documentation links generator creating correct
+// queries.
+func callerInfo() (funcName, moduleName, parentFuncName, parentModuleName string) {
 	programCounters := make([]uintptr, 15)
 
 	// skip 3 frames to start with:
@@ -38,14 +58,46 @@ func callerInfo() (string, string) {
 	entries := runtime.Callers(3, programCounters)
 
 	frames := runtime.CallersFrames(programCounters[:entries])
-	frame, _ := frames.Next()
+	frame, hasParent := frames.Next()
 
 	functionName := frame.Function
 	index := strings.LastIndex(functionName, ".")
 
 	if index == -1 {
-		return frame.Func.Name(), ""
+		funcName = frame.Func.Name()
+	} else {
+		moduleIndex := strings.LastIndex(functionName[:index], ".")
+		if moduleIndex == -1 {
+			moduleName = functionName[:index]
+		} else {
+			moduleName = functionName[moduleIndex+1 : index]
+		}
+
+		funcName = functionName[index+1:]
 	}
 
-	return functionName[index+1:], functionName[:index]
+	if !hasParent {
+		return
+	}
+
+	// Do the same with the parent
+	parentFrame, _ := frames.Next()
+
+	parentFunctionName := parentFrame.Function
+	index = strings.LastIndex(parentFunctionName, ".")
+
+	if index == -1 {
+		parentFuncName = parentFrame.Func.Name()
+	} else {
+		moduleIndex := strings.LastIndex(parentFunctionName[:index], ".")
+		if moduleIndex == -1 {
+			parentModuleName = parentFunctionName[:index]
+		} else {
+			parentModuleName = parentFunctionName[moduleIndex+1 : index]
+		}
+
+		parentFuncName = parentFunctionName[index+1:]
+	}
+
+	return
 }
