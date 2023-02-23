@@ -50,10 +50,6 @@ func PreInstrument() time.Time {
 // queries.
 func callerInfo() (funcName, moduleName, parentFuncName, parentModuleName string) {
 	programCounters := make([]uintptr, 15)
-	funcName = ""
-	moduleName = ""
-	parentFuncName = ""
-	parentModuleName = ""
 
 	// skip 3 frames to start with:
 	// frame 0: internal function called by `runtime.Callers`
