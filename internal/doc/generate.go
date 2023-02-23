@@ -11,6 +11,7 @@ import (
 
 type AutometricsLinkCommentGenerator interface {
 	GenerateAutometricsComment(funcName, moduleName string) []string
+	GeneratedLinks() []string
 }
 
 // TransformFile takes a file path and generates the documentation
@@ -66,8 +67,8 @@ func GenerateDocumentation(sourceCode, moduleName string, generator AutometricsL
 	}
 
 	dst.Inspect(fileTree, func(n dst.Node) bool {
-		if x, ok := n.(*dst.FuncDecl); ok {
-			docComments := x.Decorations().Start.All()
+		if funcDeclaration, ok := n.(*dst.FuncDecl); ok {
+			docComments := funcDeclaration.Decorations().Start.All()
 
 			// Clean up old autometrics comments
 			oldStartCommentIndex := autometricsDocStartDirective(docComments)
@@ -79,14 +80,26 @@ func GenerateDocumentation(sourceCode, moduleName string, generator AutometricsL
 			// - multiple starts
 			// - multiple ends
 			if oldStartCommentIndex >= 0 && oldEndCommentIndex > oldStartCommentIndex {
-				docComments = append(docComments[:oldStartCommentIndex], docComments[oldEndCommentIndex+1:]...)
+				// We also remove the header and the footer that are used as block separation
+				docComments = append(docComments[:oldStartCommentIndex-1], docComments[oldEndCommentIndex+2:]...)
+
+				// Remove the generated links from former passes
+				generatedLinks := generator.GeneratedLinks()
+				docComments = filter(docComments, func(input string) bool {
+					for _, link := range generatedLinks {
+						if strings.Contains(input, fmt.Sprintf("[%s]", link)) {
+							return false
+						}
+					}
+					return true
+				})
 			}
 
 			// Insert new autometrics comment
 			listIndex := hasAutometricsDocDirective(docComments)
 			if listIndex >= 0 {
-				autometricsComment := generateAutometricsComment(x.Name.Name, moduleName, generator)
-				x.Decorations().Start.Replace(insertComments(docComments, listIndex, autometricsComment)...)
+				autometricsComment := generateAutometricsComment(funcDeclaration.Name.Name, moduleName, generator)
+				funcDeclaration.Decorations().Start.Replace(insertComments(docComments, listIndex, autometricsComment)...)
 			}
 		}
 
@@ -115,7 +128,7 @@ func hasAutometricsDocDirective(commentGroup []string) int {
 
 func autometricsDocStartDirective(commentGroup []string) int {
 	for i, comment := range commentGroup {
-		if strings.HasPrefix(comment, "//   autometrics:doc-start") {
+		if strings.Contains(comment, "autometrics:doc-start") {
 			return i
 		}
 	}
@@ -125,7 +138,7 @@ func autometricsDocStartDirective(commentGroup []string) int {
 
 func autometricsDocEndDirective(commentGroup []string) int {
 	for i, comment := range commentGroup {
-		if strings.HasPrefix(comment, "//   autometrics:doc-end") {
+		if strings.Contains(comment, "autometrics:doc-end") {
 			return i
 		}
 	}
@@ -136,13 +149,13 @@ func autometricsDocEndDirective(commentGroup []string) int {
 func generateAutometricsComment(funcName, moduleName string, generator AutometricsLinkCommentGenerator) []string {
 	var ret []string
 	ret = append(ret, "//")
-	ret = append(ret, "//   autometrics:doc-start DO NOT EDIT")
+	ret = append(ret, "//   autometrics:doc-start DO NOT EDIT HERE AND LINE ABOVE")
 	ret = append(ret, "//")
 	ret = append(ret, "// # Autometrics")
 	ret = append(ret, "//")
 	ret = append(ret, generator.GenerateAutometricsComment(funcName, moduleName)...)
 	ret = append(ret, "//")
-	ret = append(ret, "//   autometrics:doc-end DO NOT EDIT")
+	ret = append(ret, "//   autometrics:doc-end DO NOT EDIT HERE AND LINE BELOW")
 	ret = append(ret, "//")
 
 	return ret
@@ -188,4 +201,13 @@ func errorReturnValueName(funcNode *dst.FuncDecl) (string, error) {
 	}
 
 	return "", nil
+}
+
+func filter(ss []string, test func(string) bool) (ret []string) {
+    for _, s := range ss {
+        if test(s) {
+            ret = append(ret, s)
+        }
+    }
+    return
 }
