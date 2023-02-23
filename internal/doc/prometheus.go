@@ -10,7 +10,7 @@ const prometheusInstanceUrl = "http://localhost:9090/"
 
 // TODO: Use globals from somewhere else in the lib
 const (
-	callCounterMetricName     = "function_calls_counter"
+	callCounterMetricName     = "function_calls_count"
 	callDurationMetricName    = "function_calls_duration_bucket"
 	concurrentCallsMetricName = "function_calls_concurrent"
 )
@@ -53,6 +53,7 @@ func errorRatioQuery(counterName, labelKey, labelValue string) string {
 
 func latencyQuery(bucketName, labelKey, labelValue string) string {
 	latency := fmt.Sprintf("sum by (le, function, module) (rate(%s{%s=\"%s\"}[5m]))", bucketName, labelKey, labelValue)
+
 	return fmt.Sprintf("histogram_quantile(0.99, %s) or histogram_quantile(0.95, %s)", latency, latency)
 }
 
@@ -79,14 +80,25 @@ func (p Prometheus) GenerateAutometricsComment(funcName, moduleName string) []st
 		"// ## Prometheus",
 		"//",
 		fmt.Sprintf("// View the live metrics for the `%s` function:", funcName),
-		fmt.Sprintf("//   - [Request Rate](%s)", requestRateUrl.String()),
-		fmt.Sprintf("//   - [Error Ratio](%s)", errorRatioUrl.String()),
-		fmt.Sprintf("//   - [Latency (95th and 99th percentiles)](%s)", latencyUrl.String()),
-		fmt.Sprintf("//   - [Concurrent Calls](%s)", concurrentCallsUrl.String()),
+		"//   - [Request Rate]",
+		"//   - [Error Ratio]",
+		"//   - [Latency (95th and 99th percentiles)]",
+		"//   - [Concurrent Calls]",
 		"//",
 		fmt.Sprintf("// Or, dig into the metrics of *functions called by* `%s`", funcName),
-		fmt.Sprintf("//   - [Request Rate](%s)", calleeRequestRateUrl.String()),
-		fmt.Sprintf("//   - [Error Ratio](%s)", calleeErrorRatioUrl.String()),
+		"//   - [Request Rate Callee]",
+		"//   - [Error Ratio Callee]",
+		"//",
+		fmt.Sprintf("// [Request Rate]: %s", requestRateUrl.String()),
+		fmt.Sprintf("// [Error Ratio]: %s", errorRatioUrl.String()),
+		fmt.Sprintf("// [Latency (95th and 99th percentiles)]: %s", latencyUrl.String()),
+		fmt.Sprintf("// [Concurrent Calls]: %s", concurrentCallsUrl.String()),
+		fmt.Sprintf("// [Request Rate Callee]: %s", calleeRequestRateUrl.String()),
+		fmt.Sprintf("// [Error Ratio Callee]: %s", calleeErrorRatioUrl.String()),
 		"//",
 	}
+}
+
+func (p Prometheus) GeneratedLinks() []string {
+	return []string {"Request Rate", "Error Ratio", "Latency (95th and 99th percentiles)" , "Concurrent Calls", "Request Rate Callee", "Error Ratio Callee"}
 }
