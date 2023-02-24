@@ -62,6 +62,8 @@ func main() {
 func indexHandler(w http.ResponseWriter, _ *http.Request) (err error) {
 	defer autometrics.Instrument(autometrics.PreInstrument(), &err) //autometrics:defer
 
+	time.Sleep(time.Duration(rand.Intn(500)) * time.Millisecond)
+
 	_, err = fmt.Fprintf(w, "Hello, World!\n")
 	return
 }

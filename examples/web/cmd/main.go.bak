@@ -35,6 +35,9 @@ func main() {
 //
 //autometrics:doc
 func indexHandler(w http.ResponseWriter, _ *http.Request) (err error) {
+
+	time.Sleep(time.Duration(rand.Intn(500)) * time.Millisecond)
+
 	_, err = fmt.Fprintf(w, "Hello, World!\n")
 	return
 }
