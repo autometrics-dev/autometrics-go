@@ -36,7 +36,7 @@ The manual changes you need to do are:
 //go:generate autometrics
 
 //autometrics:doc
-func RouteHandler(args interface{}) (err error) { // Name the error return value
+func RouteHandler(args interface{}) (err error) { // Name the error return value; this is an optional but recommended change
         // Do stuff
         return nil
 }
