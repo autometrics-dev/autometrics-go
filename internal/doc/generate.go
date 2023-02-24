@@ -171,7 +171,7 @@ func GenerateDocumentation(sourceCode, moduleName string, generator AutometricsL
 
 // buildAutometricsDeferStatement builds the AST for the defer statement to be inserted.
 func buildAutometricsDeferStatement(secondVar string) dst.DeferStmt {
-	return dst.DeferStmt{
+	statement := dst.DeferStmt{
 		Call: &dst.CallExpr{
 			Fun: dst.NewIdent("autometrics.Instrument"),
 			Args: []dst.Expr{
@@ -182,19 +182,12 @@ func buildAutometricsDeferStatement(secondVar string) dst.DeferStmt {
 				dst.NewIdent(secondVar),
 			},
 		},
-		// We don't own dst, but must use literals to build the comment here, even
-		// if the structure has unkeyed fields
-		//nolint:govet
-		Decs: dst.DeferStmtDecorations{
-			dst.NodeDecs{
-				Before: 1, // New line
-				Start:  []string{},
-				End:    []string{"//autometrics:defer"},
-				After:  2, // Empty line
-			},
-			[]string{},
-		},
 	}
+
+	statement.Decs.Before = dst.NewLine
+	statement.Decs.End = []string{"//autometrics:defer"}
+	statement.Decs.After = dst.EmptyLine
+	return statement
 }
 
 func hasAutometricsDocDirective(commentGroup []string) int {
