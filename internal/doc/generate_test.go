@@ -57,6 +57,8 @@ func main() {
 		"//\n" +
 		"//autometrics:doc\n" +
 		"func main() {\n" +
+		"\tdefer autometrics.Instrument(autometrics.PreInstrument(), nil) //autometrics:defer\n" +
+		"\n" +
 		"	fmt.Println(hello) // line comment 3\n" +
 		"}\n"
 
@@ -122,6 +124,8 @@ func main() {
 		"//\n" +
 		"//autometrics:doc\n" +
 		"func main() {\n" +
+		"\tdefer autometrics.Instrument(autometrics.PreInstrument(), nil) //autometrics:defer\n" +
+		"\n" +
 		"	fmt.Println(hello) // line comment 3\n" +
 		"}\n"
 
