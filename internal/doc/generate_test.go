@@ -60,7 +60,7 @@ func main() {
 		"	fmt.Println(hello) // line comment 3\n" +
 		"}\n"
 
-	actual, err := GenerateDocumentation(sourceCode, "main", NewPrometheusDoc())
+	actual, err := GenerateDocumentation(sourceCode, "main", NewPrometheusDoc(DefaultPrometheusInstanceUrl))
 	if err != nil {
 		t.Fatalf("error generating the documentation: %s", err)
 	}
@@ -125,7 +125,7 @@ func main() {
 		"	fmt.Println(hello) // line comment 3\n" +
 		"}\n"
 
-	actual, err := GenerateDocumentation(sourceCode, "main", NewPrometheusDoc())
+	actual, err := GenerateDocumentation(sourceCode, "main", NewPrometheusDoc(DefaultPrometheusInstanceUrl))
 	if err != nil {
 		t.Fatalf("error generating the documentation: %s", err)
 	}

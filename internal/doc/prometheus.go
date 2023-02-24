@@ -3,28 +3,23 @@ package doc
 import (
 	"fmt"
 	"net/url"
+
+	"github.com/autometrics-dev/autometrics-go/pkg/autometrics"
 )
 
-// TODO: This should be read from an argument of go generate
-const prometheusInstanceUrl = "http://localhost:9090/"
-
-// TODO: Use globals from somewhere else in the lib
-const (
-	callCounterMetricName     = "function_calls_count"
-	callDurationMetricName    = "function_calls_duration_bucket"
-	concurrentCallsMetricName = "function_calls_concurrent"
-)
-
-// https://github.com/autometrics-dev/autometrics-rs/blob/0d9c2118e7d9f77032a12e0a2fadb15d9c28446e/autometrics-macros/src/lib.rs#L314
+const DefaultPrometheusInstanceUrl = "http://localhost:9090/"
 
 type Prometheus struct {
 	instanceUrl url.URL
 }
 
-func NewPrometheusDoc() Prometheus {
+// NewPrometheusDoc builds a documentation comment generator that creates Prometheus links.
+//
+// The document generator implements the AutometricsLinkCommentGenerator interface.
+func NewPrometheusDoc(instanceUrl string) Prometheus {
 	// No way to have a url.URL constant, so we reparse it here
 
-	prometheusInstanceUrl, _ := url.Parse(prometheusInstanceUrl)
+	prometheusInstanceUrl, _ := url.Parse(instanceUrl)
 	return Prometheus{instanceUrl: *prometheusInstanceUrl}
 }
 
@@ -52,7 +47,7 @@ func errorRatioQuery(counterName, labelKey, labelValue string) string {
 }
 
 func latencyQuery(bucketName, labelKey, labelValue string) string {
-	latency := fmt.Sprintf("sum by (le, function, module) (rate(%s{%s=\"%s\"}[5m]))", bucketName, labelKey, labelValue)
+	latency := fmt.Sprintf("sum by (le, function, module) (rate(%s_bucket{%s=\"%s\"}[5m]))", bucketName, labelKey, labelValue)
 
 	return fmt.Sprintf("histogram_quantile(0.99, %s) or histogram_quantile(0.95, %s)", latency, latency)
 }
@@ -63,17 +58,17 @@ func concurrentCallsQuery(gaugeName, labelKey, labelValue string) string {
 
 func (p Prometheus) GenerateAutometricsComment(funcName, moduleName string) []string {
 	requestRateUrl := p.makePrometheusUrl(
-		requestRateQuery(callCounterMetricName, "function", funcName), fmt.Sprintf("Rate of calls to the `%s` function per second, averaged over 5 minute windows", funcName))
+		requestRateQuery(autometrics.FunctionCallsCountName, "function", funcName), fmt.Sprintf("Rate of calls to the `%s` function per second, averaged over 5 minute windows", funcName))
 	calleeRequestRateUrl := p.makePrometheusUrl(
-		requestRateQuery(callCounterMetricName, "caller", fmt.Sprintf("%s.%s", moduleName, funcName)), fmt.Sprintf("Rate of function calls emanating from `%s` function per second, averaged over 5 minute windows", funcName))
+		requestRateQuery(autometrics.FunctionCallsCountName, "caller", fmt.Sprintf("%s.%s", moduleName, funcName)), fmt.Sprintf("Rate of function calls emanating from `%s` function per second, averaged over 5 minute windows", funcName))
 	errorRatioUrl := p.makePrometheusUrl(
-		errorRatioQuery(callCounterMetricName, "function", funcName), fmt.Sprintf("Percentage of calls to the `%s` function that return errors, averaged over 5 minute windows", funcName))
+		errorRatioQuery(autometrics.FunctionCallsCountName, "function", funcName), fmt.Sprintf("Percentage of calls to the `%s` function that return errors, averaged over 5 minute windows", funcName))
 	calleeErrorRatioUrl := p.makePrometheusUrl(
-		errorRatioQuery(callCounterMetricName, "caller", fmt.Sprintf("%s.%s", moduleName, funcName)), fmt.Sprintf("Percentage of function emanating from `%s` function that return errors, averaged over 5 minute windows", funcName))
+		errorRatioQuery(autometrics.FunctionCallsCountName, "caller", fmt.Sprintf("%s.%s", moduleName, funcName)), fmt.Sprintf("Percentage of function emanating from `%s` function that return errors, averaged over 5 minute windows", funcName))
 	latencyUrl := p.makePrometheusUrl(
-		latencyQuery(callDurationMetricName, "function", funcName), fmt.Sprintf("95th and 99th percentile latencies (in seconds) for the `%s` function", funcName))
+		latencyQuery(autometrics.FunctionCallsDurationName, "function", funcName), fmt.Sprintf("95th and 99th percentile latencies (in seconds) for the `%s` function", funcName))
 	concurrentCallsUrl := p.makePrometheusUrl(
-		concurrentCallsQuery(concurrentCallsMetricName, "function", funcName), fmt.Sprintf("Concurrent calls to the `%s` function", funcName))
+		concurrentCallsQuery(autometrics.FunctionCallsConcurrentName, "function", funcName), fmt.Sprintf("Concurrent calls to the `%s` function", funcName))
 
 	// Not using raw `` strings because it's impossible to escape ` within those
 	return []string{
@@ -100,5 +95,5 @@ func (p Prometheus) GenerateAutometricsComment(funcName, moduleName string) []st
 }
 
 func (p Prometheus) GeneratedLinks() []string {
-	return []string {"Request Rate", "Error Ratio", "Latency (95th and 99th percentiles)" , "Concurrent Calls", "Request Rate Callee", "Error Ratio Callee"}
+	return []string{"Request Rate", "Error Ratio", "Latency (95th and 99th percentiles)", "Concurrent Calls", "Request Rate Callee", "Error Ratio Callee"}
 }

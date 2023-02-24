@@ -2,6 +2,7 @@ package doc
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"strings"
 
@@ -71,28 +72,49 @@ func GenerateDocumentation(sourceCode, moduleName string, generator AutometricsL
 			docComments := funcDeclaration.Decorations().Start.All()
 
 			// Clean up old autometrics comments
-			oldStartCommentIndex := autometricsDocStartDirective(docComments)
-			oldEndCommentIndex := autometricsDocEndDirective(docComments)
-			// TODO: error out if there is:
-			// - a start but no end
-			// - an end but no start
-			// - an end before a start
-			// - multiple starts
-			// - multiple ends
-			if oldStartCommentIndex >= 0 && oldEndCommentIndex > oldStartCommentIndex {
-				// We also remove the header and the footer that are used as block separation
-				docComments = append(docComments[:oldStartCommentIndex-1], docComments[oldEndCommentIndex+2:]...)
+			oldStartCommentIndices := autometricsDocStartDirectives(docComments)
+			oldEndCommentIndices := autometricsDocEndDirectives(docComments)
 
-				// Remove the generated links from former passes
-				generatedLinks := generator.GeneratedLinks()
-				docComments = filter(docComments, func(input string) bool {
-					for _, link := range generatedLinks {
-						if strings.Contains(input, fmt.Sprintf("[%s]", link)) {
-							return false
+			if len(oldStartCommentIndices) > 0 && len(oldEndCommentIndices) == 0 {
+				log.Fatalf("Found an autometrics:doc-start cookie for function %s, but no matching :doc-end cookie", funcDeclaration.Name.Name)
+			}
+
+			if len(oldStartCommentIndices) == 0 && len(oldEndCommentIndices) > 0 {
+				log.Fatalf("Found an autometrics:doc-end cookie for function %s, but no matching :doc-start cookie", funcDeclaration.Name.Name)
+			}
+
+			if len(oldStartCommentIndices) > 1 {
+				log.Fatalf("Found more than 1 autometrics:doc-start cookie for function %s", funcDeclaration.Name.Name)
+			}
+
+			if len(oldEndCommentIndices) > 1 {
+				log.Fatalf("Found more than 1 autometrics:doc-end cookie for function %s", funcDeclaration.Name.Name)
+			}
+
+			if len(oldStartCommentIndices) == 1 && len(oldEndCommentIndices) == 1 {
+				oldStartCommentIndex := oldStartCommentIndices[0]
+				oldEndCommentIndex := oldEndCommentIndices[0]
+
+				if oldStartCommentIndex >= 0 && oldEndCommentIndex <= oldStartCommentIndex {
+					log.Fatalf("Found an autometrics cookies for function %s, but the end one is after the start one", funcDeclaration.Name.Name)
+				}
+
+				if oldStartCommentIndex >= 0 && oldEndCommentIndex > oldStartCommentIndex {
+					// We also remove the header and the footer that are used as block separation
+					docComments = append(docComments[:oldStartCommentIndex-1], docComments[oldEndCommentIndex+2:]...)
+
+					// Remove the generated links from former passes
+					generatedLinks := generator.GeneratedLinks()
+					docComments = filter(docComments, func(input string) bool {
+						for _, link := range generatedLinks {
+							if strings.Contains(input, fmt.Sprintf("[%s]", link)) {
+								return false
+							}
 						}
-					}
-					return true
-				})
+						return true
+					})
+				}
+
 			}
 
 			// Insert new autometrics comment
@@ -126,24 +148,28 @@ func hasAutometricsDocDirective(commentGroup []string) int {
 	return -1
 }
 
-func autometricsDocStartDirective(commentGroup []string) int {
+// autometricsDocStartDirectives return the list of indices in the array where line is a comment start directive.
+func autometricsDocStartDirectives(commentGroup []string) []int {
+	var lines []int
 	for i, comment := range commentGroup {
 		if strings.Contains(comment, "autometrics:doc-start") {
-			return i
+			lines = append(lines, i)
 		}
 	}
 
-	return -1
+	return lines
 }
 
-func autometricsDocEndDirective(commentGroup []string) int {
+// autometricsDocStartDirectives return the list of indices in the array where line is a comment end directive.
+func autometricsDocEndDirectives(commentGroup []string) []int {
+	var lines []int
 	for i, comment := range commentGroup {
 		if strings.Contains(comment, "autometrics:doc-end") {
-			return i
+			lines = append(lines, i)
 		}
 	}
 
-	return -1
+	return lines
 }
 
 func generateAutometricsComment(funcName, moduleName string, generator AutometricsLinkCommentGenerator) []string {
@@ -204,10 +230,10 @@ func errorReturnValueName(funcNode *dst.FuncDecl) (string, error) {
 }
 
 func filter(ss []string, test func(string) bool) (ret []string) {
-    for _, s := range ss {
-        if test(s) {
-            ret = append(ret, s)
-        }
-    }
-    return
+	for _, s := range ss {
+		if test(s) {
+			ret = append(ret, s)
+		}
+	}
+	return
 }
