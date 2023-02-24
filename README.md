@@ -1,8 +1,24 @@
 # Autometrics Go
 
-Autometrics generated automatically in Go.
+Autometrics is a [Go
+Generator](https://pkg.go.dev/cmd/go#hdr-Generate_Go_files_by_processing_source)
+bundled with a library that ensures your function stays correctly instrumented
+and gives direct links to inspect usage metrics from your code.
 
-## Design Goals
+![Documentation comments of instrumented function is augmented with links](./assets/codium-screenshot-example.png)
+
+Only Prometheus as a metrics system is supported now.
+
+> **Note:** as the library and binary are still in experimental phase, and the
+> generator overwrites the file in the code, it currently backs up any file it
+> modifies with a .bak extension
+
+## How to use
+
+There is a one-time setup phase to prime the code for autometrics. Once this
+phase is accomplished, only calling `go generate` is necessary.
+
+### Add cookies in your code
 
 Given a starting function like:
 
@@ -13,30 +29,61 @@ func RouteHandler(args interface{}) error {
 }
 ```
 
-Get metrics automatically generated changing your code to:
+The manual changes you need to do are:
+
 ```go
-// Somewhere in your file, probably at the top
+// Somewhere in your file, probably at the bottom
 //go:generate autometrics
 
 //autometrics:doc
 func RouteHandler(args interface{}) (err error) { // Name the error return value
-        defer autometrics.Autometrics()
         // Do stuff
         return nil
 }
 ```
 
-It will automatically register the correct metrics to the default, global prometheus
-metrics registry, which you can then expose as an extra route (like `/metrics`) to
-your prometheus instance.
+### Generate the documentation and instrumentation code
 
-You will also get documentation generated with links to see metrics about your
-function directly in your prometheus instance (default to `http://localhost:9090`)
+Once you've done this, the `autometrics` generator takes care of the rest, and you can
+simply call `go generate` with an optional environment variable
 
-## Non-design goals
+```console
+$ AM_PROMETHEUS_URL=http://localhost:9090/ go generate ./...
+```
 
-### Handle functions that do not return error
+The generator will augment your doc comment to add quick links to metrics (using
+the Prometheus URL as base URL), and add a unique defer statement that will take
+care of instrumenting your code.
 
-Autometrics will report the success rate of a function only if the function
-returns a named value `err` of type `error`. Some constraints might be relaxed
-in further versions, but for now that's the alpha version goal.
+The environment variable `AM_PROMETHEUS_URL` controls the base URL of the instance that
+is scraping the deployed version of your code. Having an environment variable means you
+can change the generated links without touching your code. The default value, if absent,
+is `http://localhost:9090/`
+
+### Expose metrics outside
+
+The last step now is to actually expose the generated metrics to the Prometheus instance.
+
+For Prometheus the shortest way is to add the handler code in your main entrypoint:
+
+``` go
+import (
+	"github.com/autometrics-dev/autometrics-go/pkg/autometrics"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
+)
+
+
+func main() {
+	autometrics.Init(nil)
+	http.Handle("/metrics", promhttp.Handler())
+}
+```
+
+This is the shortest way to initialize and expose the metrics that autometrics will use
+in the generated code.
+
+## Metrics systems
+
+For the time being only Prometheus metrics are supported, but the code has been
+written with the possibility to have other systems, like OpenTelemetry,
+integrated in the same way.

@@ -10,6 +10,12 @@ var (
 	FunctionCallsConcurrent *prometheus.GaugeVec
 )
 
+const (
+	FunctionCallsCountName = "function_calls_count"
+	FunctionCallsDurationName = "function_calls_duration"
+	FunctionCallsConcurrentName = "function_calls_concurrent"
+)
+
 // Init sets up the metrics required for autometrics' decorated functions and registers
 // them to the argument registry.
 //
@@ -17,15 +23,15 @@ var (
 // default global registry.
 func Init(reg *prometheus.Registry) {
 	FunctionCallsCount = prometheus.NewCounterVec(prometheus.CounterOpts{
-		Name: "function_calls_count",
+		Name: FunctionCallsCountName,
 	}, []string{"function", "module", "caller", "result"})
 
 	FunctionCallsDuration = prometheus.NewHistogramVec(prometheus.HistogramOpts{
-		Name: "function_calls_duration",
+		Name: FunctionCallsDurationName,
 	}, []string{"function", "module", "caller"})
 
 	FunctionCallsConcurrent = prometheus.NewGaugeVec(prometheus.GaugeOpts{
-		Name: "function_calls_concurrent",
+		Name: FunctionCallsConcurrentName,
 	}, []string{"function", "module", "caller"})
 
 	if reg != nil {
