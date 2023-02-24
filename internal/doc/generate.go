@@ -2,6 +2,7 @@ package doc
 
 import (
 	"fmt"
+	"golang.org/x/exp/slices"
 	"log"
 	"os"
 	"strings"
@@ -69,6 +70,7 @@ func GenerateDocumentation(sourceCode, moduleName string, generator AutometricsL
 
 	dst.Inspect(fileTree, func(n dst.Node) bool {
 		if funcDeclaration, ok := n.(*dst.FuncDecl); ok {
+			// this block gets run for every function in the file
 			docComments := funcDeclaration.Decorations().Start.All()
 
 			// Clean up old autometrics comments
@@ -122,6 +124,32 @@ func GenerateDocumentation(sourceCode, moduleName string, generator AutometricsL
 			if listIndex >= 0 {
 				autometricsComment := generateAutometricsComment(funcDeclaration.Name.Name, moduleName, generator)
 				funcDeclaration.Decorations().Start.Replace(insertComments(docComments, listIndex, autometricsComment)...)
+			}
+
+			// defer statement
+			firstStatement := funcDeclaration.Body.List[0]
+			variable, err := errorReturnValueName(funcDeclaration)
+
+			if err != nil {
+				log.Fatalf("failed to get error return value name: %v", err)
+			}
+
+			if len(variable) == 0 {
+				variable = "nil"
+			} else {
+				variable = "&" + variable
+			}
+
+			autometricsDeferStatement := fmt.Sprintf("defer autometrics.Instrument(autometrics.PreInstrument(), %s) //autometrics:defer", variable)
+
+			if deferStatement, ok := firstStatement.(*dst.DeferStmt); ok {
+				decorations := deferStatement.Decorations().End
+
+				if !slices.Contains(decorations.All(), "//autometrics:defer") {
+					decorations.Prepend(autometricsDeferStatement)
+				}
+			} else {
+				firstStatement.Decorations().End.Prepend(autometricsDeferStatement)
 			}
 		}
 
