@@ -2,10 +2,11 @@ package doc
 
 import (
 	"fmt"
-	"golang.org/x/exp/slices"
 	"log"
 	"os"
 	"strings"
+
+	"golang.org/x/exp/slices"
 
 	"github.com/dave/dst"
 	"github.com/dave/dst/decorator"
@@ -119,37 +120,39 @@ func GenerateDocumentation(sourceCode, moduleName string, generator AutometricsL
 
 			}
 
-			// Insert new autometrics comment
+			// Detect autometrics directive
 			listIndex := hasAutometricsDocDirective(docComments)
 			if listIndex >= 0 {
+				// Insert comments
 				autometricsComment := generateAutometricsComment(funcDeclaration.Name.Name, moduleName, generator)
 				funcDeclaration.Decorations().Start.Replace(insertComments(docComments, listIndex, autometricsComment)...)
-			}
 
-			// defer statement
-			firstStatement := funcDeclaration.Body.List[0]
-			variable, err := errorReturnValueName(funcDeclaration)
-
-			if err != nil {
-				log.Fatalf("failed to get error return value name: %v", err)
-			}
-
-			if len(variable) == 0 {
-				variable = "nil"
-			} else {
-				variable = "&" + variable
-			}
-
-			autometricsDeferStatement := fmt.Sprintf("defer autometrics.Instrument(autometrics.PreInstrument(), %s) //autometrics:defer", variable)
-
-			if deferStatement, ok := firstStatement.(*dst.DeferStmt); ok {
-				decorations := deferStatement.Decorations().End
-
-				if !slices.Contains(decorations.All(), "//autometrics:defer") {
-					decorations.Prepend(autometricsDeferStatement)
+				// defer statement
+				firstStatement := funcDeclaration.Body.List[0]
+				variable, err := errorReturnValueName(funcDeclaration)
+				if err != nil {
+					log.Fatalf("failed to get error return value name: %v", err)
 				}
-			} else {
-				firstStatement.Decorations().End.Prepend(autometricsDeferStatement)
+
+				if len(variable) == 0 {
+					variable = "nil"
+				} else {
+					variable = "&" + variable
+				}
+
+				autometricsDeferStatement := buildAutometricsDeferStatement(variable)
+
+				if deferStatement, ok := firstStatement.(*dst.DeferStmt); ok {
+					decorations := deferStatement.Decorations().End
+
+					if slices.Contains(decorations.All(), "//autometrics:defer") {
+						funcDeclaration.Body.List[0] = &autometricsDeferStatement
+					} else {
+						funcDeclaration.Body.List = append([]dst.Stmt{&autometricsDeferStatement}, funcDeclaration.Body.List...)
+					}
+				} else {
+					funcDeclaration.Body.List = append([]dst.Stmt{&autometricsDeferStatement}, funcDeclaration.Body.List...)
+				}
 			}
 		}
 
@@ -164,6 +167,31 @@ func GenerateDocumentation(sourceCode, moduleName string, generator AutometricsL
 	}
 
 	return buf.String(), nil
+}
+
+// buildAutometricsDeferStatement builds the AST for the defer statement to be inserted.
+func buildAutometricsDeferStatement(secondVar string) dst.DeferStmt {
+	return dst.DeferStmt{
+		Call: &dst.CallExpr{
+			Fun: dst.NewIdent("autometrics.Instrument"),
+			Args: []dst.Expr{
+				&dst.CallExpr{
+					Fun:  dst.NewIdent("autometrics.PreInstrument"),
+					Args: nil,
+				},
+				dst.NewIdent(secondVar),
+			},
+		},
+		Decs: dst.DeferStmtDecorations{
+			dst.NodeDecs{
+				Before: 1, // New line
+				Start:  []string{},
+				End:    []string{"//autometrics:defer"},
+				After:  2, // Empty line
+			},
+			[]string{},
+		},
+	}
 }
 
 func hasAutometricsDocDirective(commentGroup []string) int {

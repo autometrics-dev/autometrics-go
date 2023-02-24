@@ -33,8 +33,7 @@ func main() {
 //
 // It always succeeds and says hello.
 //
-//
-//   autometrics:doc-start DO NOT EDIT HERE AND LINE ABOVE
+//	autometrics:doc-start DO NOT EDIT HERE AND LINE ABOVE
 //
 // # Autometrics
 //
@@ -50,6 +49,8 @@ func main() {
 //   - [Request Rate Callee]
 //   - [Error Ratio Callee]
 //
+//	autometrics:doc-end DO NOT EDIT HERE AND LINE BELOW
+//
 // [Request Rate]: http://localhost:9090/graph?g0.expr=%23+Rate+of+calls+to+the+%60indexHandler%60+function+per+second%2C+averaged+over+5+minute+windows%0A%0Asum+by+%28function%2C+module%29+%28rate%28function_calls_count%7Bfunction%3D%22indexHandler%22%7D%5B5m%5D%29%29&g0.tab=0
 // [Error Ratio]: http://localhost:9090/graph?g0.expr=%23+Percentage+of+calls+to+the+%60indexHandler%60+function+that+return+errors%2C+averaged+over+5+minute+windows%0A%0Asum+by+%28function%2C+module%29+%28rate%28function_calls_count%7Bfunction%3D%22indexHandler%22%2Cresult%3D%22error%22%7D%5B5m%5D%29%29&g0.tab=0
 // [Latency (95th and 99th percentiles)]: http://localhost:9090/graph?g0.expr=%23+95th+and+99th+percentile+latencies+%28in+seconds%29+for+the+%60indexHandler%60+function%0A%0Ahistogram_quantile%280.99%2C+sum+by+%28le%2C+function%2C+module%29+%28rate%28function_calls_duration_bucket%7Bfunction%3D%22indexHandler%22%7D%5B5m%5D%29%29%29+or+histogram_quantile%280.95%2C+sum+by+%28le%2C+function%2C+module%29+%28rate%28function_calls_duration_bucket%7Bfunction%3D%22indexHandler%22%7D%5B5m%5D%29%29%29&g0.tab=0
@@ -57,14 +58,10 @@ func main() {
 // [Request Rate Callee]: http://localhost:9090/graph?g0.expr=%23+Rate+of+function+calls+emanating+from+%60indexHandler%60+function+per+second%2C+averaged+over+5+minute+windows%0A%0Asum+by+%28function%2C+module%29+%28rate%28function_calls_count%7Bcaller%3D%22main.indexHandler%22%7D%5B5m%5D%29%29&g0.tab=0
 // [Error Ratio Callee]: http://localhost:9090/graph?g0.expr=%23+Percentage+of+function+emanating+from+%60indexHandler%60+function+that+return+errors%2C+averaged+over+5+minute+windows%0A%0Asum+by+%28function%2C+module%29+%28rate%28function_calls_count%7Bcaller%3D%22main.indexHandler%22%2Cresult%3D%22error%22%7D%5B5m%5D%29%29&g0.tab=0
 //
-//
-//   autometrics:doc-end DO NOT EDIT HERE AND LINE BELOW
-//
 //autometrics:doc
 func indexHandler(w http.ResponseWriter, _ *http.Request) (err error) {
-	//autometrics:defer
-	//autometrics:defer
-	defer autometrics.Instrument(autometrics.PreInstrument(), &err) //autometrics:defer-statement
+	defer autometrics.Instrument(autometrics.PreInstrument(), &err) //autometrics:defer
+
 	_, err = fmt.Fprintf(w, "Hello, World!\n")
 	return
 }
@@ -75,8 +72,7 @@ var handlerError = errors.New("failed to handle request")
 //
 // It returns an error around 50% of the time.
 //
-//
-//   autometrics:doc-start DO NOT EDIT HERE AND LINE ABOVE
+//	autometrics:doc-start DO NOT EDIT HERE AND LINE ABOVE
 //
 // # Autometrics
 //
@@ -92,6 +88,8 @@ var handlerError = errors.New("failed to handle request")
 //   - [Request Rate Callee]
 //   - [Error Ratio Callee]
 //
+//	autometrics:doc-end DO NOT EDIT HERE AND LINE BELOW
+//
 // [Request Rate]: http://localhost:9090/graph?g0.expr=%23+Rate+of+calls+to+the+%60randomErrorHandler%60+function+per+second%2C+averaged+over+5+minute+windows%0A%0Asum+by+%28function%2C+module%29+%28rate%28function_calls_count%7Bfunction%3D%22randomErrorHandler%22%7D%5B5m%5D%29%29&g0.tab=0
 // [Error Ratio]: http://localhost:9090/graph?g0.expr=%23+Percentage+of+calls+to+the+%60randomErrorHandler%60+function+that+return+errors%2C+averaged+over+5+minute+windows%0A%0Asum+by+%28function%2C+module%29+%28rate%28function_calls_count%7Bfunction%3D%22randomErrorHandler%22%2Cresult%3D%22error%22%7D%5B5m%5D%29%29&g0.tab=0
 // [Latency (95th and 99th percentiles)]: http://localhost:9090/graph?g0.expr=%23+95th+and+99th+percentile+latencies+%28in+seconds%29+for+the+%60randomErrorHandler%60+function%0A%0Ahistogram_quantile%280.99%2C+sum+by+%28le%2C+function%2C+module%29+%28rate%28function_calls_duration_bucket%7Bfunction%3D%22randomErrorHandler%22%7D%5B5m%5D%29%29%29+or+histogram_quantile%280.95%2C+sum+by+%28le%2C+function%2C+module%29+%28rate%28function_calls_duration_bucket%7Bfunction%3D%22randomErrorHandler%22%7D%5B5m%5D%29%29%29&g0.tab=0
@@ -99,14 +97,10 @@ var handlerError = errors.New("failed to handle request")
 // [Request Rate Callee]: http://localhost:9090/graph?g0.expr=%23+Rate+of+function+calls+emanating+from+%60randomErrorHandler%60+function+per+second%2C+averaged+over+5+minute+windows%0A%0Asum+by+%28function%2C+module%29+%28rate%28function_calls_count%7Bcaller%3D%22main.randomErrorHandler%22%7D%5B5m%5D%29%29&g0.tab=0
 // [Error Ratio Callee]: http://localhost:9090/graph?g0.expr=%23+Percentage+of+function+emanating+from+%60randomErrorHandler%60+function+that+return+errors%2C+averaged+over+5+minute+windows%0A%0Asum+by+%28function%2C+module%29+%28rate%28function_calls_count%7Bcaller%3D%22main.randomErrorHandler%22%2Cresult%3D%22error%22%7D%5B5m%5D%29%29&g0.tab=0
 //
-//
-//   autometrics:doc-end DO NOT EDIT HERE AND LINE BELOW
-//
 //autometrics:doc
 func randomErrorHandler(w http.ResponseWriter, _ *http.Request) (err error) {
-	//autometrics:defer
-	//autometrics:defer
-	defer autometrics.Instrument(autometrics.PreInstrument(), &err) //autometrics:defer-statement
+	defer autometrics.Instrument(autometrics.PreInstrument(), &err) //autometrics:defer
+
 	isErr := rand.Intn(2) == 0
 
 	if isErr {
