@@ -182,6 +182,9 @@ func buildAutometricsDeferStatement(secondVar string) dst.DeferStmt {
 				dst.NewIdent(secondVar),
 			},
 		},
+		// We don't own dst, but must use literals to build the comment here, even
+		// if the structure has unkeyed fields
+		//nolint:govet
 		Decs: dst.DeferStmtDecorations{
 			dst.NodeDecs{
 				Before: 1, // New line
