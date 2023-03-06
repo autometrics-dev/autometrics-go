@@ -60,7 +60,15 @@ func main() {
 //
 //autometrics:doc
 func indexHandler(w http.ResponseWriter, _ *http.Request) error {
-	defer autometrics.Instrument(autometrics.PreInstrument(), nil) //autometrics:defer
+	defer autometrics.Instrument(autometrics.Context{
+		TrackConcurrentCalls: true,
+		TrackCallerName:      true,
+		AlertConf:            nil,
+	}, autometrics.PreInstrument(autometrics.Context{
+		TrackConcurrentCalls: true,
+		TrackCallerName:      true,
+		AlertConf:            nil,
+	}), nil) //autometrics:defer
 
 	time.Sleep(time.Duration(rand.Intn(500)) * time.Millisecond)
 
@@ -101,7 +109,15 @@ var handlerError = errors.New("failed to handle request")
 //
 //autometrics:doc
 func randomErrorHandler(w http.ResponseWriter, _ *http.Request) (err error) {
-	defer autometrics.Instrument(autometrics.PreInstrument(), &err) //autometrics:defer
+	defer autometrics.Instrument(autometrics.Context{
+		TrackConcurrentCalls: true,
+		TrackCallerName:      true,
+		AlertConf:            nil,
+	}, autometrics.PreInstrument(autometrics.Context{
+		TrackConcurrentCalls: true,
+		TrackCallerName:      true,
+		AlertConf:            nil,
+	}), &err) //autometrics:defer
 
 	isErr := rand.Intn(2) == 0
 

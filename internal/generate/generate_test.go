@@ -1,13 +1,19 @@
 package generate
 
 import (
+	"fmt"
+	"go/token"
+	"strings"
 	"testing"
+	"time"
 
 	"github.com/dave/dst"
 	"github.com/dave/dst/decorator"
 	"github.com/stretchr/testify/assert"
 
+	"github.com/autometrics-dev/autometrics-go/internal/ctx"
 	"github.com/autometrics-dev/autometrics-go/internal/doc"
+	"github.com/autometrics-dev/autometrics-go/pkg/autometrics"
 )
 
 // TestCommentDirective calls GenerateDocumentationAndInstrumentation on a
@@ -19,7 +25,7 @@ package main
 
 // This comment is associated with the main function.
 //
-//autometrics:doc
+//autometrics:doc --slo "Service Test" --success-target 0.99
 func main() {
 	fmt.Println(hello) // line comment 3
 }
@@ -59,7 +65,15 @@ func main() {
 		"//\n" +
 		"//autometrics:doc\n" +
 		"func main() {\n" +
-		"\tdefer autometrics.Instrument(autometrics.PreInstrument(), nil) //autometrics:defer\n" +
+		"\tdefer autometrics.Instrument(autometrics.Context{\n" +
+		"\t\tTrackConcurrentCalls: true,\n" +
+		"\t\tTrackCallerName:      true,\n" +
+		"\t\tAlertConf:            &autometrics.AlertConfiguration{ServiceName: \"Service Test\", Latency: nil, Success: &autometrics.SuccessSlo{Objective: 0.99}},\n" +
+		"\t}, autometrics.PreInstrument(autometrics.Context{\n" +
+		"\t\tTrackConcurrentCalls: true,\n" +
+		"\t\tTrackCallerName:      true,\n" +
+		"\t\tAlertConf:            &autometrics.AlertConfiguration{ServiceName: \"Service Test\", Latency: nil, Success: &autometrics.SuccessSlo{Objective: 0.99}},\n" +
+		"\t}), nil) //autometrics:defer\n" +
 		"\n" +
 		"	fmt.Println(hello) // line comment 3\n" +
 		"}\n"
@@ -87,7 +101,7 @@ package main
 //
 //   autometrics:doc-end DO NOT EDIT
 //
-//autometrics:doc
+//autometrics:doc --slo "API" --latency-target 0.95 --latency-ms 0.5
 func main() {
 	fmt.Println(hello) // line comment 3
 }
@@ -126,7 +140,15 @@ func main() {
 		"//\n" +
 		"//autometrics:doc\n" +
 		"func main() {\n" +
-		"\tdefer autometrics.Instrument(autometrics.PreInstrument(), nil) //autometrics:defer\n" +
+		"\tdefer autometrics.Instrument(autometrics.Context{\n" +
+		"\t\tTrackConcurrentCalls: true,\n" +
+		"\t\tTrackCallerName:      true,\n" +
+		"\t\tAlertConf:            &autometrics.AlertConfiguration{ServiceName: \"API\", Latency: &autometrics.LatencySlo{Target: 500000 * time.Nanosecond, Objective: 0.95}, Success: nil},\n" +
+		"\t}, autometrics.PreInstrument(autometrics.Context{\n" +
+		"\t\tTrackConcurrentCalls: true,\n" +
+		"\t\tTrackCallerName:      true,\n" +
+		"\t\tAlertConf:            &autometrics.AlertConfiguration{ServiceName: \"API\", Latency: &autometrics.LatencySlo{Target: 500000 * time.Nanosecond, Objective: 0.95}, Success: nil},\n" +
+		"\t}), nil) //autometrics:defer\n" +
 		"\n" +
 		"	fmt.Println(hello) // line comment 3\n" +
 		"}\n"
@@ -370,4 +392,119 @@ func main() (cannotGetLuckyCollision, otherError error) {
 
 	_, err = errorReturnValueName(funcNode)
 	assert.Error(t, err, "Calling the named return detection must fail if there are multiple error values.")
+}
+
+func implementContextCodeGenTest(t *testing.T, contextToSerialize autometrics.Context, expected string) {
+	sourceContext := ctx.AutometricsGeneratorContext{
+		Ctx:          contextToSerialize,
+		CommentIndex: -1,
+	}
+
+	node, err := buildAutometricsContextNode(sourceContext)
+	if err != nil {
+		t.Fatalf("error building the context node: %s", err)
+	}
+
+	want := fmt.Sprintf(`package main
+
+var dummy2 = %v
+`, expected)
+
+	// We're obliged to reparse, modify, and build a complete Go file in order
+	// to test that the context has been correctly built
+	dummyCodeHeader := "package main"
+	dummyFile, err := decorator.Parse(dummyCodeHeader)
+	if err != nil {
+		t.Fatalf("error parsing the dummy code header for test purposes: %s", err)
+	}
+
+	dummyFile.Decls = append(dummyFile.Decls, &dst.GenDecl{
+		Tok:    token.VAR,
+		Lparen: false,
+		Specs: []dst.Spec{
+			&dst.ValueSpec{
+				Names:  []*dst.Ident{dst.NewIdent("dummy2")},
+				Type:   nil,
+				Values: []dst.Expr{node},
+				Decs:   dst.ValueSpecDecorations{},
+			},
+		},
+		Rparen: false,
+		Decs:   dst.GenDeclDecorations{},
+	})
+
+	var actualBuilder strings.Builder
+	err = decorator.Fprint(&actualBuilder, dummyFile)
+	if err != nil {
+		t.Fatalf("error writing the dummy code testing file to the string: %s", err)
+	}
+
+	actual := actualBuilder.String()
+	assert.Equal(t, want, actual, "Differences between the compile time context and the runtime constant generated.")
+}
+
+func TestNewContextCodeGen(t *testing.T) {
+	implementContextCodeGenTest(t,
+		autometrics.NewContext(),
+		`autometrics.Context{
+	TrackConcurrentCalls: true,
+	TrackCallerName:      true,
+	AlertConf:            nil,
+}`,
+	)
+}
+
+func TestNoTrackContextCodeGen(t *testing.T) {
+	ctx := autometrics.NewContext()
+	ctx.TrackCallerName = false
+	ctx.TrackConcurrentCalls = false
+	implementContextCodeGenTest(t,
+		ctx,
+		`autometrics.Context{
+	TrackConcurrentCalls: false,
+	TrackCallerName:      false,
+	AlertConf:            nil,
+}`,
+	)
+}
+
+func TestLatencyContextCodeGen(t *testing.T) {
+	ctx := autometrics.NewContext()
+	ctx.TrackCallerName = false
+	ctx.AlertConf = &autometrics.AlertConfiguration{
+		ServiceName: "api",
+		Latency: &autometrics.LatencySlo{
+			Target:    243 * time.Microsecond,
+			Objective: 0.99,
+		},
+		Success: nil,
+	}
+	implementContextCodeGenTest(t,
+		ctx,
+		`autometrics.Context{
+	TrackConcurrentCalls: true,
+	TrackCallerName:      false,
+	AlertConf:            &autometrics.AlertConfiguration{ServiceName: "api", Latency: &autometrics.LatencySlo{Target: 243000 * time.Nanosecond, Objective: 0.99}, Success: nil},
+}`,
+	)
+}
+
+func TestSuccessContextCodeGen(t *testing.T) {
+	ctx := autometrics.NewContext()
+	ctx.TrackCallerName = false
+	ctx.AlertConf = &autometrics.AlertConfiguration{
+		ServiceName: "api",
+		Latency:     nil,
+		Success: &autometrics.SuccessSlo{
+			Objective: 0.99999,
+		},
+	}
+	implementContextCodeGenTest(t,
+		ctx,
+		`autometrics.Context{
+	TrackConcurrentCalls: true,
+	TrackCallerName:      false,
+	AlertConf:            &autometrics.AlertConfiguration{ServiceName: "api", Latency: nil, Success: &autometrics.SuccessSlo{Objective: 0.99999}},
+}`,
+	)
 }

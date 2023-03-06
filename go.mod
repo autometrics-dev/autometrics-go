@@ -4,7 +4,10 @@ go 1.18
 
 require github.com/prometheus/client_golang v1.14.0
 
-require golang.org/x/exp v0.0.0-20230223210539-50820d90acfd
+require (
+	github.com/google/shlex v0.0.0-20191202100458-e7afc7fbc510
+	golang.org/x/exp v0.0.0-20230223210539-50820d90acfd
+)
 
 require (
 	github.com/beorn7/perks v1.0.1 // indirect
