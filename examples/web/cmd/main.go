@@ -19,7 +19,7 @@ import (
 func main() {
 	rand.Seed(time.Now().UnixNano())
 
-	autometrics.Init(nil)
+	autometrics.Init(nil, autometrics.DefBuckets)
 
 	http.HandleFunc("/", errorable(indexHandler))
 	http.HandleFunc("/random-error", errorable(randomErrorHandler))
@@ -59,13 +59,13 @@ func main() {
 // [Error Ratio Callee]: http://localhost:9090/graph?g0.expr=%23+Percentage+of+function+emanating+from+%60indexHandler%60+function+that+return+errors%2C+averaged+over+5+minute+windows%0A%0Asum+by+%28function%2C+module%29+%28rate%28function_calls_count%7Bcaller%3D%22main.indexHandler%22%2Cresult%3D%22error%22%7D%5B5m%5D%29%29&g0.tab=0
 //
 //autometrics:doc
-func indexHandler(w http.ResponseWriter, _ *http.Request) (err error) {
-	defer autometrics.Instrument(autometrics.PreInstrument(), &err) //autometrics:defer
+func indexHandler(w http.ResponseWriter, _ *http.Request) error {
+	defer autometrics.Instrument(autometrics.PreInstrument(), nil) //autometrics:defer
 
 	time.Sleep(time.Duration(rand.Intn(500)) * time.Millisecond)
 
-	_, err = fmt.Fprintf(w, "Hello, World!\n")
-	return
+	_, err := fmt.Fprintf(w, "Hello, World!\n")
+	return err
 }
 
 var handlerError = errors.New("failed to handle request")

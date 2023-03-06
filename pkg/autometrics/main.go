@@ -8,12 +8,18 @@ var (
 	FunctionCallsCount      *prometheus.CounterVec
 	FunctionCallsDuration   *prometheus.HistogramVec
 	FunctionCallsConcurrent *prometheus.GaugeVec
+	DefBuckets              = []float64{.005, .01, .025, .05, .1, .25, .5, 1, 2.5, 5, 10}
 )
 
 const (
-	FunctionCallsCountName = "function_calls_count"
-	FunctionCallsDurationName = "function_calls_duration"
+	FunctionCallsCountName      = "function_calls_count"
+	FunctionCallsDurationName   = "function_calls_duration"
 	FunctionCallsConcurrentName = "function_calls_concurrent"
+
+	FunctionLabel = "function"
+	ModuleLabel = "module"
+	CallerLabel = "caller"
+	ResultLabel = "result"
 )
 
 // Init sets up the metrics required for autometrics' decorated functions and registers
@@ -21,18 +27,23 @@ const (
 //
 // If the passed registry is nil, all the metrics are registered to the
 // default global registry.
-func Init(reg *prometheus.Registry) {
+//
+// Make sure that all the latency targets you want to use for SLOs are
+// present in the histogramBuckets array, otherwise the alerts will fail
+// to work (they will never trigger.)
+func Init(reg *prometheus.Registry, histogramBuckets []float64) {
 	FunctionCallsCount = prometheus.NewCounterVec(prometheus.CounterOpts{
 		Name: FunctionCallsCountName,
-	}, []string{"function", "module", "caller", "result"})
+	}, []string{FunctionLabel, ModuleLabel, CallerLabel, ResultLabel})
 
 	FunctionCallsDuration = prometheus.NewHistogramVec(prometheus.HistogramOpts{
 		Name: FunctionCallsDurationName,
-	}, []string{"function", "module", "caller"})
+		Buckets: histogramBuckets,
+	}, []string{FunctionLabel, ModuleLabel, CallerLabel})
 
 	FunctionCallsConcurrent = prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Name: FunctionCallsConcurrentName,
-	}, []string{"function", "module", "caller"})
+	}, []string{FunctionLabel, ModuleLabel, CallerLabel})
 
 	if reg != nil {
 		reg.MustRegister(FunctionCallsCount)
