@@ -2,16 +2,13 @@
 
 Autometrics is a [Go
 Generator](https://pkg.go.dev/cmd/go#hdr-Generate_Go_files_by_processing_source)
-bundled with a library that ensures your function stays correctly instrumented
-and gives direct links to inspect usage metrics from your code.
+bundled with a library that instruments your functions and gives direct links to 
+inspect usage metrics from your code.
 
 ![Documentation comments of instrumented function is augmented with links](./assets/codium-screenshot-example.png)
 
-Only Prometheus as a metrics system is supported now.
-
-> **Note:** as the library and binary are still in experimental phase, and the
-> generator overwrites the file in the code, it currently backs up any file it
-> modifies with a .bak extension
+A fully working use-case and example of library usage is available in the
+[examples/web](./examples/web) subdirectory
 
 ## How to use
 
@@ -42,10 +39,14 @@ func RouteHandler(args interface{}) (err error) { // Name the error return value
 }
 ```
 
+If you want the generated metrics to contain the function success rate, you
+_must_ name the error return value. This is why we recommend to name the error
+value you return for function you want to instrument.
+
 ### Generate the documentation and instrumentation code
 
 Once you've done this, the `autometrics` generator takes care of the rest, and you can
-simply call `go generate` with an optional environment variable
+simply call `go generate` with an optional environment variable:
 
 ```console
 $ AM_PROMETHEUS_URL=http://localhost:9090/ go generate ./...
@@ -58,7 +59,10 @@ care of instrumenting your code.
 The environment variable `AM_PROMETHEUS_URL` controls the base URL of the instance that
 is scraping the deployed version of your code. Having an environment variable means you
 can change the generated links without touching your code. The default value, if absent,
-is `http://localhost:9090/`
+is `http://localhost:9090/`.
+
+You can have any value here, the only adverse impact it can
+have is that the links in the doc comment might lead nowhere useful.
 
 ### Expose metrics outside
 
@@ -74,7 +78,7 @@ import (
 
 
 func main() {
-	autometrics.Init(nil)
+	autometrics.Init(nil, autometrics.DefBuckets)
 	http.Handle("/metrics", promhttp.Handler())
 }
 ```
@@ -82,8 +86,25 @@ func main() {
 This is the shortest way to initialize and expose the metrics that autometrics will use
 in the generated code.
 
-## Metrics systems
+## Status
+
+The library is usable but not over, this section mentions the relevant points about
+the current status
+
+### Comments welcome
+
+The first version of the library has _not_ been written by Go experts. Any comment or
+code suggestion as Pull Request is more than welcome!
+
+### Metrics system
 
 For the time being only Prometheus metrics are supported, but the code has been
 written with the possibility to have other systems, like OpenTelemetry,
 integrated in the same way.
+
+### Alerts
+
+The ability to generate alerting rules directly from annotations in your code is
+the next item on the roadmap. The goal is to have a seamless integration between
+"a magic cookie" in your code, and a Prometheus instance triggering alerts because
+the function doesn't meet SLOs.
