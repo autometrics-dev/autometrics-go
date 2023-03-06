@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 	"strings"
+	"time"
 
 	"golang.org/x/exp/slices"
 
@@ -39,7 +40,8 @@ func TransformFile(path, moduleName string, generator AutometricsLinkCommentGene
 		return fmt.Errorf("error reading the source code from %s (cwd: %s): %w", path, cwd, err)
 	}
 
-	err = os.WriteFile(fmt.Sprintf("%s.bak", path), sourceBytes, permissions)
+        ts := time.Now().UnixMilli()
+	err = os.WriteFile(fmt.Sprintf("%s.bak.%d", path, ts), sourceBytes, permissions)
 	if err != nil {
 		return fmt.Errorf("error writing backup file: %w", err)
 	}
