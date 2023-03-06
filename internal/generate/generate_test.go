@@ -1,4 +1,4 @@
-package doc
+package generate
 
 import (
 	"testing"
@@ -6,9 +6,11 @@ import (
 	"github.com/dave/dst"
 	"github.com/dave/dst/decorator"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/autometrics-dev/autometrics-go/internal/doc"
 )
 
-// TestCommentDirective calls GenerateDocumentation on a
+// TestCommentDirective calls GenerateDocumentationAndInstrumentation on a
 // decorated function, making sure that the autometrics
 // directive adds a new comment section about autometrics.
 func TestCommentDirective(t *testing.T) {
@@ -62,7 +64,7 @@ func main() {
 		"	fmt.Println(hello) // line comment 3\n" +
 		"}\n"
 
-	actual, err := GenerateDocumentation(sourceCode, "main", NewPrometheusDoc(DefaultPrometheusInstanceUrl))
+	actual, err := GenerateDocumentationAndInstrumentation(sourceCode, "main", doc.NewPrometheusDoc(doc.DefaultPrometheusInstanceUrl))
 	if err != nil {
 		t.Fatalf("error generating the documentation: %s", err)
 	}
@@ -70,7 +72,7 @@ func main() {
 	assert.Equal(t, want, actual, "The generated source code is not as expected.")
 }
 
-// TestCommentRefresh calls GenerateDocumentation on a
+// TestCommentRefresh calls GenerateDocumentationAndInstrumentation on a
 // decorated function that already has a comment, making sure that the autometrics
 // directive only updates the comment section about autometrics.
 func TestCommentRefresh(t *testing.T) {
@@ -129,7 +131,7 @@ func main() {
 		"	fmt.Println(hello) // line comment 3\n" +
 		"}\n"
 
-	actual, err := GenerateDocumentation(sourceCode, "main", NewPrometheusDoc(DefaultPrometheusInstanceUrl))
+	actual, err := GenerateDocumentationAndInstrumentation(sourceCode, "main", doc.NewPrometheusDoc(doc.DefaultPrometheusInstanceUrl))
 	if err != nil {
 		t.Fatalf("error generating the documentation: %s", err)
 	}

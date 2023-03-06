@@ -19,7 +19,7 @@ import (
 func main() {
 	rand.Seed(time.Now().UnixNano())
 
-	autometrics.Init(nil)
+	autometrics.Init(nil, autometrics.DefBuckets)
 
 	http.HandleFunc("/", errorable(indexHandler))
 	http.HandleFunc("/random-error", errorable(randomErrorHandler))
@@ -34,12 +34,12 @@ func main() {
 // It always succeeds and says hello.
 //
 //autometrics:doc
-func indexHandler(w http.ResponseWriter, _ *http.Request) (err error) {
+func indexHandler(w http.ResponseWriter, _ *http.Request) error {
 
 	time.Sleep(time.Duration(rand.Intn(500)) * time.Millisecond)
 
-	_, err = fmt.Fprintf(w, "Hello, World!\n")
-	return
+	_, err := fmt.Fprintf(w, "Hello, World!\n")
+	return err
 }
 
 var handlerError = errors.New("failed to handle request")
