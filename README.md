@@ -86,6 +86,31 @@ func main() {
 This is the shortest way to initialize and expose the metrics that autometrics will use
 in the generated code.
 
+### Generate alerts automatically
+
+Change the annotation of the function to automatically generate alerts for it:
+
+``` go
+//autometrics:doc --slo "Api" --success-target 0.9
+func RouteHandler(args interface{}) (err error) {
+        // Do stuff
+        return nil
+}
+```
+
+And add the
+[bundled](https://github.com/autometrics-dev/autometrics-rs/blob/main/autometrics.rules.yml)
+recording rules to your prometheus configuration.
+
+The valid arguments for alert generation are:
+- `--slo` (*MANDATORY*): name of the service for which the objective is relevant
+- `--success-rate` : target success rate of the function, between 0 and 1 (you
+  must name the `error` return value of the function for detection to work.)
+- `--latency-ms` : maximum latency allowed for the function, in milliseconds.
+- `--latency-target` : latency target for the threshold, between 0 and 1 (so X%
+  of calls must last less than `latency-ms` milliseconds). You must specify both
+  latency options, or none.
+
 ## Status
 
 The library is usable but not over, this section mentions the relevant points about
