@@ -21,6 +21,7 @@ services:
     restart: unless-stopped
     volumes:
       - ./prometheus.yaml:/etc/prometheus/prometheus.yaml
+      - ./autometrics.rules.yml:/etc/prometheus/autometrics.rules.yml
     command:
       - '--config.file=/etc/prometheus/prometheus.yaml'
     expose:
