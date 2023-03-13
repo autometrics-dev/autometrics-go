@@ -63,7 +63,7 @@ func main() {
 		"//\n" +
 		"//   autometrics:doc-end DO NOT EDIT HERE AND LINE BELOW\n" +
 		"//\n" +
-		"//autometrics:doc\n" +
+		"//autometrics:doc --slo \"Service Test\" --success-target 0.99\n" +
 		"func main() {\n" +
 		"\tdefer autometrics.Instrument(autometrics.Context{\n" +
 		"\t\tTrackConcurrentCalls: true,\n" +
@@ -138,7 +138,7 @@ func main() {
 		"//\n" +
 		"//   autometrics:doc-end DO NOT EDIT HERE AND LINE BELOW\n" +
 		"//\n" +
-		"//autometrics:doc\n" +
+		"//autometrics:doc --slo \"API\" --latency-target 0.95 --latency-ms 0.5\n" +
 		"func main() {\n" +
 		"\tdefer autometrics.Instrument(autometrics.Context{\n" +
 		"\t\tTrackConcurrentCalls: true,\n" +
