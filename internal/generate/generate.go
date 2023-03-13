@@ -20,6 +20,13 @@ import (
 	"github.com/dave/dst/decorator"
 )
 
+const (
+	SloNameArgument = "--slo"
+	SuccessObjArgument = "--success-target"
+	LatencyMsArgument = "--latency-ms"
+	LatencyObjArgument = "--latency-target"
+)
+
 // TransformFile takes a file path and generates the documentation
 // for the `//autometrics:doc` functions.
 //
@@ -282,15 +289,15 @@ func parseAutometricsFnContext(commentGroup []string) (ctx.AutometricsGeneratorC
 			for tokenIndex < len(tokens) {
 				token := tokens[tokenIndex]
 				switch {
-				case token == "--slo":
+				case token == SloNameArgument:
 					if tokenIndex >= len(tokens)-1 {
-						return retval, fmt.Errorf("--slo argument needs a value")
+						return retval, fmt.Errorf("%v argument needs a value", SloNameArgument)
 					}
 					// Read the "value"
 					tokenIndex = tokenIndex + 1
 					value := tokens[tokenIndex]
 					if strings.HasPrefix(value, "--") {
-						return retval, fmt.Errorf("--slo argument isn't allowed to start with '--'")
+						return retval, fmt.Errorf("%v argument isn't allowed to start with '--'", SloNameArgument)
 					}
 
 					if retval.Ctx.AlertConf != nil {
@@ -304,15 +311,15 @@ func parseAutometricsFnContext(commentGroup []string) (ctx.AutometricsGeneratorC
 					}
 					// Advance past the "value"
 					tokenIndex = tokenIndex + 1
-				case token == "--success-target":
+				case token == SuccessObjArgument:
 					if tokenIndex >= len(tokens)-1 {
-						return retval, fmt.Errorf("--success-target argument needs a value")
+						return retval, fmt.Errorf("%v argument needs a value", SuccessObjArgument)
 					}
 					// Read the "value"
 					tokenIndex = tokenIndex + 1
 					value, err := strconv.ParseFloat(tokens[tokenIndex], 64)
 					if err != nil || value < 0 || value > 1 {
-						return retval, fmt.Errorf("--success-target argument must be a float between 0 and 1")
+						return retval, fmt.Errorf("%v argument must be a float between 0 and 1", SuccessObjArgument)
 					}
 
 					if retval.Ctx.AlertConf != nil {
@@ -330,15 +337,15 @@ func parseAutometricsFnContext(commentGroup []string) (ctx.AutometricsGeneratorC
 					}
 					// Advance past the "value"
 					tokenIndex = tokenIndex + 1
-				case token == "--latency-ms":
+				case token == LatencyMsArgument:
 					if tokenIndex >= len(tokens)-1 {
-						return retval, fmt.Errorf("--latency-ms argument needs a value")
+						return retval, fmt.Errorf("%v argument needs a value", LatencyMsArgument)
 					}
 					// Read the "value"
 					tokenIndex = tokenIndex + 1
 					value, err := strconv.ParseFloat(tokens[tokenIndex], 64)
 					if err != nil || value <= 0 {
-						return retval, fmt.Errorf("--latency-ms argument must be a positive float")
+						return retval, fmt.Errorf("%v argument must be a positive float", LatencyMsArgument)
 					}
 					timeValue := time.Duration(value * float64(time.Millisecond))
 
@@ -363,15 +370,15 @@ func parseAutometricsFnContext(commentGroup []string) (ctx.AutometricsGeneratorC
 					}
 					// Advance past the "value"
 					tokenIndex = tokenIndex + 1
-				case token == "--latency-target":
+				case token == LatencyObjArgument:
 					if tokenIndex >= len(tokens)-1 {
-						return retval, fmt.Errorf("--latency-target argument needs a value")
+						return retval, fmt.Errorf("%v argument needs a value", LatencyObjArgument)
 					}
 					// Read the "value"
 					tokenIndex = tokenIndex + 1
 					value, err := strconv.ParseFloat(tokens[tokenIndex], 64)
 					if err != nil || value < 0 || value > 1 {
-						return retval, fmt.Errorf("--latency-target argument must be a float between 0 and 1")
+						return retval, fmt.Errorf("%v argument must be a float between 0 and 1", LatencyObjArgument)
 					}
 
 					if retval.Ctx.AlertConf != nil {
