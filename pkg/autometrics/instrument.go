@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"runtime"
 	"strings"
+	"strconv"
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
@@ -30,11 +31,11 @@ func Instrument(ctx Context, startTime time.Time, err *error) {
 	if ctx.AlertConf != nil {
 		sloName = ctx.AlertConf.ServiceName
 		if ctx.AlertConf.Latency != nil {
-			latencyTarget = fmt.Sprintf("%f", ctx.AlertConf.Latency.Target.Seconds())
-			latencyObjective = fmt.Sprintf("%f", ctx.AlertConf.Latency.Objective)
+			latencyTarget = strconv.FormatFloat(ctx.AlertConf.Latency.Target.Seconds(), 'f', -1, 64)
+			latencyObjective = strconv.FormatFloat(ctx.AlertConf.Latency.Objective, 'f', -1, 64)
 		}
 		if ctx.AlertConf.Success != nil {
-			successObjective = fmt.Sprintf("%f", ctx.AlertConf.Success.Objective)
+			successObjective = strconv.FormatFloat(ctx.AlertConf.Success.Objective, 'f', -1, 64)
 		}
 	}
 
