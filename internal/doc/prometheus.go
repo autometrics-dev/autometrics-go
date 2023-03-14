@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/url"
 
+	"github.com/autometrics-dev/autometrics-go/internal/ctx"
 	"github.com/autometrics-dev/autometrics-go/pkg/autometrics"
 )
 
@@ -56,7 +57,7 @@ func concurrentCallsQuery(gaugeName, labelKey, labelValue string) string {
 	return fmt.Sprintf("sum by (function, module) %s{%s=\"%s\"}", gaugeName, labelKey, labelValue)
 }
 
-func (p Prometheus) GenerateAutometricsComment(funcName, moduleName string) []string {
+func (p Prometheus) GenerateAutometricsComment(ctx ctx.AutometricsGeneratorContext, funcName, moduleName string) []string {
 	requestRateUrl := p.makePrometheusUrl(
 		requestRateQuery(autometrics.FunctionCallsCountName, "function", funcName), fmt.Sprintf("Rate of calls to the `%s` function per second, averaged over 5 minute windows", funcName))
 	calleeRequestRateUrl := p.makePrometheusUrl(
@@ -71,27 +72,46 @@ func (p Prometheus) GenerateAutometricsComment(funcName, moduleName string) []st
 		concurrentCallsQuery(autometrics.FunctionCallsConcurrentName, "function", funcName), fmt.Sprintf("Concurrent calls to the `%s` function", funcName))
 
 	// Not using raw `` strings because it's impossible to escape ` within those
-	return []string{
+	retval := []string{
 		"// ## Prometheus",
 		"//",
 		fmt.Sprintf("// View the live metrics for the `%s` function:", funcName),
 		"//   - [Request Rate]",
 		"//   - [Error Ratio]",
 		"//   - [Latency (95th and 99th percentiles)]",
-		"//   - [Concurrent Calls]",
+	}
+	if ctx.Ctx.TrackConcurrentCalls {
+		retval = append(retval,
+			"//   - [Concurrent Calls]",
+		)
+	}
+	retval = append(retval,
 		"//",
 		fmt.Sprintf("// Or, dig into the metrics of *functions called by* `%s`", funcName),
 		"//   - [Request Rate Callee]",
 		"//   - [Error Ratio Callee]",
+	)
+
+	retval = append(retval,
 		"//",
 		fmt.Sprintf("// [Request Rate]: %s", requestRateUrl.String()),
 		fmt.Sprintf("// [Error Ratio]: %s", errorRatioUrl.String()),
 		fmt.Sprintf("// [Latency (95th and 99th percentiles)]: %s", latencyUrl.String()),
-		fmt.Sprintf("// [Concurrent Calls]: %s", concurrentCallsUrl.String()),
+	)
+
+	if ctx.Ctx.TrackConcurrentCalls {
+		retval = append(retval,
+			fmt.Sprintf("// [Concurrent Calls]: %s", concurrentCallsUrl.String()),
+		)
+	}
+
+	retval = append(retval,
 		fmt.Sprintf("// [Request Rate Callee]: %s", calleeRequestRateUrl.String()),
 		fmt.Sprintf("// [Error Ratio Callee]: %s", calleeErrorRatioUrl.String()),
 		"//",
-	}
+	)
+
+	return retval
 }
 
 func (p Prometheus) GeneratedLinks() []string {

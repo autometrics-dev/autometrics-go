@@ -1,6 +1,9 @@
 global:
   scrape_interval: 5s
 
+rule_files:
+  - "./autometrics.rules.yml"
+
 scrape_configs:
   - job_name: "prometheus"
     static_configs:
@@ -13,3 +16,10 @@ scrape_configs:
   - job_name: "node"
     static_configs:
     - targets: ["node-exporter:9100"]
+
+alerting:
+  alertmanagers:
+    - scheme: http
+      static_configs:
+        - targets:
+            - "alertmanager:9093"

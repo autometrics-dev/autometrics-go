@@ -60,7 +60,15 @@ func main() {
 //
 //autometrics:doc
 func indexHandler(w http.ResponseWriter, _ *http.Request) error {
-	defer autometrics.Instrument(autometrics.PreInstrument(), nil) //autometrics:defer
+	defer autometrics.Instrument(autometrics.Context{
+		TrackConcurrentCalls: true,
+		TrackCallerName:      true,
+		AlertConf:            nil,
+	}, autometrics.PreInstrument(autometrics.Context{
+		TrackConcurrentCalls: true,
+		TrackCallerName:      true,
+		AlertConf:            nil,
+	}), nil) //autometrics:defer
 
 	time.Sleep(time.Duration(rand.Intn(500)) * time.Millisecond)
 
@@ -99,9 +107,17 @@ var handlerError = errors.New("failed to handle request")
 // [Request Rate Callee]: http://localhost:9090/graph?g0.expr=%23+Rate+of+function+calls+emanating+from+%60randomErrorHandler%60+function+per+second%2C+averaged+over+5+minute+windows%0A%0Asum+by+%28function%2C+module%29+%28rate%28function_calls_count%7Bcaller%3D%22main.randomErrorHandler%22%7D%5B5m%5D%29%29&g0.tab=0
 // [Error Ratio Callee]: http://localhost:9090/graph?g0.expr=%23+Percentage+of+function+emanating+from+%60randomErrorHandler%60+function+that+return+errors%2C+averaged+over+5+minute+windows%0A%0Asum+by+%28function%2C+module%29+%28rate%28function_calls_count%7Bcaller%3D%22main.randomErrorHandler%22%2Cresult%3D%22error%22%7D%5B5m%5D%29%29&g0.tab=0
 //
-//autometrics:doc
+//autometrics:doc --slo "API" --success-target 90
 func randomErrorHandler(w http.ResponseWriter, _ *http.Request) (err error) {
-	defer autometrics.Instrument(autometrics.PreInstrument(), &err) //autometrics:defer
+	defer autometrics.Instrument(autometrics.Context{
+		TrackConcurrentCalls: true,
+		TrackCallerName:      true,
+		AlertConf:            &autometrics.AlertConfiguration{ServiceName: "API", Latency: nil, Success: &autometrics.SuccessSlo{Objective: 90}},
+	}, autometrics.PreInstrument(autometrics.Context{
+		TrackConcurrentCalls: true,
+		TrackCallerName:      true,
+		AlertConf:            &autometrics.AlertConfiguration{ServiceName: "API", Latency: nil, Success: &autometrics.SuccessSlo{Objective: 90}},
+	}), &err) //autometrics:defer
 
 	isErr := rand.Intn(2) == 0
 

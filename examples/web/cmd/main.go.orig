@@ -48,7 +48,7 @@ var handlerError = errors.New("failed to handle request")
 //
 // It returns an error around 50% of the time.
 //
-//autometrics:doc
+//autometrics:doc --slo "API" --success-target 90
 func randomErrorHandler(w http.ResponseWriter, _ *http.Request) (err error) {
 	isErr := rand.Intn(2) == 0
 

@@ -7,6 +7,11 @@ inspect usage metrics from your code.
 
 ![Documentation comments of instrumented function is augmented with links](./assets/codium-screenshot-example.png)
 
+You can optionnally add alerting rules so that code annotations make Prometheus
+trigger alerts directly from production usage:
+
+![a Slack bot is posting an alert directly in the channel](../../assets/slack-alert-example.png)
+
 A fully working use-case and example of library usage is available in the
 [examples/web](./examples/web) subdirectory
 
@@ -86,6 +91,30 @@ func main() {
 This is the shortest way to initialize and expose the metrics that autometrics will use
 in the generated code.
 
+### (OPTIONAL) Generate alerts automatically
+
+Change the annotation of the function to automatically generate alerts for it:
+
+``` go
+//autometrics:doc --slo "Api" --success-target 90
+func RouteHandler(args interface{}) (err error) {
+        // Do stuff
+        return nil
+}
+```
+
+Then **you need to add** the [bundled](./configs/autometrics.rules.yml)
+recording rules to your prometheus configuration.
+
+The valid arguments for alert generation are:
+- `--slo` (*MANDATORY*): name of the service for which the objective is relevant
+- `--success-rate` : target success rate of the function, between 0 and 100 (you
+  must name the `error` return value of the function for detection to work.)
+- `--latency-ms` : maximum latency allowed for the function, in milliseconds.
+- `--latency-target` : latency target for the threshold, between 0 and 100 (so X%
+  of calls must last less than `latency-ms` milliseconds). You must specify both
+  latency options, or none.
+
 ## Status
 
 The library is usable but not over, this section mentions the relevant points about
@@ -101,10 +130,3 @@ code suggestion as Pull Request is more than welcome!
 For the time being only Prometheus metrics are supported, but the code has been
 written with the possibility to have other systems, like OpenTelemetry,
 integrated in the same way.
-
-### Alerts
-
-The ability to generate alerting rules directly from annotations in your code is
-the next item on the roadmap. The goal is to have a seamless integration between
-"a magic cookie" in your code, and a Prometheus instance triggering alerts because
-the function doesn't meet SLOs.

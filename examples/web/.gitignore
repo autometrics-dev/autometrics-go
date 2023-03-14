@@ -3,3 +3,6 @@
 
 # Local build of the example server
 /web-server
+
+# Local file that holds Slack secret webhook URL for alerts
+slack_url.txt
