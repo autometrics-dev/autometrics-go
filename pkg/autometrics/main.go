@@ -24,9 +24,9 @@ const (
 	ModuleLabel            = "module"
 	CallerLabel            = "caller"
 	ResultLabel            = "result"
-	TargetLatencyLabel     = "objective.latency_threshold"
-	TargetSuccessRateLabel = "objective.percentile"
-	SloNameLabel           = "objective.name"
+	TargetLatencyLabel     = "objective_latency_threshold"
+	TargetSuccessRateLabel = "objective_percentile"
+	SloNameLabel           = "objective_name"
 )
 
 // Init sets up the metrics required for autometrics' decorated functions and registers
