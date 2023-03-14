@@ -91,7 +91,7 @@ in the generated code.
 Change the annotation of the function to automatically generate alerts for it:
 
 ``` go
-//autometrics:doc --slo "Api" --success-target 0.9
+//autometrics:doc --slo "Api" --success-target 90
 func RouteHandler(args interface{}) (err error) {
         // Do stuff
         return nil
@@ -99,15 +99,15 @@ func RouteHandler(args interface{}) (err error) {
 ```
 
 And add the
-[bundled](https://github.com/autometrics-dev/autometrics-rs/blob/main/autometrics.rules.yml)
+[bundled](./configs/autometrics.rules.yml)
 recording rules to your prometheus configuration.
 
 The valid arguments for alert generation are:
 - `--slo` (*MANDATORY*): name of the service for which the objective is relevant
-- `--success-rate` : target success rate of the function, between 0 and 1 (you
+- `--success-rate` : target success rate of the function, between 0 and 100 (you
   must name the `error` return value of the function for detection to work.)
 - `--latency-ms` : maximum latency allowed for the function, in milliseconds.
-- `--latency-target` : latency target for the threshold, between 0 and 1 (so X%
+- `--latency-target` : latency target for the threshold, between 0 and 100 (so X%
   of calls must last less than `latency-ms` milliseconds). You must specify both
   latency options, or none.
 
@@ -126,10 +126,3 @@ code suggestion as Pull Request is more than welcome!
 For the time being only Prometheus metrics are supported, but the code has been
 written with the possibility to have other systems, like OpenTelemetry,
 integrated in the same way.
-
-### Alerts
-
-The ability to generate alerting rules directly from annotations in your code is
-the next item on the roadmap. The goal is to have a seamless integration between
-"a magic cookie" in your code, and a Prometheus instance triggering alerts because
-the function doesn't meet SLOs.
