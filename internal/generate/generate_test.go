@@ -16,16 +16,13 @@ import (
 	"github.com/autometrics-dev/autometrics-go/pkg/autometrics"
 )
 
-// TestCommentDirective calls GenerateDocumentationAndInstrumentation on a
-// decorated function, making sure that the autometrics
-// directive adds a new comment section about autometrics.
 func TestCommentDirective(t *testing.T) {
 	sourceCode := `// This is the package comment.
 package main
 
 // This comment is associated with the main function.
 //
-//autometrics:doc --slo "Service Test" --success-target 0.99
+//autometrics:doc --slo "Service Test" --success-target 99
 func main() {
 	fmt.Println(hello) // line comment 3
 }
@@ -63,16 +60,16 @@ func main() {
 		"//\n" +
 		"//   autometrics:doc-end DO NOT EDIT HERE AND LINE BELOW\n" +
 		"//\n" +
-		"//autometrics:doc --slo \"Service Test\" --success-target 0.99\n" +
+		"//autometrics:doc --slo \"Service Test\" --success-target 99\n" +
 		"func main() {\n" +
 		"\tdefer autometrics.Instrument(autometrics.Context{\n" +
 		"\t\tTrackConcurrentCalls: true,\n" +
 		"\t\tTrackCallerName:      true,\n" +
-		"\t\tAlertConf:            &autometrics.AlertConfiguration{ServiceName: \"Service Test\", Latency: nil, Success: &autometrics.SuccessSlo{Objective: 0.99}},\n" +
+		"\t\tAlertConf:            &autometrics.AlertConfiguration{ServiceName: \"Service Test\", Latency: nil, Success: &autometrics.SuccessSlo{Objective: 99}},\n" +
 		"\t}, autometrics.PreInstrument(autometrics.Context{\n" +
 		"\t\tTrackConcurrentCalls: true,\n" +
 		"\t\tTrackCallerName:      true,\n" +
-		"\t\tAlertConf:            &autometrics.AlertConfiguration{ServiceName: \"Service Test\", Latency: nil, Success: &autometrics.SuccessSlo{Objective: 0.99}},\n" +
+		"\t\tAlertConf:            &autometrics.AlertConfiguration{ServiceName: \"Service Test\", Latency: nil, Success: &autometrics.SuccessSlo{Objective: 99}},\n" +
 		"\t}), nil) //autometrics:defer\n" +
 		"\n" +
 		"	fmt.Println(hello) // line comment 3\n" +
@@ -101,7 +98,7 @@ package main
 //
 //   autometrics:doc-end DO NOT EDIT
 //
-//autometrics:doc --slo "API" --latency-target 0.95 --latency-ms 0.5
+//autometrics:doc --slo "API" --latency-target 99.9 --latency-ms 0.5
 func main() {
 	fmt.Println(hello) // line comment 3
 }
@@ -138,16 +135,16 @@ func main() {
 		"//\n" +
 		"//   autometrics:doc-end DO NOT EDIT HERE AND LINE BELOW\n" +
 		"//\n" +
-		"//autometrics:doc --slo \"API\" --latency-target 0.95 --latency-ms 0.5\n" +
+		"//autometrics:doc --slo \"API\" --latency-target 99.9 --latency-ms 0.5\n" +
 		"func main() {\n" +
 		"\tdefer autometrics.Instrument(autometrics.Context{\n" +
 		"\t\tTrackConcurrentCalls: true,\n" +
 		"\t\tTrackCallerName:      true,\n" +
-		"\t\tAlertConf:            &autometrics.AlertConfiguration{ServiceName: \"API\", Latency: &autometrics.LatencySlo{Target: 500000 * time.Nanosecond, Objective: 0.95}, Success: nil},\n" +
+		"\t\tAlertConf:            &autometrics.AlertConfiguration{ServiceName: \"API\", Latency: &autometrics.LatencySlo{Target: 500000 * time.Nanosecond, Objective: 99.9}, Success: nil},\n" +
 		"\t}, autometrics.PreInstrument(autometrics.Context{\n" +
 		"\t\tTrackConcurrentCalls: true,\n" +
 		"\t\tTrackCallerName:      true,\n" +
-		"\t\tAlertConf:            &autometrics.AlertConfiguration{ServiceName: \"API\", Latency: &autometrics.LatencySlo{Target: 500000 * time.Nanosecond, Objective: 0.95}, Success: nil},\n" +
+		"\t\tAlertConf:            &autometrics.AlertConfiguration{ServiceName: \"API\", Latency: &autometrics.LatencySlo{Target: 500000 * time.Nanosecond, Objective: 99.9}, Success: nil},\n" +
 		"\t}), nil) //autometrics:defer\n" +
 		"\n" +
 		"	fmt.Println(hello) // line comment 3\n" +
@@ -159,6 +156,125 @@ func main() {
 	}
 
 	assert.Equal(t, want, actual, "The generated source code is not as expected.")
+}
+
+func TestCommentDirectiveErrors(t *testing.T) {
+	sourceCode := `// This is the package comment.
+package main
+
+// This comment is associated with the main function.
+//
+//autometrics:doc --slo "Service Test" --success-target 12394
+func main() {
+	fmt.Println(hello) // line comment 3
+}
+`
+	_, err := GenerateDocumentationAndInstrumentation(sourceCode, "main", doc.NewPrometheusDoc(doc.DefaultPrometheusInstanceUrl))
+	assert.Error(t, err, "Calling generation must fail if the target success rate is unrealistic.")
+
+	sourceCode = `// This is the package comment.
+package main
+
+// This comment is associated with the main function.
+//
+//autometrics:doc --slo "Service Test" --success-target -49
+func main() {
+	fmt.Println(hello) // line comment 3
+}
+`
+	_, err = GenerateDocumentationAndInstrumentation(sourceCode, "main", doc.NewPrometheusDoc(doc.DefaultPrometheusInstanceUrl))
+	assert.Error(t, err, "Calling generation must fail if the target success rate is unrealistic.")
+
+	sourceCode = `// This is the package comment.
+package main
+
+// This comment is associated with the main function.
+//
+//autometrics:doc --success-target 90
+func main() {
+	fmt.Println(hello) // line comment 3
+}
+`
+	_, err = GenerateDocumentationAndInstrumentation(sourceCode, "main", doc.NewPrometheusDoc(doc.DefaultPrometheusInstanceUrl))
+	assert.Error(t, err, "Calling generation must fail if no service name is given.")
+
+	sourceCode = `// This is the package comment.
+package main
+
+// This comment is associated with the main function.
+//
+//autometrics:doc --latency-ms 5000 --latency-target 99.9
+func main() {
+	fmt.Println(hello) // line comment 3
+}
+`
+	_, err = GenerateDocumentationAndInstrumentation(sourceCode, "main", doc.NewPrometheusDoc(doc.DefaultPrometheusInstanceUrl))
+	assert.Error(t, err, "Calling generation must fail if no service name is given.")
+
+	sourceCode = `// This is the package comment.
+package main
+
+// This comment is associated with the main function.
+//
+//autometrics:doc --slo "API" --latency-target 90
+func main() {
+	fmt.Println(hello) // line comment 3
+}
+`
+	_, err = GenerateDocumentationAndInstrumentation(sourceCode, "main", doc.NewPrometheusDoc(doc.DefaultPrometheusInstanceUrl))
+	assert.Error(t, err, "Calling generation must fail if latency-target is given without latency-ms.")
+
+	sourceCode = `// This is the package comment.
+package main
+
+// This comment is associated with the main function.
+//
+//autometrics:doc --slo "API" --latency-ms 1000
+func main() {
+	fmt.Println(hello) // line comment 3
+}
+`
+	_, err = GenerateDocumentationAndInstrumentation(sourceCode, "main", doc.NewPrometheusDoc(doc.DefaultPrometheusInstanceUrl))
+	assert.Error(t, err, "Calling generation must fail if latency-target is given without latency-ms.")
+
+	sourceCode = `// This is the package comment.
+package main
+
+// This comment is associated with the main function.
+//
+//autometrics:doc --slo "API" --latency-ms -5000 --latency-target 99.9
+func main() {
+	fmt.Println(hello) // line comment 3
+}
+`
+	_, err = GenerateDocumentationAndInstrumentation(sourceCode, "main", doc.NewPrometheusDoc(doc.DefaultPrometheusInstanceUrl))
+	assert.Error(t, err, "Calling generation must fail if latency expectations are unrealistic.")
+
+	sourceCode = `// This is the package comment.
+package main
+
+// This comment is associated with the main function.
+//
+//autometrics:doc --slo "API" --latency-ms 5000 --latency-target 49999
+func main() {
+	fmt.Println(hello) // line comment 3
+}
+`
+	_, err = GenerateDocumentationAndInstrumentation(sourceCode, "main", doc.NewPrometheusDoc(doc.DefaultPrometheusInstanceUrl))
+	assert.Error(t, err, "Calling generation must fail if latency expectations are unrealistic.")
+
+	sourceCode = `// This is the package comment.
+package main
+
+// This comment is associated with the main function.
+//
+//autometrics:doc --slo "API" --latency-ms 5000 --latency-target -123
+func main() {
+	fmt.Println(hello) // line comment 3
+}
+`
+	_, err = GenerateDocumentationAndInstrumentation(sourceCode, "main", doc.NewPrometheusDoc(doc.DefaultPrometheusInstanceUrl))
+	assert.Error(t, err, "Calling generation must fail if latency expectations are unrealistic.")
 }
 
 func TestNamedReturnDetectionNothing(t *testing.T) {

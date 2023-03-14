@@ -2,7 +2,6 @@ package generate
 
 import (
 	"fmt"
-	"log"
 	"os"
 	"strconv"
 	"strings"
@@ -21,9 +20,9 @@ import (
 )
 
 const (
-	SloNameArgument = "--slo"
+	SloNameArgument    = "--slo"
 	SuccessObjArgument = "--success-target"
-	LatencyMsArgument = "--latency-ms"
+	LatencyMsArgument  = "--latency-ms"
 	LatencyObjArgument = "--latency-target"
 )
 
@@ -73,7 +72,9 @@ func GenerateDocumentationAndInstrumentation(sourceCode, moduleName string, gene
 		return "", fmt.Errorf("error parsing source code: %w", err)
 	}
 
-	dst.Inspect(fileTree, func(n dst.Node) bool {
+	var inspectErr error
+
+	fileWalk := func(n dst.Node) bool {
 		if funcDeclaration, ok := n.(*dst.FuncDecl); ok {
 			// this block gets run for every function in the file
 			docComments := funcDeclaration.Decorations().Start.All()
@@ -83,19 +84,23 @@ func GenerateDocumentationAndInstrumentation(sourceCode, moduleName string, gene
 			oldEndCommentIndices := autometricsDocEndDirectives(docComments)
 
 			if len(oldStartCommentIndices) > 0 && len(oldEndCommentIndices) == 0 {
-				log.Fatalf("Found an autometrics:doc-start cookie for function %s, but no matching :doc-end cookie", funcDeclaration.Name.Name)
+				inspectErr = fmt.Errorf("Found an autometrics:doc-start cookie for function %s, but no matching :doc-end cookie", funcDeclaration.Name.Name)
+				return false
 			}
 
 			if len(oldStartCommentIndices) == 0 && len(oldEndCommentIndices) > 0 {
-				log.Fatalf("Found an autometrics:doc-end cookie for function %s, but no matching :doc-start cookie", funcDeclaration.Name.Name)
+				inspectErr = fmt.Errorf("Found an autometrics:doc-end cookie for function %s, but no matching :doc-start cookie", funcDeclaration.Name.Name)
+				return false
 			}
 
 			if len(oldStartCommentIndices) > 1 {
-				log.Fatalf("Found more than 1 autometrics:doc-start cookie for function %s", funcDeclaration.Name.Name)
+				inspectErr = fmt.Errorf("Found more than 1 autometrics:doc-start cookie for function %s", funcDeclaration.Name.Name)
+				return false
 			}
 
 			if len(oldEndCommentIndices) > 1 {
-				log.Fatalf("Found more than 1 autometrics:doc-end cookie for function %s", funcDeclaration.Name.Name)
+				inspectErr = fmt.Errorf("Found more than 1 autometrics:doc-end cookie for function %s", funcDeclaration.Name.Name)
+				return false
 			}
 
 			if len(oldStartCommentIndices) == 1 && len(oldEndCommentIndices) == 1 {
@@ -103,7 +108,8 @@ func GenerateDocumentationAndInstrumentation(sourceCode, moduleName string, gene
 				oldEndCommentIndex := oldEndCommentIndices[0]
 
 				if oldStartCommentIndex >= 0 && oldEndCommentIndex <= oldStartCommentIndex {
-					log.Fatalf("Found an autometrics cookies for function %s, but the end one is after the start one", funcDeclaration.Name.Name)
+					inspectErr = fmt.Errorf("Found an autometrics cookies for function %s, but the end one is after the start one", funcDeclaration.Name.Name)
+					return false
 				}
 
 				if oldStartCommentIndex >= 0 && oldEndCommentIndex > oldStartCommentIndex {
@@ -127,10 +133,11 @@ func GenerateDocumentationAndInstrumentation(sourceCode, moduleName string, gene
 			// Detect autometrics directive
 			generatorCtx, err := parseAutometricsFnContext(docComments)
 			if err != nil {
-				log.Fatalf(
-					"failed to parse //autometrics directive for %v: %v",
+				inspectErr = fmt.Errorf(
+					"failed to parse //autometrics directive for %v: %w",
 					funcDeclaration.Name.Name,
 					err)
+				return false
 			}
 			listIndex := generatorCtx.CommentIndex
 			if listIndex >= 0 {
@@ -142,7 +149,8 @@ func GenerateDocumentationAndInstrumentation(sourceCode, moduleName string, gene
 				firstStatement := funcDeclaration.Body.List[0]
 				variable, err := errorReturnValueName(funcDeclaration)
 				if err != nil {
-					log.Fatalf("failed to get error return value name: %v", err)
+					inspectErr = fmt.Errorf("failed to get error return value name: %w", err)
+					return false
 				}
 
 				if len(variable) == 0 {
@@ -153,7 +161,8 @@ func GenerateDocumentationAndInstrumentation(sourceCode, moduleName string, gene
 
 				autometricsDeferStatement, err := buildAutometricsDeferStatement(generatorCtx, variable)
 				if err != nil {
-					log.Fatalf("failed to build the defer statement for instrumentation: %v", err)
+					inspectErr = fmt.Errorf("failed to build the defer statement for instrumentation: %w", err)
+					return false
 				}
 
 				if deferStatement, ok := firstStatement.(*dst.DeferStmt); ok {
@@ -170,8 +179,18 @@ func GenerateDocumentationAndInstrumentation(sourceCode, moduleName string, gene
 			}
 		}
 
+		if inspectErr != nil {
+			return false
+		}
+
 		return true
-	})
+	}
+
+	dst.Inspect(fileTree, fileWalk)
+
+	if inspectErr != nil {
+		return "", fmt.Errorf("error while transforming file in %v: %w", moduleName, err)
+	}
 
 	var buf strings.Builder
 
@@ -318,8 +337,8 @@ func parseAutometricsFnContext(commentGroup []string) (ctx.AutometricsGeneratorC
 					// Read the "value"
 					tokenIndex = tokenIndex + 1
 					value, err := strconv.ParseFloat(tokens[tokenIndex], 64)
-					if err != nil || value < 0 || value > 1 {
-						return retval, fmt.Errorf("%v argument must be a float between 0 and 1", SuccessObjArgument)
+					if err != nil {
+						return retval, fmt.Errorf("%v argument must be a float between 0 and 100: %w", SuccessObjArgument, err)
 					}
 
 					if retval.Ctx.AlertConf != nil {
@@ -344,7 +363,7 @@ func parseAutometricsFnContext(commentGroup []string) (ctx.AutometricsGeneratorC
 					// Read the "value"
 					tokenIndex = tokenIndex + 1
 					value, err := strconv.ParseFloat(tokens[tokenIndex], 64)
-					if err != nil || value <= 0 {
+					if err != nil {
 						return retval, fmt.Errorf("%v argument must be a positive float", LatencyMsArgument)
 					}
 					timeValue := time.Duration(value * float64(time.Millisecond))
@@ -377,7 +396,7 @@ func parseAutometricsFnContext(commentGroup []string) (ctx.AutometricsGeneratorC
 					// Read the "value"
 					tokenIndex = tokenIndex + 1
 					value, err := strconv.ParseFloat(tokens[tokenIndex], 64)
-					if err != nil || value < 0 || value > 1 {
+					if err != nil {
 						return retval, fmt.Errorf("%v argument must be a float between 0 and 1", LatencyObjArgument)
 					}
 
@@ -409,7 +428,7 @@ func parseAutometricsFnContext(commentGroup []string) (ctx.AutometricsGeneratorC
 			}
 			err = retval.Ctx.Validate()
 			if err != nil {
-				return retval, fmt.Errorf("Parsed configuration is invalid: %w", err)
+				return retval, fmt.Errorf("parsed configuration is invalid: %w", err)
 			}
 
 			return retval, nil

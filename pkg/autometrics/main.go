@@ -2,6 +2,7 @@ package autometrics
 
 import (
 	"fmt"
+	"log"
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
@@ -23,9 +24,9 @@ const (
 	ModuleLabel            = "module"
 	CallerLabel            = "caller"
 	ResultLabel            = "result"
-	TargetLatencyLabel     = "target_latency"
-	TargetSuccessRateLabel = "objective"
-	SloNameLabel           = "slo_name"
+	TargetLatencyLabel     = "objective.latency_threshold"
+	TargetSuccessRateLabel = "objective.percentile"
+	SloNameLabel           = "objective.name"
 )
 
 // Init sets up the metrics required for autometrics' decorated functions and registers
@@ -93,18 +94,25 @@ func (c Context) Validate() error {
 			return fmt.Errorf("Cannot have a target success rate that is negative")
 		}
 
-		if c.AlertConf.Success != nil && c.AlertConf.Success.Objective > 1 {
-			return fmt.Errorf("Cannot have a target success rate that is strictly greater than 1 (more than 100%%)")
+		if c.AlertConf.Success != nil && c.AlertConf.Success.Objective <= 1 {
+			log.Println("Warning: the target success rate is between 0 and 1, which is between 0 and 1%%. '1' is 1%% not 100%%!")
+		}
+
+		if c.AlertConf.Success != nil && c.AlertConf.Success.Objective > 100 {
+			return fmt.Errorf("Cannot have a target success rate that is strictly greater than 100 (more than 100%%)")
 		}
 
 		if c.AlertConf.Latency != nil {
 			if c.AlertConf.Latency.Objective <= 0 {
 				return fmt.Errorf("Cannot have a target for latency SLO that is negative")
 			}
-			if c.AlertConf.Latency.Objective > 1 {
-				return fmt.Errorf("Cannot have a target for latency SLO that is greater than 1 (more than 100%%)")
+			if c.AlertConf.Latency.Objective <= 1 {
+				log.Println("Warning: the latency target success rate is between 0 and 1, which is between 0 and 1%%. '1' is 1%% not 100%%!")
 			}
-			if c.AlertConf.Latency.Target < 0 {
+			if c.AlertConf.Latency.Objective > 100 {
+				return fmt.Errorf("Cannot have a target for latency SLO that is greater than 100 (more than 100%%)")
+			}
+			if c.AlertConf.Latency.Target <= 0 {
 				return fmt.Errorf("Cannot have a target latency SLO threshold that is negative (responses expected before the query)")
 			}
 		}
