@@ -1,1 +1,17 @@
-../../configs/alertmanager.yml
+global:
+  # Also possible to place this URL in a file.
+  # Ex: `slack_api_url_file: '/etc/alertmanager/slack_url'`
+  slack_api_url_file: '/etc/alertmanager/slack_url'
+
+route:
+  receiver: 'slack-notifications'
+  group_by: [sloth_service, sloth_slo]
+
+receivers:
+- name: 'slack-notifications'
+  slack_configs:
+  # Channel is ignored when using a webhook. The webhook URL encodes the
+  # channel the alerts will be posted to.
+  - channel: '#alerts'
+    title: "{{ range .Alerts }}{{ .Annotations.summary }}\n{{ end }}"
+    text: "{{ range .Alerts }}{{ .Annotations.description }}\n{{ end }}"
