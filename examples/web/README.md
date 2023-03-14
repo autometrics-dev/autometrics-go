@@ -74,6 +74,17 @@ approximatively 10s, you will see that the autometrics metrics get automatically
 the code. You just needed 2 lines of code (the `Init` call, and the `/metrics` prometheus handler)
 and 1 comment per function to instrument everything.
 
+### Watch alerts trigger
+
+The random function called by the `poll_server` helper will eventually fall
+below alert threshold, you can monitor prometheus catching on that and
+triggering the alert on the [Alerts](http://localhost:9090/alerts) page of your
+instance.
+
+In the "real" world setting, these alerts would be automatically routed with an
+[Alertmanager](https://prometheus.io/docs/alerting/latest/alertmanager/)
+configuration to the correct notification service
+
 ### Original input
 
 The "original" input file for the webserver (before the call to `go generate ./...`) can
