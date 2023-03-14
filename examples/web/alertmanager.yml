@@ -1,6 +1,6 @@
 global:
-  # Also possible to place this URL in a file.
-  # Ex: `slack_api_url_file: '/etc/alertmanager/slack_url'`
+  # Also possible to use the URL directly
+  # Ex: `slack_api_url: 'https://slack.com/...'`
   slack_api_url_file: '/etc/alertmanager/slack_url'
 
 route:
