@@ -7,6 +7,11 @@ inspect usage metrics from your code.
 
 ![Documentation comments of instrumented function is augmented with links](./assets/codium-screenshot-example.png)
 
+You can optionnally add alerting rules so that code annotations make Prometheus
+trigger alerts directly from production usage:
+
+![a Slack bot is posting an alert directly in the channel](../../assets/slack-alert-example.png)
+
 A fully working use-case and example of library usage is available in the
 [examples/web](./examples/web) subdirectory
 
@@ -86,7 +91,7 @@ func main() {
 This is the shortest way to initialize and expose the metrics that autometrics will use
 in the generated code.
 
-### Generate alerts automatically
+### (OPTIONAL) Generate alerts automatically
 
 Change the annotation of the function to automatically generate alerts for it:
 
@@ -98,8 +103,7 @@ func RouteHandler(args interface{}) (err error) {
 }
 ```
 
-And add the
-[bundled](./configs/autometrics.rules.yml)
+Then **you need to add** the [bundled](./configs/autometrics.rules.yml)
 recording rules to your prometheus configuration.
 
 The valid arguments for alert generation are:
