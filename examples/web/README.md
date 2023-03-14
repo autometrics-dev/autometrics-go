@@ -17,6 +17,21 @@ Then open [main](./cmd/main.go) in your editor and interact with the documentati
 
 ![Documentation comments of instrumented function is augmented with links](../../assets/codium-screenshot-example.png)
 
+### Alert generation
+
+Optionnally, create a slack integration with an "incoming webhook" for one of
+your channels, and put the URL of the webhook (a secret!) in `slack_url.txt` in
+the directory. That will enable alerting in Slack directly through Alertmanager.
+
+You can see that the name of the service "API" comes directly from the annotation in the code.
+
+![a Slack bot is posting an alert directly in the channel](../../assets/slack-alert-example.png)
+
+You can even monitor all the alerts triggering through Prometheus or Alertmanager:
+
+![Prometheus alerts dashboard showing the alerts firing](../../assets/prometheus-alert-example.png)
+![Alertmanager alerts dashboard showing the alerts firing](../../assets/alertmanager-alert-example.png)
+
 ## Dependencies
 
 In order to run this example you need:
@@ -79,11 +94,22 @@ and 1 comment per function to instrument everything.
 The random function called by the `poll_server` helper will eventually fall
 below alert threshold, you can monitor prometheus catching on that and
 triggering the alert on the [Alerts](http://localhost:9090/alerts) page of your
-instance.
+instance:
+
+![Prometheus alerts dashboard showing the alerts firing](../../assets/prometheus-alert-example.png)
 
 In the "real" world setting, these alerts would be automatically routed with an
 [Alertmanager](https://prometheus.io/docs/alerting/latest/alertmanager/)
-configuration to the correct notification service
+configuration to the correct notification service:
+
+![Alertmanager alerts dashboard showing the alerts firing](../../assets/alertmanager-alert-example.png)
+
+This demo example has a 
+[minimal configuration](../../configs/alertmanager.yml) for alerts that expects
+a file `slack_url.txt` to be passed in docker-compose context. If the file
+exists, the triggered alerts automatically go on Slack to the configured channel:
+
+![a Slack bot is posting an alert directly in the channel](../../assets/slack-alert-example.png)
 
 ### Original input
 
