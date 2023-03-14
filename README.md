@@ -10,7 +10,7 @@ inspect usage metrics from your code.
 You can optionnally add alerting rules so that code annotations make Prometheus
 trigger alerts directly from production usage:
 
-![a Slack bot is posting an alert directly in the channel](../../assets/slack-alert-example.png)
+![a Slack bot is posting an alert directly in the channel](./assets/slack-alert-example.png)
 
 A fully working use-case and example of library usage is available in the
 [examples/web](./examples/web) subdirectory
