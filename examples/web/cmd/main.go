@@ -58,12 +58,12 @@ func main() {
 // [Request Rate Callee]: http://localhost:9090/graph?g0.expr=%23+Rate+of+function+calls+emanating+from+%60indexHandler%60+function+per+second%2C+averaged+over+5+minute+windows%0A%0Asum+by+%28function%2C+module%29+%28rate%28function_calls_count%7Bcaller%3D%22main.indexHandler%22%7D%5B5m%5D%29%29&g0.tab=0
 // [Error Ratio Callee]: http://localhost:9090/graph?g0.expr=%23+Percentage+of+function+emanating+from+%60indexHandler%60+function+that+return+errors%2C+averaged+over+5+minute+windows%0A%0Asum+by+%28function%2C+module%29+%28rate%28function_calls_count%7Bcaller%3D%22main.indexHandler%22%2Cresult%3D%22error%22%7D%5B5m%5D%29%29&g0.tab=0
 //
-//autometrics:doc
+//autometrics:doc --slo "API" --latency-target 99 --latency-ms 250
 func indexHandler(w http.ResponseWriter, _ *http.Request) error {
 	defer autometrics.Instrument(autometrics.PreInstrument(&autometrics.Context{
 		TrackConcurrentCalls: true,
 		TrackCallerName:      true,
-		AlertConf:            nil,
+		AlertConf:            &autometrics.AlertConfiguration{ServiceName: "API", Latency: &autometrics.LatencySlo{Target: 250000000 * time.Nanosecond, Objective: 99}, Success: nil},
 	}), nil) //autometrics:defer
 
 	time.Sleep(time.Duration(rand.Intn(500)) * time.Millisecond)
