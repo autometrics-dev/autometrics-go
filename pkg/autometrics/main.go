@@ -74,6 +74,26 @@ type Context struct {
 	TrackCallerName bool
 	// AlertConf is an optional configuration to add alerting capabilities to the metrics.
 	AlertConf *AlertConfiguration
+	// startTime is the start time of a single function execution.
+	// Only autometrics.Instrument should read this value.
+	// Only autometrics.PreInstrument should write this value.
+	startTime time.Time
+	// callInfo contains all the relevant data for caller information.
+	// Only autometrics.Instrument should read this value.
+	// Only autometrics.PreInstrument should write/read this value.
+	callInfo CallInfo
+}
+
+// CallInfo holds the information about the current function call and its parent names.
+type CallInfo struct {
+	// FuncName is name of the function being tracked.
+	FuncName string
+	// ModuleName is name of the module of the function being tracked.
+	ModuleName string
+	// ParentFuncName is name of the caller of the function being tracked.
+	ParentFuncName string
+	// ParentModuleName is name of the module of the caller of the function being tracked.
+	ParentModuleName string
 }
 
 func NewContext() Context {

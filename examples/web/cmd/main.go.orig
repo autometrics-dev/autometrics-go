@@ -33,7 +33,7 @@ func main() {
 //
 // It always succeeds and says hello.
 //
-//autometrics:doc
+//autometrics:doc --slo "API" --latency-target 99 --latency-ms 250
 func indexHandler(w http.ResponseWriter, _ *http.Request) error {
 
 	time.Sleep(time.Duration(rand.Intn(500)) * time.Millisecond)

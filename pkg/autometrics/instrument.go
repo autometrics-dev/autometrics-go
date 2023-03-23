@@ -3,8 +3,8 @@ package autometrics
 import (
 	"fmt"
 	"runtime"
-	"strings"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
@@ -15,8 +15,7 @@ import (
 //
 // The first argument SHOULD be a call to PreInstrument so that
 // the "concurrent calls" gauge is correctly setup.
-func Instrument(ctx Context, startTime time.Time, err *error) {
-	method, module, parentMethod, parentModule := callerInfo()
+func Instrument(ctx *Context, err *error) {
 	result := "ok"
 
 	if err != nil && *err != nil {
@@ -25,7 +24,7 @@ func Instrument(ctx Context, startTime time.Time, err *error) {
 
 	var callerLabel, sloName, latencyTarget, latencyObjective, successObjective string
 	if ctx.TrackCallerName {
-		callerLabel = fmt.Sprintf("%s.%s", parentModule, parentMethod)
+		callerLabel = fmt.Sprintf("%s.%s", ctx.callInfo.ParentModuleName, ctx.callInfo.ParentFuncName)
 	}
 
 	if ctx.AlertConf != nil {
@@ -40,25 +39,25 @@ func Instrument(ctx Context, startTime time.Time, err *error) {
 	}
 
 	FunctionCallsCount.With(prometheus.Labels{
-		FunctionLabel:          method,
-		ModuleLabel:            module,
+		FunctionLabel:          ctx.callInfo.FuncName,
+		ModuleLabel:            ctx.callInfo.ModuleName,
 		CallerLabel:            callerLabel,
 		ResultLabel:            result,
 		TargetSuccessRateLabel: successObjective,
 		SloNameLabel:           sloName,
 	}).Inc()
 	FunctionCallsDuration.With(prometheus.Labels{
-		FunctionLabel:          method,
-		ModuleLabel:            module,
+		FunctionLabel:          ctx.callInfo.FuncName,
+		ModuleLabel:            ctx.callInfo.ModuleName,
 		CallerLabel:            callerLabel,
 		TargetLatencyLabel:     latencyTarget,
 		TargetSuccessRateLabel: latencyObjective,
 		SloNameLabel:           sloName,
-	}).Observe(time.Since(startTime).Seconds())
+	}).Observe(time.Since(ctx.startTime).Seconds())
 	if ctx.TrackConcurrentCalls {
 		FunctionCallsConcurrent.With(prometheus.Labels{
-			FunctionLabel: method,
-			ModuleLabel:   module,
+			FunctionLabel: ctx.callInfo.FuncName,
+			ModuleLabel:   ctx.callInfo.ModuleName,
 			CallerLabel:   callerLabel,
 		}).Dec()
 	}
@@ -68,17 +67,23 @@ func Instrument(ctx Context, startTime time.Time, err *error) {
 //
 // It is meant to be called as the first argument to Instrument in a
 // defer call.
-func PreInstrument(ctx Context) time.Time {
-	method, module, parentMethod, parentModule := callerInfo()
+func PreInstrument(ctx *Context) *Context {
+	ctx.callInfo = callerInfo()
 
 	var callerLabel string
 	if ctx.TrackCallerName {
-		callerLabel = fmt.Sprintf("%s.%s", parentModule, parentMethod)
+		callerLabel = fmt.Sprintf("%s.%s", ctx.callInfo.ParentModuleName, ctx.callInfo.ParentFuncName)
 	}
 
-	FunctionCallsConcurrent.With(prometheus.Labels{FunctionLabel: method, ModuleLabel: module, CallerLabel: callerLabel}).Inc()
+	FunctionCallsConcurrent.With(prometheus.Labels{
+		FunctionLabel: ctx.callInfo.FuncName,
+		ModuleLabel:   ctx.callInfo.ModuleName,
+		CallerLabel:   callerLabel,
+	}).Inc()
 
-	return time.Now()
+	ctx.startTime = time.Now()
+
+	return ctx
 }
 
 // callerInfo returns the (method name, module name) of the function that called the function that called this function.
@@ -92,7 +97,7 @@ func PreInstrument(ctx Context) time.Time {
 // then we can lift this artificial limitation here and use the full "module name" from the caller information.
 // Currently this compromise is the only way to have the documentation links generator creating correct
 // queries.
-func callerInfo() (funcName, moduleName, parentFuncName, parentModuleName string) {
+func callerInfo() (callInfo CallInfo) {
 	programCounters := make([]uintptr, 15)
 
 	// skip 3 frames to start with:
@@ -108,16 +113,16 @@ func callerInfo() (funcName, moduleName, parentFuncName, parentModuleName string
 	index := strings.LastIndex(functionName, ".")
 
 	if index == -1 {
-		funcName = frame.Func.Name()
+		callInfo.FuncName = frame.Func.Name()
 	} else {
 		moduleIndex := strings.LastIndex(functionName[:index], ".")
 		if moduleIndex == -1 {
-			moduleName = functionName[:index]
+			callInfo.ModuleName = functionName[:index]
 		} else {
-			moduleName = functionName[moduleIndex+1 : index]
+			callInfo.ModuleName = functionName[moduleIndex+1 : index]
 		}
 
-		funcName = functionName[index+1:]
+		callInfo.FuncName = functionName[index+1:]
 	}
 
 	if !hasParent {
@@ -131,16 +136,16 @@ func callerInfo() (funcName, moduleName, parentFuncName, parentModuleName string
 	index = strings.LastIndex(parentFunctionName, ".")
 
 	if index == -1 {
-		parentFuncName = parentFrame.Func.Name()
+		callInfo.ParentFuncName = parentFrame.Func.Name()
 	} else {
 		moduleIndex := strings.LastIndex(parentFunctionName[:index], ".")
 		if moduleIndex == -1 {
-			parentModuleName = parentFunctionName[:index]
+			callInfo.ParentModuleName = parentFunctionName[:index]
 		} else {
-			parentModuleName = parentFunctionName[moduleIndex+1 : index]
+			callInfo.ParentModuleName = parentFunctionName[moduleIndex+1 : index]
 		}
 
-		parentFuncName = parentFunctionName[index+1:]
+		callInfo.ParentFuncName = parentFunctionName[index+1:]
 	}
 
 	return
