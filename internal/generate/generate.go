@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"go/token"
 
 	"github.com/google/shlex"
 
@@ -266,19 +267,18 @@ func buildAutometricsDeferStatement(ctx ctx.AutometricsGeneratorContext, secondV
 	if err != nil {
 		return dst.DeferStmt{}, fmt.Errorf("could not generate the runtime context value: %w", err)
 	}
-	instrumentArg, err := buildAutometricsContextNode(ctx)
-	if err != nil {
-		return dst.DeferStmt{}, fmt.Errorf("could not generate the runtime context value: %w", err)
-	}
 	statement := dst.DeferStmt{
 		Call: &dst.CallExpr{
 			Fun: dst.NewIdent("autometrics.Instrument"),
 			Args: []dst.Expr{
-				instrumentArg,
 				&dst.CallExpr{
 					Fun: dst.NewIdent("autometrics.PreInstrument"),
 					Args: []dst.Expr{
-						preInstrumentArg,
+						&dst.UnaryExpr{
+							Op:   token.AND,
+							X:    preInstrumentArg,
+							Decs: dst.UnaryExprDecorations{},
+						},
 					},
 				},
 				dst.NewIdent(secondVar),

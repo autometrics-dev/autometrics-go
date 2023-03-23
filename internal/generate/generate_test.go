@@ -62,11 +62,7 @@ func main() {
 		"//\n" +
 		"//autometrics:doc --slo \"Service Test\" --success-target 99\n" +
 		"func main() {\n" +
-		"\tdefer autometrics.Instrument(autometrics.Context{\n" +
-		"\t\tTrackConcurrentCalls: true,\n" +
-		"\t\tTrackCallerName:      true,\n" +
-		"\t\tAlertConf:            &autometrics.AlertConfiguration{ServiceName: \"Service Test\", Latency: nil, Success: &autometrics.SuccessSlo{Objective: 99}},\n" +
-		"\t}, autometrics.PreInstrument(autometrics.Context{\n" +
+		"\tdefer autometrics.Instrument(autometrics.PreInstrument(&autometrics.Context{\n" +
 		"\t\tTrackConcurrentCalls: true,\n" +
 		"\t\tTrackCallerName:      true,\n" +
 		"\t\tAlertConf:            &autometrics.AlertConfiguration{ServiceName: \"Service Test\", Latency: nil, Success: &autometrics.SuccessSlo{Objective: 99}},\n" +
@@ -137,11 +133,7 @@ func main() {
 		"//\n" +
 		"//autometrics:doc --slo \"API\" --latency-target 99.9 --latency-ms 0.5\n" +
 		"func main() {\n" +
-		"\tdefer autometrics.Instrument(autometrics.Context{\n" +
-		"\t\tTrackConcurrentCalls: true,\n" +
-		"\t\tTrackCallerName:      true,\n" +
-		"\t\tAlertConf:            &autometrics.AlertConfiguration{ServiceName: \"API\", Latency: &autometrics.LatencySlo{Target: 500000 * time.Nanosecond, Objective: 99.9}, Success: nil},\n" +
-		"\t}, autometrics.PreInstrument(autometrics.Context{\n" +
+		"\tdefer autometrics.Instrument(autometrics.PreInstrument(&autometrics.Context{\n" +
 		"\t\tTrackConcurrentCalls: true,\n" +
 		"\t\tTrackCallerName:      true,\n" +
 		"\t\tAlertConf:            &autometrics.AlertConfiguration{ServiceName: \"API\", Latency: &autometrics.LatencySlo{Target: 500000 * time.Nanosecond, Objective: 99.9}, Success: nil},\n" +
