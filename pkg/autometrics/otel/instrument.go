@@ -1,4 +1,4 @@
-package prometheus // import "github.com/autometrics-dev/autometrics-go/pkg/autometrics/prometheus"
+package otel // import "github.com/autometrics-dev/autometrics-go/pkg/autometrics/otel"
 
 import (
 	"fmt"
@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/autometrics-dev/autometrics-go/pkg/autometrics"
-	"github.com/prometheus/client_golang/prometheus"
+	"go.opentelemetry.io/otel/attribute"
 )
 
 // Instrument called in a defer statement wraps the body of a function
@@ -37,28 +37,31 @@ func Instrument(ctx *autometrics.Context, err *error) {
 		}
 	}
 
-	FunctionCallsCount.With(prometheus.Labels{
-		FunctionLabel:          ctx.CallInfo.FuncName,
-		ModuleLabel:            ctx.CallInfo.ModuleName,
-		CallerLabel:            callerLabel,
-		ResultLabel:            result,
-		TargetSuccessRateLabel: successObjective,
-		SloNameLabel:           sloName,
-	}).Inc()
-	FunctionCallsDuration.With(prometheus.Labels{
-		FunctionLabel:          ctx.CallInfo.FuncName,
-		ModuleLabel:            ctx.CallInfo.ModuleName,
-		CallerLabel:            callerLabel,
-		TargetLatencyLabel:     latencyTarget,
-		TargetSuccessRateLabel: latencyObjective,
-		SloNameLabel:           sloName,
-	}).Observe(time.Since(ctx.StartTime).Seconds())
+	FunctionCallsCount.Add(ctx.Context, 1,
+		[]attribute.KeyValue{
+			attribute.Key(FunctionLabel).String(ctx.CallInfo.FuncName),
+			attribute.Key(ModuleLabel).String(ctx.CallInfo.ModuleName),
+			attribute.Key(CallerLabel).String(callerLabel),
+			attribute.Key(ResultLabel).String(result),
+			attribute.Key(TargetSuccessRateLabel).String(successObjective),
+			attribute.Key(SloNameLabel).String(sloName),
+		}...)
+	FunctionCallsDuration.Record(ctx.Context, time.Since(ctx.StartTime).Seconds(),
+		[]attribute.KeyValue{
+			attribute.Key(FunctionLabel).String(ctx.CallInfo.FuncName),
+			attribute.Key(ModuleLabel).String(ctx.CallInfo.ModuleName),
+			attribute.Key(CallerLabel).String(callerLabel),
+			attribute.Key(TargetLatencyLabel).String(latencyTarget),
+			attribute.Key(TargetSuccessRateLabel).String(latencyObjective),
+			attribute.Key(SloNameLabel).String(sloName),
+		}...)
 	if ctx.TrackConcurrentCalls {
-		FunctionCallsConcurrent.With(prometheus.Labels{
-			FunctionLabel: ctx.CallInfo.FuncName,
-			ModuleLabel:   ctx.CallInfo.ModuleName,
-			CallerLabel:   callerLabel,
-		}).Dec()
+		FunctionCallsConcurrent.Add(ctx.Context, -1,
+			[]attribute.KeyValue{
+				attribute.Key(FunctionLabel).String(ctx.CallInfo.FuncName),
+				attribute.Key(ModuleLabel).String(ctx.CallInfo.ModuleName),
+				attribute.Key(CallerLabel).String(callerLabel),
+			}...)
 	}
 }
 
@@ -75,11 +78,12 @@ func PreInstrument(ctx *autometrics.Context) *autometrics.Context {
 	}
 
 	if ctx.TrackConcurrentCalls {
-		FunctionCallsConcurrent.With(prometheus.Labels{
-			FunctionLabel: ctx.CallInfo.FuncName,
-			ModuleLabel:   ctx.CallInfo.ModuleName,
-			CallerLabel:   callerLabel,
-		}).Inc()
+		FunctionCallsConcurrent.Add(ctx.Context, 1,
+			[]attribute.KeyValue{
+				attribute.Key(FunctionLabel).String(ctx.CallInfo.FuncName),
+				attribute.Key(ModuleLabel).String(ctx.CallInfo.ModuleName),
+				attribute.Key(CallerLabel).String(callerLabel),
+			}...)
 	}
 
 	ctx.StartTime = time.Now()

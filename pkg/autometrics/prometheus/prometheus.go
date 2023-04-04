@@ -35,7 +35,7 @@ const (
 // Make sure that all the latency targets you want to use for SLOs are
 // present in the histogramBuckets array, otherwise the alerts will fail
 // to work (they will never trigger.)
-func Init(reg *prometheus.Registry, histogramBuckets []float64) {
+func Init(reg *prometheus.Registry, histogramBuckets []float64) error {
 	FunctionCallsCount = prometheus.NewCounterVec(prometheus.CounterOpts{
 		Name: FunctionCallsCountName,
 	}, []string{FunctionLabel, ModuleLabel, CallerLabel, ResultLabel, TargetSuccessRateLabel, SloNameLabel})
@@ -58,4 +58,6 @@ func Init(reg *prometheus.Registry, histogramBuckets []float64) {
 		prometheus.DefaultRegisterer.MustRegister(FunctionCallsDuration)
 		prometheus.DefaultRegisterer.MustRegister(FunctionCallsConcurrent)
 	}
+
+	return nil
 }

@@ -1,6 +1,7 @@
 package autometrics
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"time"
@@ -43,6 +44,7 @@ type Context struct {
 	//
 	// This value is only exported for the child packages "prometheus" and "otel"
 	CallInfo CallInfo
+	Context  context.Context
 }
 
 // CallInfo holds the information about the current function call and its parent names.
@@ -62,6 +64,7 @@ func NewContext() Context {
 		TrackConcurrentCalls: true,
 		TrackCallerName:      true,
 		AlertConf:            nil,
+		Context:              context.Background(),
 	}
 }
 
