@@ -20,6 +20,23 @@ A fully working use-case and example of library usage is available in the
 There is a one-time setup phase to prime the code for autometrics. Once this
 phase is accomplished, only calling `go generate` is necessary.
 
+### Import the libraries and initialize the metrics
+
+In the main entrypoint of your program, you need to both add packages
+
+``` go
+import (
+	"github.com/autometrics-dev/autometrics-go/pkg/autometrics"
+	amImpl "github.com/autometrics-dev/autometrics-go/pkg/autometrics/prometheus"
+)
+```
+
+And then in your main function initialize the metrics
+
+``` go
+amImpl.Init(nil, autometrics.DefBuckets)
+```
+
 ### Add cookies in your code
 
 Given a starting function like:
@@ -34,7 +51,6 @@ func RouteHandler(args interface{}) error {
 The manual changes you need to do are:
 
 ```go
-// Somewhere in your file, probably at the bottom
 //go:generate autometrics
 
 //autometrics:doc
@@ -78,12 +94,13 @@ For Prometheus the shortest way is to add the handler code in your main entrypoi
 ``` go
 import (
 	"github.com/autometrics-dev/autometrics-go/pkg/autometrics"
+	amImpl "github.com/autometrics-dev/autometrics-go/pkg/autometrics/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 
 func main() {
-	autometrics.Init(nil, autometrics.DefBuckets)
+	amImpl.Init(nil, autometrics.DefBuckets)
 	http.Handle("/metrics", promhttp.Handler())
 }
 ```
@@ -114,6 +131,30 @@ The valid arguments for alert generation are:
 - `--latency-target` : latency target for the threshold, between 0 and 100 (so X%
   of calls must last less than `latency-ms` milliseconds). You must specify both
   latency options, or none.
+  
+## (OPTIONAL) OpenTelemetry Support
+
+Autometrics supports using OpenTelemetry with a prometheus exporter instead of using
+Prometheus to publish the metrics. The changes you need to make are:
+
+- change where the `amImpl` import points to
+```patch
+import (
+	"github.com/autometrics-dev/autometrics-go/pkg/autometrics"
+-	amImpl "github.com/autometrics-dev/autometrics-go/pkg/autometrics/prometheus"
++	amImpl "github.com/autometrics-dev/autometrics-go/pkg/autometrics/otel"
+)
+```
+- change the call to `amImpl.Init` to the new signature
+- add the `-otel` flag to the `//go:generate` directive
+
+```patch
+-//go:generate autometrics
++//go:generate autometrics -otel
+```
+
+
+### Implementation library import
 
 ## Status
 

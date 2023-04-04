@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/autometrics-dev/autometrics-go/pkg/autometrics"
-	prom "github.com/autometrics-dev/autometrics-go/pkg/autometrics/prometheus"
+	amImpl "github.com/autometrics-dev/autometrics-go/pkg/autometrics/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
@@ -20,7 +20,7 @@ import (
 func main() {
 	rand.Seed(time.Now().UnixNano())
 
-	prom.Init(nil, autometrics.DefBuckets)
+	amImpl.Init(nil, autometrics.DefBuckets)
 
 	http.HandleFunc("/", errorable(indexHandler))
 	http.HandleFunc("/random-error", errorable(randomErrorHandler))

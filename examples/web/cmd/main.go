@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/autometrics-dev/autometrics-go/pkg/autometrics"
-	prom "github.com/autometrics-dev/autometrics-go/pkg/autometrics/prometheus"
+	amImpl "github.com/autometrics-dev/autometrics-go/pkg/autometrics/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
@@ -20,7 +20,7 @@ import (
 func main() {
 	rand.Seed(time.Now().UnixNano())
 
-	prom.Init(nil, autometrics.DefBuckets)
+	amImpl.Init(nil, autometrics.DefBuckets)
 
 	http.HandleFunc("/", errorable(indexHandler))
 	http.HandleFunc("/random-error", errorable(randomErrorHandler))
@@ -61,7 +61,7 @@ func main() {
 //
 //autometrics:doc --slo "API" --latency-target 99 --latency-ms 250
 func indexHandler(w http.ResponseWriter, _ *http.Request) error {
-	defer prom.Instrument(prom.PreInstrument(&autometrics.Context{
+	defer amImpl.Instrument(amImpl.PreInstrument(&autometrics.Context{
 		TrackConcurrentCalls: true,
 		TrackCallerName:      true,
 		AlertConf:            &autometrics.AlertConfiguration{ServiceName: "API", Latency: &autometrics.LatencySlo{Target: 250000000 * time.Nanosecond, Objective: 99}, Success: nil},
@@ -106,7 +106,7 @@ var handlerError = errors.New("failed to handle request")
 //
 //autometrics:doc --slo "API" --success-target 90
 func randomErrorHandler(w http.ResponseWriter, _ *http.Request) (err error) {
-	defer prom.Instrument(prom.PreInstrument(&autometrics.Context{
+	defer amImpl.Instrument(amImpl.PreInstrument(&autometrics.Context{
 		TrackConcurrentCalls: true,
 		TrackCallerName:      true,
 		AlertConf:            &autometrics.AlertConfiguration{ServiceName: "API", Latency: nil, Success: &autometrics.SuccessSlo{Objective: 90}},
