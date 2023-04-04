@@ -2,11 +2,11 @@ package generate
 
 import (
 	"fmt"
+	"go/token"
 	"os"
 	"strconv"
 	"strings"
 	"time"
-	"go/token"
 
 	"github.com/google/shlex"
 
@@ -25,13 +25,17 @@ const (
 	SuccessObjArgument = "--success-target"
 	LatencyMsArgument  = "--latency-ms"
 	LatencyObjArgument = "--latency-target"
+
+	AmBasePackage = "\"github.com/autometrics-dev/autometrics-go/pkg/autometrics\""
+	AmPromPackage = "\"github.com/autometrics-dev/autometrics-go/pkg/autometrics/prometheus\""
+	AmOtelPackage = "\"github.com/autometrics-dev/autometrics-go/pkg/autometrics/otel\""
 )
 
 // TransformFile takes a file path and generates the documentation
 // for the `//autometrics:doc` functions.
 //
 // It also replaces the file in place.
-func TransformFile(path, moduleName string, generator doc.AutometricsLinkCommentGenerator) error {
+func TransformFile(path, moduleName string, generator doc.AutometricsLinkCommentGenerator, implementation autometrics.Implementation) error {
 	cwd, err := os.Getwd()
 	if err != nil {
 		return fmt.Errorf("error getting a working directory: %w", err)
@@ -50,7 +54,7 @@ func TransformFile(path, moduleName string, generator doc.AutometricsLinkComment
 	}
 
 	sourceCode := string(sourceBytes)
-	transformedSource, err := GenerateDocumentationAndInstrumentation(sourceCode, moduleName, generator)
+	transformedSource, err := GenerateDocumentationAndInstrumentation(sourceCode, moduleName, generator, implementation)
 	if err != nil {
 		return fmt.Errorf("error generating documentation: %w", err)
 	}
@@ -67,16 +71,66 @@ func TransformFile(path, moduleName string, generator doc.AutometricsLinkComment
 // the documentation for the `//autometrics:doc` functions.
 //
 // It returns the new source code with augmented documentation.
-func GenerateDocumentationAndInstrumentation(sourceCode, moduleName string, generator doc.AutometricsLinkCommentGenerator) (string, error) {
+func GenerateDocumentationAndInstrumentation(sourceCode, moduleName string, generator doc.AutometricsLinkCommentGenerator, implementation autometrics.Implementation) (string, error) {
 	fileTree, err := decorator.Parse(sourceCode)
 	if err != nil {
 		return "", fmt.Errorf("error parsing source code: %w", err)
 	}
 
 	var inspectErr error
+	var autometricsName string
+	var autometricsImplName string
 
 	fileWalk := func(n dst.Node) bool {
+		if importSpec, ok := n.(*dst.ImportSpec); ok {
+			if importSpec.Path.Value == AmBasePackage {
+				if importSpec.Name != nil {
+					autometricsName = importSpec.Name.Name
+				} else {
+					autometricsName = "autometrics"
+				}
+			}
+
+			if implementation == autometrics.PROMETHEUS {
+				if importSpec.Path.Value == AmPromPackage {
+					if importSpec.Name != nil {
+						autometricsImplName = importSpec.Name.Name
+					} else {
+						autometricsImplName = "prometheus"
+					}
+				}
+			}
+
+			if implementation == autometrics.OTEL {
+				if importSpec.Path.Value == AmOtelPackage {
+					if importSpec.Name != nil {
+						autometricsImplName = importSpec.Name.Name
+					} else {
+						autometricsImplName = "otel"
+					}
+				}
+			}
+
+			return true
+		}
+
 		if funcDeclaration, ok := n.(*dst.FuncDecl); ok {
+			if autometricsImplName == "" {
+				if implementation == autometrics.PROMETHEUS {
+					inspectErr = fmt.Errorf("the source file is missing a %v import", AmPromPackage)
+				} else if implementation == autometrics.OTEL {
+					inspectErr = fmt.Errorf("the source file is missing a %v import", AmOtelPackage)
+				} else {
+					inspectErr = fmt.Errorf("unknown implementation of metrics has been queried.")
+				}
+				return false
+			}
+
+			if autometricsName == "" {
+				inspectErr = fmt.Errorf("the source file is missing a %v import", AmBasePackage)
+				return false
+			}
+
 			// this block gets run for every function in the file
 			docComments := funcDeclaration.Decorations().Start.All()
 
@@ -133,6 +187,8 @@ func GenerateDocumentationAndInstrumentation(sourceCode, moduleName string, gene
 
 			// Detect autometrics directive
 			generatorCtx, err := parseAutometricsFnContext(docComments)
+			generatorCtx.ImportName = autometricsName
+			generatorCtx.ImplImportName = autometricsImplName
 			if err != nil {
 				inspectErr = fmt.Errorf(
 					"failed to parse //autometrics directive for %v: %w",
@@ -190,7 +246,7 @@ func GenerateDocumentationAndInstrumentation(sourceCode, moduleName string, gene
 	dst.Inspect(fileTree, fileWalk)
 
 	if inspectErr != nil {
-		return "", fmt.Errorf("error while transforming file in %v: %w", moduleName, err)
+		return "", fmt.Errorf("error while transforming file in %v: %w", moduleName, inspectErr)
 	}
 
 	var buf strings.Builder
@@ -212,16 +268,20 @@ func buildAutometricsContextNode(agc ctx.AutometricsGeneratorContext) (*dst.Comp
 
 	if agc.Ctx.AlertConf != nil {
 		if agc.Ctx.AlertConf.Latency != nil {
-			alertConfLatency = fmt.Sprintf("&autometrics.LatencySlo{ Target: %#v * time.Nanosecond, Objective: %#v }",
+			alertConfLatency = fmt.Sprintf("&%v.LatencySlo{ Target: %#v * time.Nanosecond, Objective: %#v }",
+				agc.ImportName,
 				agc.Ctx.AlertConf.Latency.Target,
 				agc.Ctx.AlertConf.Latency.Objective,
 			)
 		}
 		if agc.Ctx.AlertConf.Success != nil {
-			alertConfSuccess = fmt.Sprintf("&autometrics.SuccessSlo{ Objective: %#v }", agc.Ctx.AlertConf.Success.Objective)
+			alertConfSuccess = fmt.Sprintf("&%v.SuccessSlo{ Objective: %#v }",
+				agc.ImportName,
+				agc.Ctx.AlertConf.Success.Objective)
 		}
 
-		alertConf = fmt.Sprintf("&autometrics.AlertConfiguration{ ServiceName: %#v, Latency: %v, Success: %v }",
+		alertConf = fmt.Sprintf("&%v.AlertConfiguration{ ServiceName: %#v, Latency: %v, Success: %v }",
+			agc.ImportName,
 			agc.Ctx.AlertConf.ServiceName,
 			alertConfLatency,
 			alertConfSuccess,
@@ -231,12 +291,13 @@ func buildAutometricsContextNode(agc ctx.AutometricsGeneratorContext) (*dst.Comp
 	sourceCode := fmt.Sprintf(`
 package main
 
-var dummy = autometrics.Context {
+var dummy = %v.Context {
         TrackConcurrentCalls: %#v,
         TrackCallerName: %#v,
         AlertConf: %v,
 }
 `,
+		agc.ImportName,
 		agc.Ctx.TrackConcurrentCalls, agc.Ctx.TrackCallerName, alertConf)
 	sourceAst, err := decorator.Parse(sourceCode)
 	if err != nil {
@@ -269,10 +330,10 @@ func buildAutometricsDeferStatement(ctx ctx.AutometricsGeneratorContext, secondV
 	}
 	statement := dst.DeferStmt{
 		Call: &dst.CallExpr{
-			Fun: dst.NewIdent("autometrics.Instrument"),
+			Fun: dst.NewIdent(fmt.Sprintf("%v.Instrument", ctx.ImplImportName)),
 			Args: []dst.Expr{
 				&dst.CallExpr{
-					Fun: dst.NewIdent("autometrics.PreInstrument"),
+					Fun: dst.NewIdent(fmt.Sprintf("%v.PreInstrument", ctx.ImplImportName)),
 					Args: []dst.Expr{
 						&dst.UnaryExpr{
 							Op:   token.AND,

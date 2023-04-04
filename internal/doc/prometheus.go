@@ -5,7 +5,7 @@ import (
 	"net/url"
 
 	"github.com/autometrics-dev/autometrics-go/internal/ctx"
-	"github.com/autometrics-dev/autometrics-go/pkg/autometrics"
+	"github.com/autometrics-dev/autometrics-go/pkg/autometrics/prometheus"
 )
 
 const DefaultPrometheusInstanceUrl = "http://localhost:9090/"
@@ -59,17 +59,17 @@ func concurrentCallsQuery(gaugeName, labelKey, labelValue string) string {
 
 func (p Prometheus) GenerateAutometricsComment(ctx ctx.AutometricsGeneratorContext, funcName, moduleName string) []string {
 	requestRateUrl := p.makePrometheusUrl(
-		requestRateQuery(autometrics.FunctionCallsCountName, "function", funcName), fmt.Sprintf("Rate of calls to the `%s` function per second, averaged over 5 minute windows", funcName))
+		requestRateQuery(prometheus.FunctionCallsCountName, "function", funcName), fmt.Sprintf("Rate of calls to the `%s` function per second, averaged over 5 minute windows", funcName))
 	calleeRequestRateUrl := p.makePrometheusUrl(
-		requestRateQuery(autometrics.FunctionCallsCountName, "caller", fmt.Sprintf("%s.%s", moduleName, funcName)), fmt.Sprintf("Rate of function calls emanating from `%s` function per second, averaged over 5 minute windows", funcName))
+		requestRateQuery(prometheus.FunctionCallsCountName, "caller", fmt.Sprintf("%s.%s", moduleName, funcName)), fmt.Sprintf("Rate of function calls emanating from `%s` function per second, averaged over 5 minute windows", funcName))
 	errorRatioUrl := p.makePrometheusUrl(
-		errorRatioQuery(autometrics.FunctionCallsCountName, "function", funcName), fmt.Sprintf("Percentage of calls to the `%s` function that return errors, averaged over 5 minute windows", funcName))
+		errorRatioQuery(prometheus.FunctionCallsCountName, "function", funcName), fmt.Sprintf("Percentage of calls to the `%s` function that return errors, averaged over 5 minute windows", funcName))
 	calleeErrorRatioUrl := p.makePrometheusUrl(
-		errorRatioQuery(autometrics.FunctionCallsCountName, "caller", fmt.Sprintf("%s.%s", moduleName, funcName)), fmt.Sprintf("Percentage of function emanating from `%s` function that return errors, averaged over 5 minute windows", funcName))
+		errorRatioQuery(prometheus.FunctionCallsCountName, "caller", fmt.Sprintf("%s.%s", moduleName, funcName)), fmt.Sprintf("Percentage of function emanating from `%s` function that return errors, averaged over 5 minute windows", funcName))
 	latencyUrl := p.makePrometheusUrl(
-		latencyQuery(autometrics.FunctionCallsDurationName, "function", funcName), fmt.Sprintf("95th and 99th percentile latencies (in seconds) for the `%s` function", funcName))
+		latencyQuery(prometheus.FunctionCallsDurationName, "function", funcName), fmt.Sprintf("95th and 99th percentile latencies (in seconds) for the `%s` function", funcName))
 	concurrentCallsUrl := p.makePrometheusUrl(
-		concurrentCallsQuery(autometrics.FunctionCallsConcurrentName, "function", funcName), fmt.Sprintf("Concurrent calls to the `%s` function", funcName))
+		concurrentCallsQuery(prometheus.FunctionCallsConcurrentName, "function", funcName), fmt.Sprintf("Concurrent calls to the `%s` function", funcName))
 
 	// Not using raw `` strings because it's impossible to escape ` within those
 	retval := []string{

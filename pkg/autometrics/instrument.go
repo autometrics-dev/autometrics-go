@@ -1,92 +1,17 @@
 package autometrics
 
 import (
-	"fmt"
 	"runtime"
-	"strconv"
 	"strings"
-	"time"
-
-	"github.com/prometheus/client_golang/prometheus"
 )
 
-// Instrument called in a defer statement wraps the body of a function
-// with automatic instrumentation.
-//
-// The first argument SHOULD be a call to PreInstrument so that
-// the "concurrent calls" gauge is correctly setup.
-func Instrument(ctx *Context, err *error) {
-	result := "ok"
-
-	if err != nil && *err != nil {
-		result = "error"
-	}
-
-	var callerLabel, sloName, latencyTarget, latencyObjective, successObjective string
-	if ctx.TrackCallerName {
-		callerLabel = fmt.Sprintf("%s.%s", ctx.callInfo.ParentModuleName, ctx.callInfo.ParentFuncName)
-	}
-
-	if ctx.AlertConf != nil {
-		sloName = ctx.AlertConf.ServiceName
-		if ctx.AlertConf.Latency != nil {
-			latencyTarget = strconv.FormatFloat(ctx.AlertConf.Latency.Target.Seconds(), 'f', -1, 64)
-			latencyObjective = strconv.FormatFloat(ctx.AlertConf.Latency.Objective, 'f', -1, 64)
-		}
-		if ctx.AlertConf.Success != nil {
-			successObjective = strconv.FormatFloat(ctx.AlertConf.Success.Objective, 'f', -1, 64)
-		}
-	}
-
-	FunctionCallsCount.With(prometheus.Labels{
-		FunctionLabel:          ctx.callInfo.FuncName,
-		ModuleLabel:            ctx.callInfo.ModuleName,
-		CallerLabel:            callerLabel,
-		ResultLabel:            result,
-		TargetSuccessRateLabel: successObjective,
-		SloNameLabel:           sloName,
-	}).Inc()
-	FunctionCallsDuration.With(prometheus.Labels{
-		FunctionLabel:          ctx.callInfo.FuncName,
-		ModuleLabel:            ctx.callInfo.ModuleName,
-		CallerLabel:            callerLabel,
-		TargetLatencyLabel:     latencyTarget,
-		TargetSuccessRateLabel: latencyObjective,
-		SloNameLabel:           sloName,
-	}).Observe(time.Since(ctx.startTime).Seconds())
-	if ctx.TrackConcurrentCalls {
-		FunctionCallsConcurrent.With(prometheus.Labels{
-			FunctionLabel: ctx.callInfo.FuncName,
-			ModuleLabel:   ctx.callInfo.ModuleName,
-			CallerLabel:   callerLabel,
-		}).Dec()
-	}
+// TODO: Use the interface in the API
+type Instrumentor interface {
+	Instrument(ctx *Context, err *error)
+	PreInstrument(ctx *Context) *Context
 }
 
-// PreInstrument runs the "before wrappee" part of instrumentation.
-//
-// It is meant to be called as the first argument to Instrument in a
-// defer call.
-func PreInstrument(ctx *Context) *Context {
-	ctx.callInfo = callerInfo()
-
-	var callerLabel string
-	if ctx.TrackCallerName {
-		callerLabel = fmt.Sprintf("%s.%s", ctx.callInfo.ParentModuleName, ctx.callInfo.ParentFuncName)
-	}
-
-	FunctionCallsConcurrent.With(prometheus.Labels{
-		FunctionLabel: ctx.callInfo.FuncName,
-		ModuleLabel:   ctx.callInfo.ModuleName,
-		CallerLabel:   callerLabel,
-	}).Inc()
-
-	ctx.startTime = time.Now()
-
-	return ctx
-}
-
-// callerInfo returns the (method name, module name) of the function that called the function that called this function.
+// CallerInfo returns the (method name, module name) of the function that called the function that called this function.
 //
 // It also returns the information about its grandparent.
 //
@@ -97,7 +22,7 @@ func PreInstrument(ctx *Context) *Context {
 // then we can lift this artificial limitation here and use the full "module name" from the caller information.
 // Currently this compromise is the only way to have the documentation links generator creating correct
 // queries.
-func callerInfo() (callInfo CallInfo) {
+func CallerInfo() (callInfo CallInfo) {
 	programCounters := make([]uintptr, 15)
 
 	// skip 3 frames to start with:

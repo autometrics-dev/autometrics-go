@@ -5,6 +5,8 @@ import (
 )
 
 type AutometricsGeneratorContext struct {
-	CommentIndex int
-	Ctx          autometrics.Context
+	CommentIndex   int
+	Ctx            autometrics.Context
+	ImportName     string
+	ImplImportName string
 }
