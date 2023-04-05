@@ -5,7 +5,7 @@ global:
 
 route:
   receiver: 'slack-notifications'
-  group_by: [sloth_service, sloth_slo]
+  group_by: [sloth_service, sloth_slo, objective_name]
 
 receivers:
 - name: 'slack-notifications'

@@ -18,26 +18,16 @@ var (
 
 const (
 	FunctionCallsCountName          = "function.calls.count"
-	FunctionCallsCountPromName      = "function_calls_count"
 	FunctionCallsDurationName       = "function.calls.duration"
-	FunctionCallsDurationPromName   = "function_calls_duration"
 	FunctionCallsConcurrentName     = "function.calls.concurrent"
-	FunctionCallsConcurrentPromName = "function_calls_concurrent"
 
 	FunctionLabel          = "function"
 	ModuleLabel            = "module"
 	CallerLabel            = "caller"
 	ResultLabel            = "result"
-	// Within the metric.Stream of a metric.View, it is only possible
-	// to have AttributeFilter (attribute.Filter) that eventually just choose
-	// to keep or remove a Key/Value pair from the source attribute set.
-	// It is notably impossible to rename a key in an attribute. This is
-	// why we will keep the 'objective_' prefix instead of using a more idiomatic
-	// 'objective.' prefix, so that the exported metrics stay compatible with the
-	// autometrics.rules.yml file.
-	TargetLatencyLabel     = "objective_latency_threshold"
-	TargetSuccessRateLabel = "objective_percentile"
-	SloNameLabel           = "objective_name"
+	TargetLatencyLabel     = "objective.latency_threshold"
+	TargetSuccessRateLabel = "objective.percentile"
+	SloNameLabel           = "objective.name"
 )
 
 func completeMeterName(meterName string) string {
@@ -68,28 +58,9 @@ func Init(meterName string, histogramBuckets []float64) error {
 				Scope: instrumentation.Scope{Name: completeMeterName(meterName)},
 			},
 			metric.Stream{
-				Name: FunctionCallsDurationPromName,
 				Aggregation: aggregation.ExplicitBucketHistogram{
 					Boundaries: histogramBuckets,
 				},
-			},
-		)),
-		metric.WithView(metric.NewView(
-			metric.Instrument{
-				Name:  FunctionCallsCountName,
-				Scope: instrumentation.Scope{Name: completeMeterName(meterName)},
-			},
-			metric.Stream{
-				Name: FunctionCallsCountPromName,
-			},
-		)),
-		metric.WithView(metric.NewView(
-			metric.Instrument{
-				Name:  FunctionCallsConcurrentName,
-				Scope: instrumentation.Scope{Name: completeMeterName(meterName)},
-			},
-			metric.Stream{
-				Name: FunctionCallsConcurrentPromName,
 			},
 		)),
 	)

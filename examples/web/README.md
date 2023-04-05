@@ -104,10 +104,10 @@ configuration to the correct notification service:
 
 ![Alertmanager alerts dashboard showing the alerts firing](../../assets/alertmanager-alert-example.png)
 
-This demo example has a 
-[minimal configuration](./alertmanager.yml) for alerts that expects
-a file `slack_url.txt` to be passed in docker-compose context. If the file
-exists, the triggered alerts automatically go on Slack to the configured channel:
+This demo example has a [minimal configuration](./alertmanager.yml) for alerts
+that expects a file `slack_url.txt` to be passed in docker-compose context.
+Create the file in the same folder as this README, and if the file exists, the
+triggered alerts automatically go on Slack to the configured channel:
 
 ![a Slack bot is posting an alert directly in the channel](../../assets/slack-alert-example.png)
 

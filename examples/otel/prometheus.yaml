@@ -1,5 +1,5 @@
 global:
-  scrape_interval: 5s
+  scrape_interval: 2s
 
 rule_files:
   - "./autometrics.rules.yml"
