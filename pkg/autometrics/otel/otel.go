@@ -11,7 +11,7 @@ import (
 )
 
 var (
-	FunctionCallsCount      instrument.Int64Counter
+	FunctionCallsCount      instrument.Int64UpDownCounter
 	FunctionCallsDuration   instrument.Float64Histogram
 	FunctionCallsConcurrent instrument.Int64UpDownCounter
 )
@@ -28,32 +28,20 @@ const (
 	ModuleLabel            = "module"
 	CallerLabel            = "caller"
 	ResultLabel            = "result"
-	TargetLatencyLabel     = "objective.latency_threshold"
-	TargetSuccessRateLabel = "objective.percentile"
-	SloNameLabel           = "objective.name"
+	// Within the metric.Stream of a metric.View, it is only possible
+	// to have AttributeFilter (attribute.Filter) that eventually just choose
+	// to keep or remove a Key/Value pair from the source attribute set.
+	// It is notably impossible to rename a key in an attribute. This is
+	// why we will keep the 'objective_' prefix instead of using a more idiomatic
+	// 'objective.' prefix, so that the exported metrics stay compatible with the
+	// autometrics.rules.yml file.
+	TargetLatencyLabel     = "objective_latency_threshold"
+	TargetSuccessRateLabel = "objective_percentile"
+	SloNameLabel           = "objective_name"
 )
 
-// // The default aggregation selector, but with the histogramBuckets instead
-// // of the default ones.
-// func makeAmAggregationSelector(histogramBuckets []float64) metric.AggregationSelector {
-// 	return func(ik metric.InstrumentKind) aggregation.Aggregation {
-// 		switch ik {
-// 		case metric.InstrumentKindCounter, metric.InstrumentKindUpDownCounter, metric.InstrumentKindObservableCounter, metric.InstrumentKindObservableUpDownCounter:
-// 			return aggregation.Sum{}
-// 		case metric.InstrumentKindObservableGauge:
-// 			return aggregation.LastValue{}
-// 		case metric.InstrumentKindHistogram:
-// 			return aggregation.ExplicitBucketHistogram{
-// 				Boundaries: histogramBuckets,
-// 				NoMinMax:   false,
-// 			}
-// 		}
-// 		panic("unknown instrument kind")
-// 	}
-// }
-
 func completeMeterName(meterName string) string {
-	return fmt.Sprintf("autometric/%v", meterName)
+	return fmt.Sprintf("autometrics/%v", meterName)
 }
 
 // Init sets up the metrics required for autometrics' decorated functions and registers
@@ -64,7 +52,9 @@ func completeMeterName(meterName string) string {
 // to work (they will never trigger.)
 func Init(meterName string, histogramBuckets []float64) error {
 	exporter, err := prometheus.New(
-		// prometheus.WithAggregationSelector(makeAmAggregationSelector(histogramBuckets)),
+		// The units are removed from the exporter so that the names of the
+		// exported metrics after the View rename are consistent with the
+		// autometrics.rules.yml file
 		prometheus.WithoutUnits(),
 	)
 	if err != nil {
@@ -105,7 +95,11 @@ func Init(meterName string, histogramBuckets []float64) error {
 	)
 	meter := provider.Meter(completeMeterName(meterName))
 
-	FunctionCallsCount, err = meter.Int64Counter(FunctionCallsCountName, instrument.WithDescription("The number of times the function has been called"))
+	// We are using an UpDown counter instead of the natural Counter because with a monotonic counter
+	// there is no way to remove the '_total' suffix from the exported metric name. This suffix
+	// makes the exported metrics incompatible with the autometrics.rules.yml file.
+	// Ref: https://github.com/open-telemetry/opentelemetry-go/blob/6b7e207953ce0a13d38da628a6aa48ad56058d2a/exporters/prometheus/exporter.go#L212-L215
+	FunctionCallsCount, err = meter.Int64UpDownCounter(FunctionCallsCountName, instrument.WithDescription("The number of times the function has been called"))
 	if err != nil {
 		return fmt.Errorf("error initializing %v metric: %w", FunctionCallsCountName, err)
 	}
