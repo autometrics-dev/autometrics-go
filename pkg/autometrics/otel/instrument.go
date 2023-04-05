@@ -1,6 +1,7 @@
 package otel // import "github.com/autometrics-dev/autometrics-go/pkg/autometrics/otel"
 
 import (
+	"context"
 	"fmt"
 	"strconv"
 	"time"
@@ -22,16 +23,19 @@ func Instrument(ctx *autometrics.Context, err *error) {
 	}
 
 	var callerLabel, sloName, latencyTarget, latencyObjective, successObjective string
+
 	if ctx.TrackCallerName {
 		callerLabel = fmt.Sprintf("%s.%s", ctx.CallInfo.ParentModuleName, ctx.CallInfo.ParentFuncName)
 	}
 
 	if ctx.AlertConf != nil {
 		sloName = ctx.AlertConf.ServiceName
+
 		if ctx.AlertConf.Latency != nil {
 			latencyTarget = strconv.FormatFloat(ctx.AlertConf.Latency.Target.Seconds(), 'f', -1, 64)
 			latencyObjective = strconv.FormatFloat(ctx.AlertConf.Latency.Objective, 'f', -1, 64)
 		}
+
 		if ctx.AlertConf.Success != nil {
 			successObjective = strconv.FormatFloat(ctx.AlertConf.Success.Objective, 'f', -1, 64)
 		}
@@ -55,6 +59,7 @@ func Instrument(ctx *autometrics.Context, err *error) {
 			attribute.Key(TargetSuccessRateLabel).String(latencyObjective),
 			attribute.Key(SloNameLabel).String(sloName),
 		}...)
+
 	if ctx.TrackConcurrentCalls {
 		FunctionCallsConcurrent.Add(ctx.Context, -1,
 			[]attribute.KeyValue{
@@ -71,6 +76,7 @@ func Instrument(ctx *autometrics.Context, err *error) {
 // defer call.
 func PreInstrument(ctx *autometrics.Context) *autometrics.Context {
 	ctx.CallInfo = autometrics.CallerInfo()
+	ctx.Context = context.Background()
 
 	var callerLabel string
 	if ctx.TrackCallerName {
