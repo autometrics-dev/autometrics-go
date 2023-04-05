@@ -36,6 +36,10 @@ And then in your main function initialize the metrics
 ``` go
 amImpl.Init(nil, autometrics.DefBuckets)
 ```
+**_Warning_**: if you want to enable alerting from Autometrics, you **MUST NOT**
+change the `autometrics.DefBuckets` argument. This is because alerting only uses
+the bundled [Alerting rules file](./configs/autometrics.rules.yml).
+Support for custom rule generation is planned but not present at the moment.
 
 ### Add cookies in your code
 
@@ -132,6 +136,10 @@ The valid arguments for alert generation are:
   of calls must last less than `latency-ms` milliseconds). You must specify both
   latency options, or none.
   
+**_Warning_**: the generator will error out if you use targets that are not
+supported by the bundled [Alerting rules file](./configs/autometrics.rules.yml).
+Support for custom target is planned but not present at the moment
+  
 ## (OPTIONAL) OpenTelemetry Support
 
 Autometrics supports using OpenTelemetry with a prometheus exporter instead of using
@@ -145,7 +153,15 @@ import (
 +	amImpl "github.com/autometrics-dev/autometrics-go/pkg/autometrics/otel"
 )
 ```
-- change the call to `amImpl.Init` to the new signature
+- change the call to `amImpl.Init` to the new signature: instead of a registry,
+the `Init` function takes a meter name for the `otel_scope` label of the exported
+metric. You can use the name of the application or its version for example
+
+``` patch
+-	amImpl.Init(nil, autometrics.DefBuckets)
++	amImpl.Init("myApp/v2/prod", autometrics.DefBuckets)
+```
+
 - add the `-otel` flag to the `//go:generate` directive
 
 ```patch
