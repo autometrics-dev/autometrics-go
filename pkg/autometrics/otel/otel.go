@@ -18,30 +18,30 @@ var (
 
 const (
 	// FunctionCallsCountName is the name of the openTelemetry metric for the counter of calls to specific functions.
-	FunctionCallsCountName          = "function.calls.count"
+	FunctionCallsCountName = "function.calls.count"
 	// FunctionCallsDurationName is the name of the openTelemetry metric for the duration histogram of calls to specific functions.
-	FunctionCallsDurationName       = "function.calls.duration"
+	FunctionCallsDurationName = "function.calls.duration"
 	// FunctionCallsConcurrentName is the name of the openTelemetry metric for the number of simulateneously active calls to specific functions.
-	FunctionCallsConcurrentName     = "function.calls.concurrent"
+	FunctionCallsConcurrentName = "function.calls.concurrent"
 
 	// FunctionLabel is the openTelemetry attribute that describes the function name.
 	//
 	// It is guaranteed that a (FunctionLabel, ModuleLabel) value pair is unique
 	// and matches at most one function in the source code
-	FunctionLabel          = "function"
+	FunctionLabel = "function"
 	// ModuleLabel is the openTelemetry attribute that describes the module name that contains the function.
 	//
 	// It is guaranteed that a (FunctionLabel, ModuleLabel) value pair is unique
 	// and matches at most one function in the source code
-	ModuleLabel            = "module"
+	ModuleLabel = "module"
 	// CallerLabel is the openTelemetry attribute that describes the name of the function that called
 	// the current function.
-	CallerLabel            = "caller"
+	CallerLabel = "caller"
 	// ResultLabel is the openTelemetry attribute that describes whether a function call is successful.
-	ResultLabel            = "result"
+	ResultLabel = "result"
 	// TargetLatencyLabel is the openTelemetry attribute that describes the latency to respect to match
 	// the Service Level Objective.
-	TargetLatencyLabel     = "objective.latency_threshold"
+	TargetLatencyLabel = "objective.latency_threshold"
 	// TargetSuccessRateLabel is the openTelemetry attribute that describes the percentage of calls that
 	// must succeed to match the Service Level Objective.
 	//
@@ -52,8 +52,13 @@ const (
 	// that must be successful (i.e. have their [ResultLabel] be 'ok').
 	TargetSuccessRateLabel = "objective.percentile"
 	// SloLabelName is the openTelemetry attribute that describes the name of the Service Level Objective.
-	SloNameLabel           = "objective.name"
+	SloNameLabel = "objective.name"
 )
+
+// Instrumentor is an empty struct that implements [autometrics.Instrumentor] interface.
+//
+// TODO: Use this instrumentor in the API.
+type Instrumentor struct{}
 
 func completeMeterName(meterName string) string {
 	return fmt.Sprintf("autometrics/%v", meterName)
