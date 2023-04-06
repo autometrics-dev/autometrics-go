@@ -44,11 +44,11 @@ func main() {
 		"\n" +
 		"// This comment is associated with the main function.\n" +
 		"//\n" +
-		"//\tautometrics:doc-start DO NOT EDIT HERE AND LINE ABOVE\n" +
+		"//\tautometrics:doc-start Generated documentation by Autometrics.\n" +
 		"//\n" +
 		"// # Autometrics\n" +
 		"//\n" +
-		"// ## Prometheus\n" +
+		"// # Prometheus\n" +
 		"//\n" +
 		"// View the live metrics for the `main` function:\n" +
 		"//   - [Request Rate]\n" +
@@ -60,7 +60,7 @@ func main() {
 		"//   - [Request Rate Callee]\n" +
 		"//   - [Error Ratio Callee]\n" +
 		"//\n" +
-		"//\tautometrics:doc-end DO NOT EDIT HERE AND LINE BELOW\n" +
+		"//\tautometrics:doc-end Generated documentation by Autometrics.\n" +
 		"//\n" +
 		"// [Request Rate]: http://localhost:9090/graph?g0.expr=%23+Rate+of+calls+to+the+%60main%60+function+per+second%2C+averaged+over+5+minute+windows%0A%0Asum+by+%28function%2C+module%29+%28rate%28function_calls_count%7Bfunction%3D%22main%22%7D%5B5m%5D%29%29&g0.tab=0\n" +
 		"// [Error Ratio]: http://localhost:9090/graph?g0.expr=%23+Percentage+of+calls+to+the+%60main%60+function+that+return+errors%2C+averaged+over+5+minute+windows%0A%0Asum+by+%28function%2C+module%29+%28rate%28function_calls_count%7Bfunction%3D%22main%22%2Cresult%3D%22error%22%7D%5B5m%5D%29%29&g0.tab=0\n" +
@@ -129,11 +129,11 @@ func main() {
 		"\n" +
 		"// This comment is associated with the main function.\n" +
 		"//\n" +
-		"//\tautometrics:doc-start DO NOT EDIT HERE AND LINE ABOVE\n" +
+		"//\tautometrics:doc-start Generated documentation by Autometrics.\n" +
 		"//\n" +
 		"// # Autometrics\n" +
 		"//\n" +
-		"// ## Prometheus\n" +
+		"// # Prometheus\n" +
 		"//\n" +
 		"// View the live metrics for the `main` function:\n" +
 		"//   - [Request Rate]\n" +
@@ -145,7 +145,7 @@ func main() {
 		"//   - [Request Rate Callee]\n" +
 		"//   - [Error Ratio Callee]\n" +
 		"//\n" +
-		"//\tautometrics:doc-end DO NOT EDIT HERE AND LINE BELOW\n" +
+		"//\tautometrics:doc-end Generated documentation by Autometrics.\n" +
 		"//\n" +
 		"// [Request Rate]: http://localhost:9090/graph?g0.expr=%23+Rate+of+calls+to+the+%60main%60+function+per+second%2C+averaged+over+5+minute+windows%0A%0Asum+by+%28function%2C+module%29+%28rate%28function_calls_count%7Bfunction%3D%22main%22%7D%5B5m%5D%29%29&g0.tab=0\n" +
 		"// [Error Ratio]: http://localhost:9090/graph?g0.expr=%23+Percentage+of+calls+to+the+%60main%60+function+that+return+errors%2C+averaged+over+5+minute+windows%0A%0Asum+by+%28function%2C+module%29+%28rate%28function_calls_count%7Bfunction%3D%22main%22%2Cresult%3D%22error%22%7D%5B5m%5D%29%29&g0.tab=0\n" +

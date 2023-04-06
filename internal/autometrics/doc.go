@@ -82,7 +82,7 @@ func (p Prometheus) GenerateAutometricsComment(ctx GeneratorContext, funcName, m
 
 	// Not using raw `` strings because it's impossible to escape ` within those
 	retval := []string{
-		"// ## Prometheus",
+		"// # Prometheus",
 		"//",
 		fmt.Sprintf("// View the live metrics for the `%s` function:", funcName),
 		"//   - [Request Rate]",

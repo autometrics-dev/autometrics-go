@@ -535,13 +535,13 @@ func generateAutometricsComment(ctx internal.GeneratorContext) (commentLines []s
 		ctx.FuncCtx.ModuleName,
 	)
 	commentLines = append(commentLines, "//")
-	commentLines = append(commentLines, "//   autometrics:doc-start DO NOT EDIT HERE AND LINE ABOVE")
+	commentLines = append(commentLines, "//\tautometrics:doc-start Generated documentation by Autometrics.")
 	commentLines = append(commentLines, "//")
 	commentLines = append(commentLines, "// # Autometrics")
 	commentLines = append(commentLines, "//")
 	commentLines = append(commentLines, l...)
 	commentLines = append(commentLines, "//")
-	commentLines = append(commentLines, "//   autometrics:doc-end DO NOT EDIT HERE AND LINE BELOW")
+	commentLines = append(commentLines, "//\tautometrics:doc-end Generated documentation by Autometrics.")
 	commentLines = append(commentLines, "//")
 
 	return
