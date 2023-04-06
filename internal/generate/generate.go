@@ -12,8 +12,7 @@ import (
 
 	"golang.org/x/exp/slices"
 
-	"github.com/autometrics-dev/autometrics-go/internal/ctx"
-	"github.com/autometrics-dev/autometrics-go/internal/doc"
+	internal "github.com/autometrics-dev/autometrics-go/internal/autometrics"
 	"github.com/autometrics-dev/autometrics-go/pkg/autometrics"
 
 	"github.com/dave/dst"
@@ -35,7 +34,7 @@ const (
 // for the `//autometrics:doc` functions.
 //
 // It also replaces the file in place.
-func TransformFile(path, moduleName string, generator doc.AutometricsLinkCommentGenerator, implementation autometrics.Implementation) error {
+func TransformFile(ctx internal.GeneratorContext, path, moduleName string) error {
 	cwd, err := os.Getwd()
 	if err != nil {
 		return fmt.Errorf("error getting a working directory: %w", err)
@@ -54,7 +53,7 @@ func TransformFile(path, moduleName string, generator doc.AutometricsLinkComment
 	}
 
 	sourceCode := string(sourceBytes)
-	transformedSource, err := GenerateDocumentationAndInstrumentation(sourceCode, moduleName, generator, implementation)
+	transformedSource, err := GenerateDocumentationAndInstrumentation(ctx, sourceCode, moduleName)
 	if err != nil {
 		return fmt.Errorf("error generating documentation: %w", err)
 	}
@@ -71,42 +70,40 @@ func TransformFile(path, moduleName string, generator doc.AutometricsLinkComment
 // the documentation for the `//autometrics:doc` functions.
 //
 // It returns the new source code with augmented documentation.
-func GenerateDocumentationAndInstrumentation(sourceCode, moduleName string, generator doc.AutometricsLinkCommentGenerator, implementation autometrics.Implementation) (string, error) {
+func GenerateDocumentationAndInstrumentation(ctx internal.GeneratorContext, sourceCode, moduleName string) (string, error) {
 	fileTree, err := decorator.Parse(sourceCode)
 	if err != nil {
 		return "", fmt.Errorf("error parsing source code: %w", err)
 	}
 
 	var inspectErr error
-	var autometricsName string
-	var autometricsImplName string
 
 	fileWalk := func(n dst.Node) bool {
 		if importSpec, ok := n.(*dst.ImportSpec); ok {
 			if importSpec.Path.Value == AmBasePackage {
 				if importSpec.Name != nil {
-					autometricsName = importSpec.Name.Name
+					ctx.FuncCtx.ImportName = importSpec.Name.Name
 				} else {
-					autometricsName = "autometrics"
+					ctx.FuncCtx.ImportName = "autometrics"
 				}
 			}
 
-			if implementation == autometrics.PROMETHEUS {
+			if ctx.Implementation == autometrics.PROMETHEUS {
 				if importSpec.Path.Value == AmPromPackage {
 					if importSpec.Name != nil {
-						autometricsImplName = importSpec.Name.Name
+						ctx.FuncCtx.ImplImportName = importSpec.Name.Name
 					} else {
-						autometricsImplName = "prometheus"
+						ctx.FuncCtx.ImplImportName = "prometheus"
 					}
 				}
 			}
 
-			if implementation == autometrics.OTEL {
+			if ctx.Implementation == autometrics.OTEL {
 				if importSpec.Path.Value == AmOtelPackage {
 					if importSpec.Name != nil {
-						autometricsImplName = importSpec.Name.Name
+						ctx.FuncCtx.ImplImportName = importSpec.Name.Name
 					} else {
-						autometricsImplName = "otel"
+						ctx.FuncCtx.ImplImportName = "otel"
 					}
 				}
 			}
@@ -115,10 +112,10 @@ func GenerateDocumentationAndInstrumentation(sourceCode, moduleName string, gene
 		}
 
 		if funcDeclaration, ok := n.(*dst.FuncDecl); ok {
-			if autometricsImplName == "" {
-				if implementation == autometrics.PROMETHEUS {
+			if ctx.FuncCtx.ImplImportName == "" {
+				if ctx.Implementation == autometrics.PROMETHEUS {
 					inspectErr = fmt.Errorf("the source file is missing a %v import", AmPromPackage)
-				} else if implementation == autometrics.OTEL {
+				} else if ctx.Implementation == autometrics.OTEL {
 					inspectErr = fmt.Errorf("the source file is missing a %v import", AmOtelPackage)
 				} else {
 					inspectErr = fmt.Errorf("unknown implementation of metrics has been queried.")
@@ -126,10 +123,14 @@ func GenerateDocumentationAndInstrumentation(sourceCode, moduleName string, gene
 				return false
 			}
 
-			if autometricsName == "" {
+			if ctx.FuncCtx.ImportName == "" {
 				inspectErr = fmt.Errorf("the source file is missing a %v import", AmBasePackage)
 				return false
 			}
+
+			ctx.FuncCtx.FunctionName = funcDeclaration.Name.Name
+			ctx.FuncCtx.ModuleName = moduleName
+			defer ctx.ResetFuncCtx()
 
 			// this block gets run for every function in the file
 			docComments := funcDeclaration.Decorations().Start.All()
@@ -172,23 +173,23 @@ func GenerateDocumentationAndInstrumentation(sourceCode, moduleName string, gene
 					docComments = append(docComments[:oldStartCommentIndex-1], docComments[oldEndCommentIndex+2:]...)
 
 					// Remove the generated links from former passes
-					generatedLinks := generator.GeneratedLinks()
-					docComments = filter(docComments, func(input string) bool {
-						for _, link := range generatedLinks {
-							if strings.Contains(input, fmt.Sprintf("[%s]", link)) {
-								return false
+					if ctx.DocumentationGenerator != nil {
+						generatedLinks := ctx.DocumentationGenerator.GeneratedLinks()
+						docComments = filter(docComments, func(input string) bool {
+							for _, link := range generatedLinks {
+								if strings.Contains(input, fmt.Sprintf("[%s]", link)) {
+									return false
+								}
 							}
-						}
-						return true
-					})
+							return true
+						})
+					}
 				}
 
 			}
 
 			// Detect autometrics directive
-			generatorCtx, err := parseAutometricsFnContext(docComments)
-			generatorCtx.ImportName = autometricsName
-			generatorCtx.ImplImportName = autometricsImplName
+			err := parseAutometricsFnContext(&ctx, docComments)
 			if err != nil {
 				inspectErr = fmt.Errorf(
 					"failed to parse //autometrics directive for %v: %w",
@@ -196,10 +197,10 @@ func GenerateDocumentationAndInstrumentation(sourceCode, moduleName string, gene
 					err)
 				return false
 			}
-			listIndex := generatorCtx.CommentIndex
+			listIndex := ctx.FuncCtx.CommentIndex
 			if listIndex >= 0 {
 				// Insert comments
-				autometricsComment := generateAutometricsComment(generatorCtx, funcDeclaration.Name.Name, moduleName, generator)
+				autometricsComment := generateAutometricsComment(ctx)
 				funcDeclaration.Decorations().Start.Replace(insertComments(docComments, listIndex, autometricsComment)...)
 
 				// defer statement
@@ -216,7 +217,7 @@ func GenerateDocumentationAndInstrumentation(sourceCode, moduleName string, gene
 					variable = "&" + variable
 				}
 
-				autometricsDeferStatement, err := buildAutometricsDeferStatement(generatorCtx, variable)
+				autometricsDeferStatement, err := buildAutometricsDeferStatement(ctx, variable)
 				if err != nil {
 					inspectErr = fmt.Errorf("failed to build the defer statement for instrumentation: %w", err)
 					return false
@@ -259,30 +260,30 @@ func GenerateDocumentationAndInstrumentation(sourceCode, moduleName string, gene
 	return buf.String(), nil
 }
 
-func buildAutometricsContextNode(agc ctx.AutometricsGeneratorContext) (*dst.CompositeLit, error) {
+func buildAutometricsContextNode(agc internal.GeneratorContext) (*dst.CompositeLit, error) {
 	// Using https://github.com/dave/dst/issues/73 workaround
 
 	alertConf := "nil"
 	alertConfLatency := "nil"
 	alertConfSuccess := "nil"
 
-	if agc.Ctx.AlertConf != nil {
-		if agc.Ctx.AlertConf.Latency != nil {
+	if agc.RuntimeCtx.AlertConf != nil {
+		if agc.RuntimeCtx.AlertConf.Latency != nil {
 			alertConfLatency = fmt.Sprintf("&%v.LatencySlo{ Target: %#v * time.Nanosecond, Objective: %#v }",
-				agc.ImportName,
-				agc.Ctx.AlertConf.Latency.Target,
-				agc.Ctx.AlertConf.Latency.Objective,
+				agc.FuncCtx.ImportName,
+				agc.RuntimeCtx.AlertConf.Latency.Target,
+				agc.RuntimeCtx.AlertConf.Latency.Objective,
 			)
 		}
-		if agc.Ctx.AlertConf.Success != nil {
+		if agc.RuntimeCtx.AlertConf.Success != nil {
 			alertConfSuccess = fmt.Sprintf("&%v.SuccessSlo{ Objective: %#v }",
-				agc.ImportName,
-				agc.Ctx.AlertConf.Success.Objective)
+				agc.FuncCtx.ImportName,
+				agc.RuntimeCtx.AlertConf.Success.Objective)
 		}
 
 		alertConf = fmt.Sprintf("&%v.AlertConfiguration{ ServiceName: %#v, Latency: %v, Success: %v }",
-			agc.ImportName,
-			agc.Ctx.AlertConf.ServiceName,
+			agc.FuncCtx.ImportName,
+			agc.RuntimeCtx.AlertConf.ServiceName,
 			alertConfLatency,
 			alertConfSuccess,
 		)
@@ -297,8 +298,8 @@ var dummy = %v.Context {
         AlertConf: %v,
 }
 `,
-		agc.ImportName,
-		agc.Ctx.TrackConcurrentCalls, agc.Ctx.TrackCallerName, alertConf)
+		agc.FuncCtx.ImportName,
+		agc.RuntimeCtx.TrackConcurrentCalls, agc.RuntimeCtx.TrackCallerName, alertConf)
 	sourceAst, err := decorator.Parse(sourceCode)
 	if err != nil {
 		return nil, fmt.Errorf("could not parse dummy code: %w", err)
@@ -323,17 +324,17 @@ var dummy = %v.Context {
 }
 
 // buildAutometricsDeferStatement builds the AST for the defer statement to be inserted.
-func buildAutometricsDeferStatement(ctx ctx.AutometricsGeneratorContext, secondVar string) (dst.DeferStmt, error) {
+func buildAutometricsDeferStatement(ctx internal.GeneratorContext, secondVar string) (dst.DeferStmt, error) {
 	preInstrumentArg, err := buildAutometricsContextNode(ctx)
 	if err != nil {
 		return dst.DeferStmt{}, fmt.Errorf("could not generate the runtime context value: %w", err)
 	}
 	statement := dst.DeferStmt{
 		Call: &dst.CallExpr{
-			Fun: dst.NewIdent(fmt.Sprintf("%v.Instrument", ctx.ImplImportName)),
+			Fun: dst.NewIdent(fmt.Sprintf("%v.Instrument", ctx.FuncCtx.ImplImportName)),
 			Args: []dst.Expr{
 				&dst.CallExpr{
-					Fun: dst.NewIdent(fmt.Sprintf("%v.PreInstrument", ctx.ImplImportName)),
+					Fun: dst.NewIdent(fmt.Sprintf("%v.PreInstrument", ctx.FuncCtx.ImplImportName)),
 					Args: []dst.Expr{
 						&dst.UnaryExpr{
 							Op:   token.AND,
@@ -353,17 +354,15 @@ func buildAutometricsDeferStatement(ctx ctx.AutometricsGeneratorContext, secondV
 	return statement, nil
 }
 
-func parseAutometricsFnContext(commentGroup []string) (ctx.AutometricsGeneratorContext, error) {
+func parseAutometricsFnContext(ctx *internal.GeneratorContext, commentGroup []string) error {
 	for i, comment := range commentGroup {
 		if args, found := cutPrefix(comment, "//autometrics:"); found {
-			retval := ctx.AutometricsGeneratorContext{
-				CommentIndex: i,
-				Ctx:          autometrics.NewContext(),
-			}
-			// TODO: Parse the end of the directive into the autometrics.Context
+			ctx.FuncCtx.CommentIndex = i
+			ctx.RuntimeCtx = autometrics.NewContext()
+
 			tokens, err := shlex.Split(args)
 			if err != nil {
-				return retval, fmt.Errorf("could not parse the directive arguments: %w", err)
+				return fmt.Errorf("could not parse the directive arguments: %w", err)
 			}
 			tokenIndex := 0
 			for tokenIndex < len(tokens) {
@@ -371,19 +370,19 @@ func parseAutometricsFnContext(commentGroup []string) (ctx.AutometricsGeneratorC
 				switch {
 				case token == SloNameArgument:
 					if tokenIndex >= len(tokens)-1 {
-						return retval, fmt.Errorf("%v argument needs a value", SloNameArgument)
+						return fmt.Errorf("%v argument needs a value", SloNameArgument)
 					}
 					// Read the "value"
 					tokenIndex = tokenIndex + 1
 					value := tokens[tokenIndex]
 					if strings.HasPrefix(value, "--") {
-						return retval, fmt.Errorf("%v argument isn't allowed to start with '--'", SloNameArgument)
+						return fmt.Errorf("%v argument isn't allowed to start with '--'", SloNameArgument)
 					}
 
-					if retval.Ctx.AlertConf != nil {
-						retval.Ctx.AlertConf.ServiceName = value
+					if ctx.RuntimeCtx.AlertConf != nil {
+						ctx.RuntimeCtx.AlertConf.ServiceName = value
 					} else {
-						retval.Ctx.AlertConf = &autometrics.AlertConfiguration{
+						ctx.RuntimeCtx.AlertConf = &autometrics.AlertConfiguration{
 							ServiceName: value,
 							Latency:     nil,
 							Success:     nil,
@@ -393,23 +392,23 @@ func parseAutometricsFnContext(commentGroup []string) (ctx.AutometricsGeneratorC
 					tokenIndex = tokenIndex + 1
 				case token == SuccessObjArgument:
 					if tokenIndex >= len(tokens)-1 {
-						return retval, fmt.Errorf("%v argument needs a value", SuccessObjArgument)
+						return fmt.Errorf("%v argument needs a value", SuccessObjArgument)
 					}
 					// Read the "value"
 					tokenIndex = tokenIndex + 1
 					value, err := strconv.ParseFloat(tokens[tokenIndex], 64)
 					if err != nil {
-						return retval, fmt.Errorf("%v argument must be a float between 0 and 100: %w", SuccessObjArgument, err)
+						return fmt.Errorf("%v argument must be a float between 0 and 100: %w", SuccessObjArgument, err)
 					}
 
-					if retval.Ctx.AlertConf != nil {
-						if retval.Ctx.AlertConf.Success != nil {
-							retval.Ctx.AlertConf.Success.Objective = value
+					if ctx.RuntimeCtx.AlertConf != nil {
+						if ctx.RuntimeCtx.AlertConf.Success != nil {
+							ctx.RuntimeCtx.AlertConf.Success.Objective = value
 						} else {
-							retval.Ctx.AlertConf.Success = &autometrics.SuccessSlo{Objective: value}
+							ctx.RuntimeCtx.AlertConf.Success = &autometrics.SuccessSlo{Objective: value}
 						}
 					} else {
-						retval.Ctx.AlertConf = &autometrics.AlertConfiguration{
+						ctx.RuntimeCtx.AlertConf = &autometrics.AlertConfiguration{
 							ServiceName: "",
 							Latency:     nil,
 							Success:     &autometrics.SuccessSlo{Objective: value},
@@ -419,27 +418,27 @@ func parseAutometricsFnContext(commentGroup []string) (ctx.AutometricsGeneratorC
 					tokenIndex = tokenIndex + 1
 				case token == LatencyMsArgument:
 					if tokenIndex >= len(tokens)-1 {
-						return retval, fmt.Errorf("%v argument needs a value", LatencyMsArgument)
+						return fmt.Errorf("%v argument needs a value", LatencyMsArgument)
 					}
 					// Read the "value"
 					tokenIndex = tokenIndex + 1
 					value, err := strconv.ParseFloat(tokens[tokenIndex], 64)
 					if err != nil {
-						return retval, fmt.Errorf("%v argument must be a positive float", LatencyMsArgument)
+						return fmt.Errorf("%v argument must be a positive float", LatencyMsArgument)
 					}
 					timeValue := time.Duration(value * float64(time.Millisecond))
 
-					if retval.Ctx.AlertConf != nil {
-						if retval.Ctx.AlertConf.Latency != nil {
-							retval.Ctx.AlertConf.Latency.Target = timeValue
+					if ctx.RuntimeCtx.AlertConf != nil {
+						if ctx.RuntimeCtx.AlertConf.Latency != nil {
+							ctx.RuntimeCtx.AlertConf.Latency.Target = timeValue
 						} else {
-							retval.Ctx.AlertConf.Latency = &autometrics.LatencySlo{
+							ctx.RuntimeCtx.AlertConf.Latency = &autometrics.LatencySlo{
 								Target:    timeValue,
 								Objective: 0,
 							}
 						}
 					} else {
-						retval.Ctx.AlertConf = &autometrics.AlertConfiguration{
+						ctx.RuntimeCtx.AlertConf = &autometrics.AlertConfiguration{
 							ServiceName: "",
 							Latency: &autometrics.LatencySlo{
 								Target:    timeValue,
@@ -452,26 +451,26 @@ func parseAutometricsFnContext(commentGroup []string) (ctx.AutometricsGeneratorC
 					tokenIndex = tokenIndex + 1
 				case token == LatencyObjArgument:
 					if tokenIndex >= len(tokens)-1 {
-						return retval, fmt.Errorf("%v argument needs a value", LatencyObjArgument)
+						return fmt.Errorf("%v argument needs a value", LatencyObjArgument)
 					}
 					// Read the "value"
 					tokenIndex = tokenIndex + 1
 					value, err := strconv.ParseFloat(tokens[tokenIndex], 64)
 					if err != nil {
-						return retval, fmt.Errorf("%v argument must be a float between 0 and 1", LatencyObjArgument)
+						return fmt.Errorf("%v argument must be a float between 0 and 1", LatencyObjArgument)
 					}
 
-					if retval.Ctx.AlertConf != nil {
-						if retval.Ctx.AlertConf.Latency != nil {
-							retval.Ctx.AlertConf.Latency.Objective = value
+					if ctx.RuntimeCtx.AlertConf != nil {
+						if ctx.RuntimeCtx.AlertConf.Latency != nil {
+							ctx.RuntimeCtx.AlertConf.Latency.Objective = value
 						} else {
-							retval.Ctx.AlertConf.Latency = &autometrics.LatencySlo{
+							ctx.RuntimeCtx.AlertConf.Latency = &autometrics.LatencySlo{
 								Target:    0,
 								Objective: value,
 							}
 						}
 					} else {
-						retval.Ctx.AlertConf = &autometrics.AlertConfiguration{
+						ctx.RuntimeCtx.AlertConf = &autometrics.AlertConfiguration{
 							ServiceName: "",
 							Latency: &autometrics.LatencySlo{
 								Target:    0,
@@ -487,19 +486,18 @@ func parseAutometricsFnContext(commentGroup []string) (ctx.AutometricsGeneratorC
 					tokenIndex = tokenIndex + 1
 				}
 			}
-			err = retval.Ctx.Validate()
+			err = ctx.RuntimeCtx.Validate(ctx.AllowCustomLatencies)
 			if err != nil {
-				return retval, fmt.Errorf("parsed configuration is invalid: %w", err)
+				return fmt.Errorf("parsed configuration is invalid: %w", err)
 			}
 
-			return retval, nil
+			return nil
 		}
 	}
 
-	return ctx.AutometricsGeneratorContext{
-		CommentIndex: -1,
-		Ctx:          autometrics.NewContext(),
-	}, nil
+	ctx.FuncCtx.CommentIndex = -1
+	ctx.RuntimeCtx = autometrics.NewContext()
+	return nil
 }
 
 // autometricsDocStartDirectives return the list of indices in the array where line is a comment start directive.
@@ -526,19 +524,27 @@ func autometricsDocEndDirectives(commentGroup []string) []int {
 	return lines
 }
 
-func generateAutometricsComment(generatorCtx ctx.AutometricsGeneratorContext, funcName, moduleName string, generator doc.AutometricsLinkCommentGenerator) []string {
-	var ret []string
-	ret = append(ret, "//")
-	ret = append(ret, "//   autometrics:doc-start DO NOT EDIT HERE AND LINE ABOVE")
-	ret = append(ret, "//")
-	ret = append(ret, "// # Autometrics")
-	ret = append(ret, "//")
-	ret = append(ret, generator.GenerateAutometricsComment(generatorCtx, funcName, moduleName)...)
-	ret = append(ret, "//")
-	ret = append(ret, "//   autometrics:doc-end DO NOT EDIT HERE AND LINE BELOW")
-	ret = append(ret, "//")
+func generateAutometricsComment(ctx internal.GeneratorContext) (commentLines []string) {
+	if ctx.DocumentationGenerator == nil {
+		return
+	}
 
-	return ret
+	l := ctx.DocumentationGenerator.GenerateAutometricsComment(
+		ctx,
+		ctx.FuncCtx.FunctionName,
+		ctx.FuncCtx.ModuleName,
+	)
+	commentLines = append(commentLines, "//")
+	commentLines = append(commentLines, "//   autometrics:doc-start DO NOT EDIT HERE AND LINE ABOVE")
+	commentLines = append(commentLines, "//")
+	commentLines = append(commentLines, "// # Autometrics")
+	commentLines = append(commentLines, "//")
+	commentLines = append(commentLines, l...)
+	commentLines = append(commentLines, "//")
+	commentLines = append(commentLines, "//   autometrics:doc-end DO NOT EDIT HERE AND LINE BELOW")
+	commentLines = append(commentLines, "//")
+
+	return
 }
 
 func insertComments(inputArray []string, index int, values []string) []string {

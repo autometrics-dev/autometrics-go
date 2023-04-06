@@ -7,9 +7,15 @@ import (
 	"time"
 )
 
+// Those are variables because we cannot have const of this type.
+// These variables are not meant to be modified.
 var (
 	DefBuckets    = []float64{.005, .0075, .01, .025, .05, .075, .1, .25, .5, .75, 1, 2.5, 5, 7.5, 10}
 	DefObjectives = []float64{90, 95, 99, 99.9}
+)
+
+const (
+	AllowCustomLatenciesFlag = "-custom-latency"
 )
 
 // Implementation is an enumeration type for the
@@ -68,7 +74,7 @@ func NewContext() Context {
 	}
 }
 
-func (c Context) Validate() error {
+func (c Context) Validate(allowCustomLatencies bool) error {
 	if c.AlertConf != nil {
 		if c.AlertConf.ServiceName == "" {
 			return fmt.Errorf("Cannot have an AlertConfiguration without a service name")
@@ -106,8 +112,8 @@ func (c Context) Validate() error {
 			if c.AlertConf.Latency.Target <= 0 {
 				return fmt.Errorf("Cannot have a target latency SLO threshold that is negative (responses expected before the query)")
 			}
-			if !contains(DefBuckets, c.AlertConf.Latency.Target.Seconds()) {
-				return fmt.Errorf("Cannot have a target latency SLO threshold that does not match a bucket (valid threshold in seconds are %v)", DefBuckets)
+			if !allowCustomLatencies && !contains(DefBuckets, c.AlertConf.Latency.Target.Seconds()) {
+				return fmt.Errorf("Cannot have a target latency SLO threshold that does not match a bucket (valid threshold in seconds are %v). If you set custom latencies in your Init call, then you can add the %v flag to the //go:generate invocation to remove this error", DefBuckets, AllowCustomLatenciesFlag)
 			}
 		}
 	}

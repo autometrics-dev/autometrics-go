@@ -11,10 +11,11 @@ import (
 	"github.com/dave/dst/decorator"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/autometrics-dev/autometrics-go/internal/ctx"
-	"github.com/autometrics-dev/autometrics-go/internal/doc"
+	internal "github.com/autometrics-dev/autometrics-go/internal/autometrics"
 	"github.com/autometrics-dev/autometrics-go/pkg/autometrics"
 )
+
+const DefaultPrometheusInstanceUrl = "http://localhost:9090/"
 
 func TestCommentDirective(t *testing.T) {
 	sourceCode := `// This is the package comment.
@@ -79,7 +80,12 @@ func main() {
 		"	fmt.Println(hello) // line comment 3\n" +
 		"}\n"
 
-	actual, err := GenerateDocumentationAndInstrumentation(sourceCode, "main", doc.NewPrometheusDoc(doc.DefaultPrometheusInstanceUrl), autometrics.PROMETHEUS)
+	ctx, err := internal.NewGeneratorContext(autometrics.PROMETHEUS, DefaultPrometheusInstanceUrl, false)
+	if err != nil {
+		t.Fatalf("error creating the generation context: %s", err)
+	}
+
+	actual, err := GenerateDocumentationAndInstrumentation(ctx, sourceCode, "main")
 	if err != nil {
 		t.Fatalf("error generating the documentation: %s", err)
 	}
@@ -159,7 +165,12 @@ func main() {
 		"	fmt.Println(hello) // line comment 3\n" +
 		"}\n"
 
-	actual, err := GenerateDocumentationAndInstrumentation(sourceCode, "main", doc.NewPrometheusDoc(doc.DefaultPrometheusInstanceUrl), autometrics.PROMETHEUS)
+	ctx, err := internal.NewGeneratorContext(autometrics.PROMETHEUS, DefaultPrometheusInstanceUrl, false)
+	if err != nil {
+		t.Fatalf("error creating the generation context: %s", err)
+	}
+
+	actual, err := GenerateDocumentationAndInstrumentation(ctx, sourceCode, "main")
 	if err != nil {
 		t.Fatalf("error generating the documentation: %s", err)
 	}
@@ -183,7 +194,12 @@ func main() {
 	fmt.Println(hello) // line comment 3
 }
 `
-	_, err := GenerateDocumentationAndInstrumentation(sourceCode, "main", doc.NewPrometheusDoc(doc.DefaultPrometheusInstanceUrl), autometrics.PROMETHEUS)
+	ctx, err := internal.NewGeneratorContext(autometrics.PROMETHEUS, DefaultPrometheusInstanceUrl, false)
+	if err != nil {
+		t.Fatalf("error creating the generation context: %s", err)
+	}
+
+	_, err = GenerateDocumentationAndInstrumentation(ctx, sourceCode, "main")
 	assert.Error(t, err, "Calling generation must fail if the target success rate is unrealistic.")
 
 	sourceCode = `// This is the package comment.
@@ -201,7 +217,12 @@ func main() {
 	fmt.Println(hello) // line comment 3
 }
 `
-	_, err = GenerateDocumentationAndInstrumentation(sourceCode, "main", doc.NewPrometheusDoc(doc.DefaultPrometheusInstanceUrl), autometrics.PROMETHEUS)
+	ctx, err = internal.NewGeneratorContext(autometrics.PROMETHEUS, DefaultPrometheusInstanceUrl, false)
+	if err != nil {
+		t.Fatalf("error creating the generation context: %s", err)
+	}
+
+	_, err = GenerateDocumentationAndInstrumentation(ctx, sourceCode, "main")
 	assert.Error(t, err, "Calling generation must fail if the target success rate is unrealistic.")
 
 	sourceCode = `// This is the package comment.
@@ -219,7 +240,12 @@ func main() {
 	fmt.Println(hello) // line comment 3
 }
 `
-	_, err = GenerateDocumentationAndInstrumentation(sourceCode, "main", doc.NewPrometheusDoc(doc.DefaultPrometheusInstanceUrl), autometrics.PROMETHEUS)
+	ctx, err = internal.NewGeneratorContext(autometrics.PROMETHEUS, DefaultPrometheusInstanceUrl, false)
+	if err != nil {
+		t.Fatalf("error creating the generation context: %s", err)
+	}
+
+	_, err = GenerateDocumentationAndInstrumentation(ctx, sourceCode, "main")
 	assert.Error(t, err, "Calling generation must fail if no service name is given.")
 
 	sourceCode = `// This is the package comment.
@@ -237,7 +263,12 @@ func main() {
 	fmt.Println(hello) // line comment 3
 }
 `
-	_, err = GenerateDocumentationAndInstrumentation(sourceCode, "main", doc.NewPrometheusDoc(doc.DefaultPrometheusInstanceUrl), autometrics.PROMETHEUS)
+	ctx, err = internal.NewGeneratorContext(autometrics.PROMETHEUS, DefaultPrometheusInstanceUrl, false)
+	if err != nil {
+		t.Fatalf("error creating the generation context: %s", err)
+	}
+
+	_, err = GenerateDocumentationAndInstrumentation(ctx, sourceCode, "main")
 	assert.Error(t, err, "Calling generation must fail if no service name is given.")
 
 	sourceCode = `// This is the package comment.
@@ -255,7 +286,12 @@ func main() {
 	fmt.Println(hello) // line comment 3
 }
 `
-	_, err = GenerateDocumentationAndInstrumentation(sourceCode, "main", doc.NewPrometheusDoc(doc.DefaultPrometheusInstanceUrl), autometrics.PROMETHEUS)
+	ctx, err = internal.NewGeneratorContext(autometrics.PROMETHEUS, DefaultPrometheusInstanceUrl, false)
+	if err != nil {
+		t.Fatalf("error creating the generation context: %s", err)
+	}
+
+	_, err = GenerateDocumentationAndInstrumentation(ctx, sourceCode, "main")
 	assert.Error(t, err, "Calling generation must fail if latency-target is given without latency-ms.")
 
 	sourceCode = `// This is the package comment.
@@ -273,7 +309,12 @@ func main() {
 	fmt.Println(hello) // line comment 3
 }
 `
-	_, err = GenerateDocumentationAndInstrumentation(sourceCode, "main", doc.NewPrometheusDoc(doc.DefaultPrometheusInstanceUrl), autometrics.PROMETHEUS)
+	ctx, err = internal.NewGeneratorContext(autometrics.PROMETHEUS, DefaultPrometheusInstanceUrl, false)
+	if err != nil {
+		t.Fatalf("error creating the generation context: %s", err)
+	}
+
+	_, err = GenerateDocumentationAndInstrumentation(ctx, sourceCode, "main")
 	assert.Error(t, err, "Calling generation must fail if latency-target is given without latency-ms.")
 
 	sourceCode = `// This is the package comment.
@@ -291,7 +332,12 @@ func main() {
 	fmt.Println(hello) // line comment 3
 }
 `
-	_, err = GenerateDocumentationAndInstrumentation(sourceCode, "main", doc.NewPrometheusDoc(doc.DefaultPrometheusInstanceUrl), autometrics.PROMETHEUS)
+	ctx, err = internal.NewGeneratorContext(autometrics.PROMETHEUS, DefaultPrometheusInstanceUrl, false)
+	if err != nil {
+		t.Fatalf("error creating the generation context: %s", err)
+	}
+
+	_, err = GenerateDocumentationAndInstrumentation(ctx, sourceCode, "main")
 	assert.Error(t, err, "Calling generation must fail if latency expectations are unrealistic.")
 
 	sourceCode = `// This is the package comment.
@@ -309,7 +355,12 @@ func main() {
 	fmt.Println(hello) // line comment 3
 }
 `
-	_, err = GenerateDocumentationAndInstrumentation(sourceCode, "main", doc.NewPrometheusDoc(doc.DefaultPrometheusInstanceUrl), autometrics.PROMETHEUS)
+	ctx, err = internal.NewGeneratorContext(autometrics.PROMETHEUS, DefaultPrometheusInstanceUrl, false)
+	if err != nil {
+		t.Fatalf("error creating the generation context: %s", err)
+	}
+
+	_, err = GenerateDocumentationAndInstrumentation(ctx, sourceCode, "main")
 	assert.Error(t, err, "Calling generation must fail if latency expectations are unrealistic.")
 
 	sourceCode = `// This is the package comment.
@@ -327,7 +378,12 @@ func main() {
 	fmt.Println(hello) // line comment 3
 }
 `
-	_, err = GenerateDocumentationAndInstrumentation(sourceCode, "main", doc.NewPrometheusDoc(doc.DefaultPrometheusInstanceUrl), autometrics.PROMETHEUS)
+	ctx, err = internal.NewGeneratorContext(autometrics.PROMETHEUS, DefaultPrometheusInstanceUrl, false)
+	if err != nil {
+		t.Fatalf("error creating the generation context: %s", err)
+	}
+
+	_, err = GenerateDocumentationAndInstrumentation(ctx, sourceCode, "main")
 	assert.Error(t, err, "Calling generation must fail if latency expectations are unrealistic.")
 }
 
@@ -565,10 +621,12 @@ func main() (cannotGetLuckyCollision, otherError error) {
 }
 
 func implementContextCodeGenTest(t *testing.T, contextToSerialize autometrics.Context, expected string) {
-	sourceContext := ctx.AutometricsGeneratorContext{
-		Ctx:          contextToSerialize,
-		CommentIndex: -1,
-		ImportName: "autometrics",
+	sourceContext := internal.GeneratorContext{
+		RuntimeCtx: contextToSerialize,
+		FuncCtx: internal.GeneratorFunctionContext{
+			CommentIndex: -1,
+			ImportName:   "autometrics",
+		},
 	}
 
 	node, err := buildAutometricsContextNode(sourceContext)

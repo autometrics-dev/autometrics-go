@@ -1,14 +1,24 @@
-package doc
+package autometrics // import "github.com/autometrics-dev/autometrics-go/internal/autometrics"
 
 import (
 	"fmt"
 	"net/url"
 
-	"github.com/autometrics-dev/autometrics-go/internal/ctx"
 	"github.com/autometrics-dev/autometrics-go/pkg/autometrics/prometheus"
 )
 
-const DefaultPrometheusInstanceUrl = "http://localhost:9090/"
+
+type AutometricsLinkCommentGenerator interface {
+	GenerateAutometricsComment(ctx GeneratorContext, funcName, moduleName string) []string
+	// Generated Links returns the list of text from links created by
+	// GenerateAutometricsComment.
+	//
+	// As gofmt will move the links outside the fences for Autometrics
+	// documentation, we add a helper to track the links to delete/recreate
+	// in the links section when calling the generator multiple times.
+	GeneratedLinks() []string
+}
+
 
 type Prometheus struct {
 	instanceUrl url.URL
@@ -17,11 +27,10 @@ type Prometheus struct {
 // NewPrometheusDoc builds a documentation comment generator that creates Prometheus links.
 //
 // The document generator implements the AutometricsLinkCommentGenerator interface.
-func NewPrometheusDoc(instanceUrl string) Prometheus {
+func NewPrometheusDoc(instanceUrl url.URL) Prometheus {
 	// No way to have a url.URL constant, so we reparse it here
 
-	prometheusInstanceUrl, _ := url.Parse(instanceUrl)
-	return Prometheus{instanceUrl: *prometheusInstanceUrl}
+	return Prometheus{instanceUrl: instanceUrl}
 }
 
 func (p Prometheus) makePrometheusUrl(query, comment string) url.URL {
@@ -57,7 +66,7 @@ func concurrentCallsQuery(gaugeName, labelKey, labelValue string) string {
 	return fmt.Sprintf("sum by (function, module) %s{%s=\"%s\"}", gaugeName, labelKey, labelValue)
 }
 
-func (p Prometheus) GenerateAutometricsComment(ctx ctx.AutometricsGeneratorContext, funcName, moduleName string) []string {
+func (p Prometheus) GenerateAutometricsComment(ctx GeneratorContext, funcName, moduleName string) []string {
 	requestRateUrl := p.makePrometheusUrl(
 		requestRateQuery(prometheus.FunctionCallsCountName, "function", funcName), fmt.Sprintf("Rate of calls to the `%s` function per second, averaged over 5 minute windows", funcName))
 	calleeRequestRateUrl := p.makePrometheusUrl(
@@ -80,7 +89,7 @@ func (p Prometheus) GenerateAutometricsComment(ctx ctx.AutometricsGeneratorConte
 		"//   - [Error Ratio]",
 		"//   - [Latency (95th and 99th percentiles)]",
 	}
-	if ctx.Ctx.TrackConcurrentCalls {
+	if ctx.RuntimeCtx.TrackConcurrentCalls {
 		retval = append(retval,
 			"//   - [Concurrent Calls]",
 		)
@@ -99,7 +108,7 @@ func (p Prometheus) GenerateAutometricsComment(ctx ctx.AutometricsGeneratorConte
 		fmt.Sprintf("// [Latency (95th and 99th percentiles)]: %s", latencyUrl.String()),
 	)
 
-	if ctx.Ctx.TrackConcurrentCalls {
+	if ctx.RuntimeCtx.TrackConcurrentCalls {
 		retval = append(retval,
 			fmt.Sprintf("// [Concurrent Calls]: %s", concurrentCallsUrl.String()),
 		)

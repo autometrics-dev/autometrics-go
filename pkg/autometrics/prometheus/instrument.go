@@ -22,16 +22,19 @@ func Instrument(ctx *autometrics.Context, err *error) {
 	}
 
 	var callerLabel, sloName, latencyTarget, latencyObjective, successObjective string
+
 	if ctx.TrackCallerName {
 		callerLabel = fmt.Sprintf("%s.%s", ctx.CallInfo.ParentModuleName, ctx.CallInfo.ParentFuncName)
 	}
 
 	if ctx.AlertConf != nil {
 		sloName = ctx.AlertConf.ServiceName
+
 		if ctx.AlertConf.Latency != nil {
 			latencyTarget = strconv.FormatFloat(ctx.AlertConf.Latency.Target.Seconds(), 'f', -1, 64)
 			latencyObjective = strconv.FormatFloat(ctx.AlertConf.Latency.Objective, 'f', -1, 64)
 		}
+
 		if ctx.AlertConf.Success != nil {
 			successObjective = strconv.FormatFloat(ctx.AlertConf.Success.Objective, 'f', -1, 64)
 		}
@@ -53,6 +56,7 @@ func Instrument(ctx *autometrics.Context, err *error) {
 		TargetSuccessRateLabel: latencyObjective,
 		SloNameLabel:           sloName,
 	}).Observe(time.Since(ctx.StartTime).Seconds())
+
 	if ctx.TrackConcurrentCalls {
 		FunctionCallsConcurrent.With(prometheus.Labels{
 			FunctionLabel: ctx.CallInfo.FuncName,
