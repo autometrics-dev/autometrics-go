@@ -1,7 +1,6 @@
 package prometheus // import "github.com/autometrics-dev/autometrics-go/pkg/autometrics/prometheus"
 
 import (
-	"github.com/autometrics-dev/autometrics-go/pkg/autometrics"
 	"github.com/prometheus/client_golang/prometheus"
 )
 
@@ -9,7 +8,6 @@ var (
 	functionCallsCount      *prometheus.CounterVec
 	functionCallsDuration   *prometheus.HistogramVec
 	functionCallsConcurrent *prometheus.GaugeVec
-	DefBuckets              = autometrics.DefBuckets
 )
 
 const (
