@@ -40,7 +40,7 @@ func Instrument(ctx *autometrics.Context, err *error) {
 		}
 	}
 
-	FunctionCallsCount.With(prometheus.Labels{
+	functionCallsCount.With(prometheus.Labels{
 		FunctionLabel:          ctx.CallInfo.FuncName,
 		ModuleLabel:            ctx.CallInfo.ModuleName,
 		CallerLabel:            callerLabel,
@@ -48,7 +48,7 @@ func Instrument(ctx *autometrics.Context, err *error) {
 		TargetSuccessRateLabel: successObjective,
 		SloNameLabel:           sloName,
 	}).Inc()
-	FunctionCallsDuration.With(prometheus.Labels{
+	functionCallsDuration.With(prometheus.Labels{
 		FunctionLabel:          ctx.CallInfo.FuncName,
 		ModuleLabel:            ctx.CallInfo.ModuleName,
 		CallerLabel:            callerLabel,
@@ -58,7 +58,7 @@ func Instrument(ctx *autometrics.Context, err *error) {
 	}).Observe(time.Since(ctx.StartTime).Seconds())
 
 	if ctx.TrackConcurrentCalls {
-		FunctionCallsConcurrent.With(prometheus.Labels{
+		functionCallsConcurrent.With(prometheus.Labels{
 			FunctionLabel: ctx.CallInfo.FuncName,
 			ModuleLabel:   ctx.CallInfo.ModuleName,
 			CallerLabel:   callerLabel,
@@ -79,7 +79,7 @@ func PreInstrument(ctx *autometrics.Context) *autometrics.Context {
 	}
 
 	if ctx.TrackConcurrentCalls {
-		FunctionCallsConcurrent.With(prometheus.Labels{
+		functionCallsConcurrent.With(prometheus.Labels{
 			FunctionLabel: ctx.CallInfo.FuncName,
 			ModuleLabel:   ctx.CallInfo.ModuleName,
 			CallerLabel:   callerLabel,

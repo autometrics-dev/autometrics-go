@@ -7,7 +7,16 @@ import (
 
 // TODO: Use the interface in the API
 type Instrumentor interface {
+	// Instrument called in a defer statement wraps the body of a function
+	// with automatic instrumentation.
+	//
+	// The first argument SHOULD be a call to PreInstrument so that
+	// the "concurrent calls" gauge is correctly setup.
 	Instrument(ctx *Context, err *error)
+	// PreInstrument runs the "before wrappee" part of instrumentation.
+	//
+	// It is meant to be called as the first argument to Instrument in a
+	// defer call.
 	PreInstrument(ctx *Context) *Context
 }
 

@@ -78,6 +78,12 @@ value you return for function you want to instrument.
 
 ### Generate the documentation and instrumentation code
 
+Install the go generator using `go install` as usual:
+
+``` console
+go install https://github.com/autometrics-dev/autometrics-go/cmd/autometrics
+```
+
 Once you've done this, the `autometrics` generator takes care of the rest, and you can
 simply call `go generate` with an optional environment variable:
 

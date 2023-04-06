@@ -41,7 +41,7 @@ func Instrument(ctx *autometrics.Context, err *error) {
 		}
 	}
 
-	FunctionCallsCount.Add(ctx.Context, 1,
+	functionCallsCount.Add(ctx.Context, 1,
 		[]attribute.KeyValue{
 			attribute.Key(FunctionLabel).String(ctx.CallInfo.FuncName),
 			attribute.Key(ModuleLabel).String(ctx.CallInfo.ModuleName),
@@ -50,7 +50,7 @@ func Instrument(ctx *autometrics.Context, err *error) {
 			attribute.Key(TargetSuccessRateLabel).String(successObjective),
 			attribute.Key(SloNameLabel).String(sloName),
 		}...)
-	FunctionCallsDuration.Record(ctx.Context, time.Since(ctx.StartTime).Seconds(),
+	functionCallsDuration.Record(ctx.Context, time.Since(ctx.StartTime).Seconds(),
 		[]attribute.KeyValue{
 			attribute.Key(FunctionLabel).String(ctx.CallInfo.FuncName),
 			attribute.Key(ModuleLabel).String(ctx.CallInfo.ModuleName),
@@ -61,7 +61,7 @@ func Instrument(ctx *autometrics.Context, err *error) {
 		}...)
 
 	if ctx.TrackConcurrentCalls {
-		FunctionCallsConcurrent.Add(ctx.Context, -1,
+		functionCallsConcurrent.Add(ctx.Context, -1,
 			[]attribute.KeyValue{
 				attribute.Key(FunctionLabel).String(ctx.CallInfo.FuncName),
 				attribute.Key(ModuleLabel).String(ctx.CallInfo.ModuleName),
@@ -84,7 +84,7 @@ func PreInstrument(ctx *autometrics.Context) *autometrics.Context {
 	}
 
 	if ctx.TrackConcurrentCalls {
-		FunctionCallsConcurrent.Add(ctx.Context, 1,
+		functionCallsConcurrent.Add(ctx.Context, 1,
 			[]attribute.KeyValue{
 				attribute.Key(FunctionLabel).String(ctx.CallInfo.FuncName),
 				attribute.Key(ModuleLabel).String(ctx.CallInfo.ModuleName),

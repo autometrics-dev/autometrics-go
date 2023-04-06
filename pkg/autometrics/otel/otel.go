@@ -11,22 +11,47 @@ import (
 )
 
 var (
-	FunctionCallsCount      instrument.Int64UpDownCounter
-	FunctionCallsDuration   instrument.Float64Histogram
-	FunctionCallsConcurrent instrument.Int64UpDownCounter
+	functionCallsCount      instrument.Int64UpDownCounter
+	functionCallsDuration   instrument.Float64Histogram
+	functionCallsConcurrent instrument.Int64UpDownCounter
 )
 
 const (
+	// FunctionCallsCountName is the name of the openTelemetry metric for the counter of calls to specific functions.
 	FunctionCallsCountName          = "function.calls.count"
+	// FunctionCallsDurationName is the name of the openTelemetry metric for the duration histogram of calls to specific functions.
 	FunctionCallsDurationName       = "function.calls.duration"
+	// FunctionCallsConcurrentName is the name of the openTelemetry metric for the number of simulateneously active calls to specific functions.
 	FunctionCallsConcurrentName     = "function.calls.concurrent"
 
+	// FunctionLabel is the openTelemetry attribute that describes the function name.
+	//
+	// It is guaranteed that a (FunctionLabel, ModuleLabel) value pair is unique
+	// and matches at most one function in the source code
 	FunctionLabel          = "function"
+	// ModuleLabel is the openTelemetry attribute that describes the module name that contains the function.
+	//
+	// It is guaranteed that a (FunctionLabel, ModuleLabel) value pair is unique
+	// and matches at most one function in the source code
 	ModuleLabel            = "module"
+	// CallerLabel is the openTelemetry attribute that describes the name of the function that called
+	// the current function.
 	CallerLabel            = "caller"
+	// ResultLabel is the openTelemetry attribute that describes whether a function call is successful.
 	ResultLabel            = "result"
+	// TargetLatencyLabel is the openTelemetry attribute that describes the latency to respect to match
+	// the Service Level Objective.
 	TargetLatencyLabel     = "objective.latency_threshold"
+	// TargetSuccessRateLabel is the openTelemetry attribute that describes the percentage of calls that
+	// must succeed to match the Service Level Objective.
+	//
+	// In the case of latency objectives, it describes the percentage of
+	// calls that must last less than the value in [TargetLatencyLabel].
+	//
+	// In the case of success objectives, it describes the percentage of calls
+	// that must be successful (i.e. have their [ResultLabel] be 'ok').
 	TargetSuccessRateLabel = "objective.percentile"
+	// SloLabelName is the openTelemetry attribute that describes the name of the Service Level Objective.
 	SloNameLabel           = "objective.name"
 )
 
@@ -70,17 +95,17 @@ func Init(meterName string, histogramBuckets []float64) error {
 	// there is no way to remove the '_total' suffix from the exported metric name. This suffix
 	// makes the exported metrics incompatible with the autometrics.rules.yml file.
 	// Ref: https://github.com/open-telemetry/opentelemetry-go/blob/6b7e207953ce0a13d38da628a6aa48ad56058d2a/exporters/prometheus/exporter.go#L212-L215
-	FunctionCallsCount, err = meter.Int64UpDownCounter(FunctionCallsCountName, instrument.WithDescription("The number of times the function has been called"))
+	functionCallsCount, err = meter.Int64UpDownCounter(FunctionCallsCountName, instrument.WithDescription("The number of times the function has been called"))
 	if err != nil {
 		return fmt.Errorf("error initializing %v metric: %w", FunctionCallsCountName, err)
 	}
 
-	FunctionCallsDuration, err = meter.Float64Histogram(FunctionCallsDurationName, instrument.WithDescription("The duration of each function call, in seconds"))
+	functionCallsDuration, err = meter.Float64Histogram(FunctionCallsDurationName, instrument.WithDescription("The duration of each function call, in seconds"))
 	if err != nil {
 		return fmt.Errorf("error initializing %v metric: %w", FunctionCallsDurationName, err)
 	}
 
-	FunctionCallsConcurrent, err = meter.Int64UpDownCounter(FunctionCallsConcurrentName, instrument.WithDescription("The number of simultaneous calls of the function"))
+	functionCallsConcurrent, err = meter.Int64UpDownCounter(FunctionCallsConcurrentName, instrument.WithDescription("The number of simultaneous calls of the function"))
 	if err != nil {
 		return fmt.Errorf("error initializing %v metric: %w", FunctionCallsConcurrentName, err)
 	}
