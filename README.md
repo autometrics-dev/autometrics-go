@@ -36,10 +36,18 @@ And then in your main function initialize the metrics
 ``` go
 amImpl.Init(nil, autometrics.DefBuckets)
 ```
-**_Warning_**: if you want to enable alerting from Autometrics, you **MUST NOT**
-change the `autometrics.DefBuckets` argument. This is because alerting only uses
-the bundled [Alerting rules file](./configs/autometrics.rules.yml).
-Support for custom rule generation is planned but not present at the moment.
+
+**_Warning_**: if you want to enable alerting from Autometrics, you **MUST**
+have the `--latency-ms` values to match the values given in your buckets. The
+values in the buckets are given in _seconds_. By default, the generator will
+error and tell you the valid default values if they don't match.
+If the default values do not match you use case, you can change the buckets in
+the init call, and add a `-custom-latency` argument to the `//go:generate` invocation.
+
+```patch
+-//go:generate autometrics
++//go:generate autometrics -custom-latency
+```
 
 ### Add cookies in your code
 
@@ -169,8 +177,18 @@ metric. You can use the name of the application or its version for example
 +//go:generate autometrics -otel
 ```
 
+## (OPTIONAL) Git hook
 
-### Implementation library import
+As autometrics is a Go generator that modifies the source code when run, it
+might be interesting to set up `go generate ./...` to run in a git pre-commit
+hook so that you never forget to run it if you change the source code.
+
+If you use a tool like [pre-commit](https://pre-commit.com/), see their
+documentation about how to add a hook that will run `go generate ./...`.
+
+Otherwise, a simple example has been added in the [configs folder](./configs/pre-commit)
+as an example. You can copy this file in your copy of your project's repository, within
+`.git/hooks` and make sure that the file is executable.
 
 ## Status
 
@@ -182,8 +200,10 @@ the current status
 The first version of the library has _not_ been written by Go experts. Any comment or
 code suggestion as Pull Request is more than welcome!
 
-### Metrics system
+### Support for custom alerting rules generation
 
-For the time being only Prometheus metrics are supported, but the code has been
-written with the possibility to have other systems, like OpenTelemetry,
-integrated in the same way.
+The alerting system for SLOs that Autometrics uses is based on
+[Sloth](https://github.com/slok/sloth), and it has native Go types for
+marshalling/unmarshalling rules, so it should be possible to provide an extra
+binary in this repository, that only takes care of generating a new [rules
+file](./configs/autometrics.rules.yml) with custom objectives.

@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+
+# This pre-commit hook runs "go generate over all .go files that are staged"
+
+STAGED_GO_FILES=$(git diff --cached --name-only -- '*.go')
+
+if [[ $STAGED_GO_FILES == "" ]]; then
+    echo "No Go Files to check"
+else
+    for file in $STAGED_GO_FILES; do
+        go generate $file
+        git add $file
+    done
+fi
