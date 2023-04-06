@@ -58,13 +58,6 @@ const (
 	SloNameLabel = "objective.name"
 )
 
-// Instrumentor is an empty struct that implements [autometrics.Instrumentation] interface.
-//
-// TODO: Use this instrumentor in the API.
-type Instrumentor struct{}
-
-// Compile time check that Instrumentor does all the necessary work
-// var _ autometrics.Instrumentation = Instrumentor{}
 
 func completeMeterName(meterName string) string {
 	return fmt.Sprintf("autometrics/%v", meterName)

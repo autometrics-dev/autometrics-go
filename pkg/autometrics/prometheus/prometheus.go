@@ -51,13 +51,6 @@ const (
 	SloNameLabel = "objective_name"
 )
 
-// Instrumentor is an empty struct that implements [autometrics.Instrumentor] interface.
-//
-// TODO: Use this instrumentor in the API.
-type Instrumentor struct{}
-
-// var _ autometrics.Instrumentation = Instrumentor{}
-
 // Init sets up the metrics required for autometrics' decorated functions and registers
 // them to the argument registry.
 //
