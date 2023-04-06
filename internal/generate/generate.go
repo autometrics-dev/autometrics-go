@@ -2,7 +2,6 @@ package generate
 
 import (
 	"fmt"
-	"go/token"
 	"os"
 	"strconv"
 	"strings"
@@ -25,7 +24,6 @@ const (
 	LatencyMsArgument  = "--latency-ms"
 	LatencyObjArgument = "--latency-target"
 
-	AmBasePackage = "\"github.com/autometrics-dev/autometrics-go/pkg/autometrics\""
 	AmPromPackage = "\"github.com/autometrics-dev/autometrics-go/pkg/autometrics/prometheus\""
 	AmOtelPackage = "\"github.com/autometrics-dev/autometrics-go/pkg/autometrics/otel\""
 )
@@ -80,14 +78,6 @@ func GenerateDocumentationAndInstrumentation(ctx internal.GeneratorContext, sour
 
 	fileWalk := func(n dst.Node) bool {
 		if importSpec, ok := n.(*dst.ImportSpec); ok {
-			if importSpec.Path.Value == AmBasePackage {
-				if importSpec.Name != nil {
-					ctx.FuncCtx.ImportName = importSpec.Name.Name
-				} else {
-					ctx.FuncCtx.ImportName = "autometrics"
-				}
-			}
-
 			if ctx.Implementation == autometrics.PROMETHEUS {
 				if importSpec.Path.Value == AmPromPackage {
 					if importSpec.Name != nil {
@@ -120,11 +110,6 @@ func GenerateDocumentationAndInstrumentation(ctx internal.GeneratorContext, sour
 				} else {
 					inspectErr = fmt.Errorf("unknown implementation of metrics has been queried.")
 				}
-				return false
-			}
-
-			if ctx.FuncCtx.ImportName == "" {
-				inspectErr = fmt.Errorf("the source file is missing a %v import", AmBasePackage)
 				return false
 			}
 
@@ -260,46 +245,59 @@ func GenerateDocumentationAndInstrumentation(ctx internal.GeneratorContext, sour
 	return buf.String(), nil
 }
 
-func buildAutometricsContextNode(agc internal.GeneratorContext) (*dst.CompositeLit, error) {
+func buildAutometricsContextNode(agc internal.GeneratorContext) (*dst.CallExpr, error) {
 	// Using https://github.com/dave/dst/issues/73 workaround
 
-	alertConf := "nil"
-	alertConfLatency := "nil"
-	alertConfSuccess := "nil"
+	var options []string
+
+	options = append(options,
+		fmt.Sprintf("%v.WithConcurrentCalls(%#v)", agc.FuncCtx.ImplImportName, agc.RuntimeCtx.TrackConcurrentCalls),
+		fmt.Sprintf("%v.WithCallerName(%#v)", agc.FuncCtx.ImplImportName, agc.RuntimeCtx.TrackCallerName),
+	)
 
 	if agc.RuntimeCtx.AlertConf != nil {
+		options = append(options, fmt.Sprintf("%v.WithSloName(%#v)",
+			agc.FuncCtx.ImplImportName,
+			agc.RuntimeCtx.AlertConf.ServiceName,
+		))
 		if agc.RuntimeCtx.AlertConf.Latency != nil {
-			alertConfLatency = fmt.Sprintf("&%v.LatencySlo{ Target: %#v * time.Nanosecond, Objective: %#v }",
-				agc.FuncCtx.ImportName,
+			options = append(options, fmt.Sprintf("%v.WithAlertLatency(%#v * time.Nanosecond, %#v)",
+				agc.FuncCtx.ImplImportName,
 				agc.RuntimeCtx.AlertConf.Latency.Target,
 				agc.RuntimeCtx.AlertConf.Latency.Objective,
-			)
+			))
 		}
 		if agc.RuntimeCtx.AlertConf.Success != nil {
-			alertConfSuccess = fmt.Sprintf("&%v.SuccessSlo{ Objective: %#v }",
-				agc.FuncCtx.ImportName,
-				agc.RuntimeCtx.AlertConf.Success.Objective)
+			options = append(options, fmt.Sprintf("%v.WithAlertSuccess(%#v)",
+				agc.FuncCtx.ImplImportName,
+				agc.RuntimeCtx.AlertConf.Success.Objective))
 		}
-
-		alertConf = fmt.Sprintf("&%v.AlertConfiguration{ ServiceName: %#v, Latency: %v, Success: %v }",
-			agc.FuncCtx.ImportName,
-			agc.RuntimeCtx.AlertConf.ServiceName,
-			alertConfLatency,
-			alertConfSuccess,
-		)
 	}
 
-	sourceCode := fmt.Sprintf(`
+	var buf strings.Builder
+	_, err := fmt.Fprintf(&buf, `
 package main
 
-var dummy = %v.Context {
-        TrackConcurrentCalls: %#v,
-        TrackCallerName: %#v,
-        AlertConf: %v,
-}
+var dummy = %v.NewContext(
 `,
-		agc.FuncCtx.ImportName,
-		agc.RuntimeCtx.TrackConcurrentCalls, agc.RuntimeCtx.TrackCallerName, alertConf)
+		agc.FuncCtx.ImplImportName)
+	if err != nil {
+		return nil, fmt.Errorf("could not write string builder to build dummy source code: %w", err)
+	}
+
+	for _, o := range options {
+		_, err = fmt.Fprintf(&buf, "\t%s,\n", o)
+		if err != nil {
+			return nil, fmt.Errorf("could not write string builder to build dummy source code: %w", err)
+		}
+	}
+
+	_, err = fmt.Fprint(&buf, ")\n")
+	if err != nil {
+		return nil, fmt.Errorf("could not write string builder to build dummy source code: %w", err)
+	}
+
+	sourceCode := buf.String()
 	sourceAst, err := decorator.Parse(sourceCode)
 	if err != nil {
 		return nil, fmt.Errorf("could not parse dummy code: %w", err)
@@ -315,12 +313,12 @@ var dummy = %v.Context {
 		return nil, fmt.Errorf("unexpected node in the dummy code (expected dst.ValueSpec): %w", err)
 	}
 
-	literal, ok := specNode.Values[0].(*dst.CompositeLit)
+	callExpr, ok := specNode.Values[0].(*dst.CallExpr)
 	if !ok {
-		return nil, fmt.Errorf("unexpected node in the dummy code (expected dst.CompositeLit): %w", err)
+		return nil, fmt.Errorf("unexpected node in the dummy code (expected dst.CallExpr): %w", err)
 	}
 
-	return literal, nil
+	return callExpr, nil
 }
 
 // buildAutometricsDeferStatement builds the AST for the defer statement to be inserted.
@@ -336,11 +334,7 @@ func buildAutometricsDeferStatement(ctx internal.GeneratorContext, secondVar str
 				&dst.CallExpr{
 					Fun: dst.NewIdent(fmt.Sprintf("%v.PreInstrument", ctx.FuncCtx.ImplImportName)),
 					Args: []dst.Expr{
-						&dst.UnaryExpr{
-							Op:   token.AND,
-							X:    preInstrumentArg,
-							Decs: dst.UnaryExprDecorations{},
-						},
+						preInstrumentArg,
 					},
 				},
 				dst.NewIdent(secondVar),

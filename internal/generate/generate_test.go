@@ -71,11 +71,12 @@ func main() {
 		"//\n" +
 		"//autometrics:doc --slo \"Service Test\" --success-target 99\n" +
 		"func main() {\n" +
-		"\tdefer prom.Instrument(prom.PreInstrument(&autometrics.Context{\n" +
-		"\t\tTrackConcurrentCalls: true,\n" +
-		"\t\tTrackCallerName:      true,\n" +
-		"\t\tAlertConf:            &autometrics.AlertConfiguration{ServiceName: \"Service Test\", Latency: nil, Success: &autometrics.SuccessSlo{Objective: 99}},\n" +
-		"\t}), nil) //autometrics:defer\n" +
+		"\tdefer prom.Instrument(prom.PreInstrument(prom.NewContext(\n" +
+		"\t\tprom.WithConcurrentCalls(true),\n" +
+		"\t\tprom.WithCallerName(true),\n" +
+		"\t\tprom.WithSloName(\"Service Test\"),\n" +
+		"\t\tprom.WithAlertSuccess(99),\n" +
+		"\t)), nil) //autometrics:defer\n" +
 		"\n" +
 		"	fmt.Println(hello) // line comment 3\n" +
 		"}\n"
@@ -156,11 +157,12 @@ func main() {
 		"//\n" +
 		"//autometrics:doc --slo \"API\" --latency-target 99.9 --latency-ms 500\n" +
 		"func main() {\n" +
-		"\tdefer prom.Instrument(prom.PreInstrument(&autometrics.Context{\n" +
-		"\t\tTrackConcurrentCalls: true,\n" +
-		"\t\tTrackCallerName:      true,\n" +
-		"\t\tAlertConf:            &autometrics.AlertConfiguration{ServiceName: \"API\", Latency: &autometrics.LatencySlo{Target: 500000000 * time.Nanosecond, Objective: 99.9}, Success: nil},\n" +
-		"\t}), nil) //autometrics:defer\n" +
+		"\tdefer prom.Instrument(prom.PreInstrument(prom.NewContext(\n" +
+		"\t\tprom.WithConcurrentCalls(true),\n" +
+		"\t\tprom.WithCallerName(true),\n" +
+		"\t\tprom.WithSloName(\"API\"),\n" +
+		"\t\tprom.WithAlertLatency(500000000*time.Nanosecond, 99.9),\n" +
+		"\t)), nil) //autometrics:defer\n" +
 		"\n" +
 		"	fmt.Println(hello) // line comment 3\n" +
 		"}\n"
@@ -625,7 +627,7 @@ func implementContextCodeGenTest(t *testing.T, contextToSerialize autometrics.Co
 		RuntimeCtx: contextToSerialize,
 		FuncCtx: internal.GeneratorFunctionContext{
 			CommentIndex: -1,
-			ImportName:   "autometrics",
+			ImplImportName:   "autometrics",
 		},
 	}
 
@@ -675,11 +677,10 @@ var dummy2 = %v
 func TestNewContextCodeGen(t *testing.T) {
 	implementContextCodeGenTest(t,
 		autometrics.NewContext(),
-		`autometrics.Context{
-	TrackConcurrentCalls: true,
-	TrackCallerName:      true,
-	AlertConf:            nil,
-}`,
+		`autometrics.NewContext(
+	autometrics.WithConcurrentCalls(true),
+	autometrics.WithCallerName(true),
+)`,
 	)
 }
 
@@ -689,11 +690,10 @@ func TestNoTrackContextCodeGen(t *testing.T) {
 	ctx.TrackConcurrentCalls = false
 	implementContextCodeGenTest(t,
 		ctx,
-		`autometrics.Context{
-	TrackConcurrentCalls: false,
-	TrackCallerName:      false,
-	AlertConf:            nil,
-}`,
+		`autometrics.NewContext(
+	autometrics.WithConcurrentCalls(false),
+	autometrics.WithCallerName(false),
+)`,
 	)
 }
 
@@ -710,11 +710,12 @@ func TestLatencyContextCodeGen(t *testing.T) {
 	}
 	implementContextCodeGenTest(t,
 		ctx,
-		`autometrics.Context{
-	TrackConcurrentCalls: true,
-	TrackCallerName:      false,
-	AlertConf:            &autometrics.AlertConfiguration{ServiceName: "api", Latency: &autometrics.LatencySlo{Target: 243000 * time.Nanosecond, Objective: 0.99}, Success: nil},
-}`,
+		`autometrics.NewContext(
+	autometrics.WithConcurrentCalls(true),
+	autometrics.WithCallerName(false),
+	autometrics.WithSloName("api"),
+	autometrics.WithAlertLatency(243000*time.Nanosecond, 0.99),
+)`,
 	)
 }
 
@@ -730,10 +731,11 @@ func TestSuccessContextCodeGen(t *testing.T) {
 	}
 	implementContextCodeGenTest(t,
 		ctx,
-		`autometrics.Context{
-	TrackConcurrentCalls: true,
-	TrackCallerName:      false,
-	AlertConf:            &autometrics.AlertConfiguration{ServiceName: "api", Latency: nil, Success: &autometrics.SuccessSlo{Objective: 0.99999}},
-}`,
+		`autometrics.NewContext(
+	autometrics.WithConcurrentCalls(true),
+	autometrics.WithCallerName(false),
+	autometrics.WithSloName("api"),
+	autometrics.WithAlertSuccess(0.99999),
+)`,
 	)
 }

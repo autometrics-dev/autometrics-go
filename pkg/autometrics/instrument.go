@@ -6,7 +6,7 @@ import (
 )
 
 // TODO: Use the interface in the API
-type Instrumentor interface {
+type Instrumentation interface {
 	// Instrument called in a defer statement wraps the body of a function
 	// with automatic instrumentation.
 	//
@@ -18,6 +18,13 @@ type Instrumentor interface {
 	// It is meant to be called as the first argument to Instrument in a
 	// defer call.
 	PreInstrument(ctx *Context) *Context
+	// NewContext builds a [Context] from a list of options.
+	NewContext(opts ...Option) *Context
+}
+
+type Option interface {
+	// Apply the option to the currently created context
+	Apply(*Context)
 }
 
 // CallerInfo returns the (method name, module name) of the function that called the function that called this function.

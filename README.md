@@ -22,19 +22,18 @@ phase is accomplished, only calling `go generate` is necessary.
 
 ### Import the libraries and initialize the metrics
 
-In the main entrypoint of your program, you need to both add packages
+In the main entrypoint of your program, you need to both add package
 
 ``` go
 import (
-	"github.com/autometrics-dev/autometrics-go/pkg/autometrics"
-	amImpl "github.com/autometrics-dev/autometrics-go/pkg/autometrics/prometheus"
+	am "github.com/autometrics-dev/autometrics-go/pkg/autometrics/prometheus"
 )
 ```
 
 And then in your main function initialize the metrics
 
 ``` go
-amImpl.Init(nil, autometrics.DefBuckets)
+am.Init(nil, am.DefBuckets)
 ```
 
 **_Warning_**: if you want to enable alerting from Autometrics, you **MUST**
@@ -111,14 +110,13 @@ For Prometheus the shortest way is to add the handler code in your main entrypoi
 
 ``` go
 import (
-	"github.com/autometrics-dev/autometrics-go/pkg/autometrics"
-	amImpl "github.com/autometrics-dev/autometrics-go/pkg/autometrics/prometheus"
+	am "github.com/autometrics-dev/autometrics-go/pkg/autometrics/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 
 func main() {
-	amImpl.Init(nil, autometrics.DefBuckets)
+	am.Init(nil, am.DefBuckets)
 	http.Handle("/metrics", promhttp.Handler())
 }
 ```
@@ -162,9 +160,8 @@ Prometheus to publish the metrics. The changes you need to make are:
 - change where the `amImpl` import points to
 ```patch
 import (
-	"github.com/autometrics-dev/autometrics-go/pkg/autometrics"
--	amImpl "github.com/autometrics-dev/autometrics-go/pkg/autometrics/prometheus"
-+	amImpl "github.com/autometrics-dev/autometrics-go/pkg/autometrics/otel"
+-	am "github.com/autometrics-dev/autometrics-go/pkg/autometrics/prometheus"
++	am "github.com/autometrics-dev/autometrics-go/pkg/autometrics/otel"
 )
 ```
 - change the call to `amImpl.Init` to the new signature: instead of a registry,
@@ -172,8 +169,8 @@ the `Init` function takes a meter name for the `otel_scope` label of the exporte
 metric. You can use the name of the application or its version for example
 
 ``` patch
--	amImpl.Init(nil, autometrics.DefBuckets)
-+	amImpl.Init("myApp/v2/prod", autometrics.DefBuckets)
+-	am.Init(nil, am.DefBuckets)
++	am.Init("myApp/v2/prod", am.DefBuckets)
 ```
 
 - add the `-otel` flag to the `//go:generate` directive

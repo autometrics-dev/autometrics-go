@@ -3,6 +3,8 @@ package otel // import "github.com/autometrics-dev/autometrics-go/pkg/autometric
 import (
 	"fmt"
 
+	"github.com/autometrics-dev/autometrics-go/pkg/autometrics"
+
 	"go.opentelemetry.io/otel/exporters/prometheus"
 	"go.opentelemetry.io/otel/metric/instrument"
 	"go.opentelemetry.io/otel/sdk/instrumentation"
@@ -14,6 +16,7 @@ var (
 	functionCallsCount      instrument.Int64UpDownCounter
 	functionCallsDuration   instrument.Float64Histogram
 	functionCallsConcurrent instrument.Int64UpDownCounter
+	DefBuckets              = autometrics.DefBuckets
 )
 
 const (
@@ -55,10 +58,13 @@ const (
 	SloNameLabel = "objective.name"
 )
 
-// Instrumentor is an empty struct that implements [autometrics.Instrumentor] interface.
+// Instrumentor is an empty struct that implements [autometrics.Instrumentation] interface.
 //
 // TODO: Use this instrumentor in the API.
 type Instrumentor struct{}
+
+// Compile time check that Instrumentor does all the necessary work
+// var _ autometrics.Instrumentation = Instrumentor{}
 
 func completeMeterName(meterName string) string {
 	return fmt.Sprintf("autometrics/%v", meterName)

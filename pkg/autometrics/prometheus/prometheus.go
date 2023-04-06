@@ -1,6 +1,7 @@
 package prometheus // import "github.com/autometrics-dev/autometrics-go/pkg/autometrics/prometheus"
 
 import (
+	"github.com/autometrics-dev/autometrics-go/pkg/autometrics"
 	"github.com/prometheus/client_golang/prometheus"
 )
 
@@ -8,6 +9,7 @@ var (
 	functionCallsCount      *prometheus.CounterVec
 	functionCallsDuration   *prometheus.HistogramVec
 	functionCallsConcurrent *prometheus.GaugeVec
+	DefBuckets              = autometrics.DefBuckets
 )
 
 const (
@@ -53,6 +55,8 @@ const (
 //
 // TODO: Use this instrumentor in the API.
 type Instrumentor struct{}
+
+// var _ autometrics.Instrumentation = Instrumentor{}
 
 // Init sets up the metrics required for autometrics' decorated functions and registers
 // them to the argument registry.

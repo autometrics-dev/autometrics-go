@@ -19,7 +19,6 @@ type GeneratorFunctionContext struct {
 	CommentIndex   int
 	FunctionName   string
 	ModuleName     string
-	ImportName     string
 	ImplImportName string
 }
 
