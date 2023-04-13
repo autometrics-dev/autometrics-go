@@ -20,6 +20,15 @@ A fully working use-case and example of library usage is available in the
 There is a one-time setup phase to prime the code for autometrics. Once this
 phase is accomplished, only calling `go generate` is necessary.
 
+### Install the go generator.
+
+The generator is the binary in cmd/autometrics, so the easiest way to get it is
+to install it through go:
+
+```console
+go install github.com/autometrics-dev/autometrics-go/cmd/autometrics@latest
+```
+
 ### Import the libraries and initialize the metrics
 
 In the main entrypoint of your program, you need to both add package
