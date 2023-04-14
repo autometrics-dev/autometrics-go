@@ -7,7 +7,7 @@ inspect usage metrics from your code.
 
 ![Documentation comments of instrumented function is augmented with links](./assets/codium-screenshot-example.png)
 
-You can optionnally add alerting rules so that code annotations make Prometheus
+You can optionally add alerting rules so that code annotations make Prometheus
 trigger alerts directly from production usage:
 
 ![a Slack bot is posting an alert directly in the channel](./assets/slack-alert-example.png)
@@ -58,7 +58,7 @@ am.Init(nil, am.DefBuckets)
 have the `--latency-ms` values to match the values given in your buckets. The
 values in the buckets are given in _seconds_. By default, the generator will
 error and tell you the valid default values if they don't match.
-If the default values do not match you use case, you can change the buckets in
+If the default values do not match your use case, you can change the buckets in
 the init call, and add a `-custom-latency` argument to the `//go:generate` invocation.
 
 ```patch
@@ -91,7 +91,7 @@ func RouteHandler(args interface{}) (err error) { // Name the error return value
 
 If you want the generated metrics to contain the function success rate, you
 _must_ name the error return value. This is why we recommend to name the error
-value you return for function you want to instrument.
+value you return for the function you want to instrument.
 
 ### Generate the documentation and instrumentation code
 
