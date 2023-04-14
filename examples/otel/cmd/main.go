@@ -8,18 +8,18 @@ import (
 	"net/http"
 	"time"
 
-	amImpl "github.com/autometrics-dev/autometrics-go/pkg/autometrics/prometheus"
+	amImpl "github.com/autometrics-dev/autometrics-go/pkg/autometrics/otel"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 // This should be `//go:generate autometrics` in practice. Those are hacks to get the example working, see
 // README
-//go:generate go run ../../../cmd/autometrics/main.go
+//go:generate go run ../../../cmd/autometrics/main.go -otel
 
 func main() {
 	rand.Seed(time.Now().UnixNano())
 
-	amImpl.Init(nil, amImpl.DefBuckets)
+	amImpl.Init("web-server", amImpl.DefBuckets)
 
 	http.HandleFunc("/", errorable(indexHandler))
 	http.HandleFunc("/random-error", errorable(randomErrorHandler))

@@ -1,67 +1,31 @@
 package autometrics
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"time"
-
-	"github.com/prometheus/client_golang/prometheus"
 )
 
+// Those are variables because we cannot have const of this type.
+// These variables are not meant to be modified.
 var (
-	FunctionCallsCount      *prometheus.CounterVec
-	FunctionCallsDuration   *prometheus.HistogramVec
-	FunctionCallsConcurrent *prometheus.GaugeVec
-	DefBuckets              = []float64{.005, .01, .025, .05, .1, .25, .5, 1, 2.5, 5, 10}
+	DefBuckets    = []float64{.005, .0075, .01, .025, .05, .075, .1, .25, .5, .75, 1, 2.5, 5, 7.5, 10}
+	DefObjectives = []float64{90, 95, 99, 99.9}
 )
 
 const (
-	FunctionCallsCountName      = "function_calls_count"
-	FunctionCallsDurationName   = "function_calls_duration"
-	FunctionCallsConcurrentName = "function_calls_concurrent"
-
-	FunctionLabel          = "function"
-	ModuleLabel            = "module"
-	CallerLabel            = "caller"
-	ResultLabel            = "result"
-	TargetLatencyLabel     = "objective_latency_threshold"
-	TargetSuccessRateLabel = "objective_percentile"
-	SloNameLabel           = "objective_name"
+	AllowCustomLatenciesFlag = "-custom-latency"
 )
 
-// Init sets up the metrics required for autometrics' decorated functions and registers
-// them to the argument registry.
-//
-// If the passed registry is nil, all the metrics are registered to the
-// default global registry.
-//
-// Make sure that all the latency targets you want to use for SLOs are
-// present in the histogramBuckets array, otherwise the alerts will fail
-// to work (they will never trigger.)
-func Init(reg *prometheus.Registry, histogramBuckets []float64) {
-	FunctionCallsCount = prometheus.NewCounterVec(prometheus.CounterOpts{
-		Name: FunctionCallsCountName,
-	}, []string{FunctionLabel, ModuleLabel, CallerLabel, ResultLabel, TargetSuccessRateLabel, SloNameLabel})
+// Implementation is an enumeration type for the
+// possible implementations of metrics to use.
+type Implementation int
 
-	FunctionCallsDuration = prometheus.NewHistogramVec(prometheus.HistogramOpts{
-		Name:    FunctionCallsDurationName,
-		Buckets: histogramBuckets,
-	}, []string{FunctionLabel, ModuleLabel, CallerLabel, TargetLatencyLabel, TargetSuccessRateLabel, SloNameLabel})
-
-	FunctionCallsConcurrent = prometheus.NewGaugeVec(prometheus.GaugeOpts{
-		Name: FunctionCallsConcurrentName,
-	}, []string{FunctionLabel, ModuleLabel, CallerLabel})
-
-	if reg != nil {
-		reg.MustRegister(FunctionCallsCount)
-		reg.MustRegister(FunctionCallsDuration)
-		reg.MustRegister(FunctionCallsConcurrent)
-	} else {
-		prometheus.DefaultRegisterer.MustRegister(FunctionCallsCount)
-		prometheus.DefaultRegisterer.MustRegister(FunctionCallsDuration)
-		prometheus.DefaultRegisterer.MustRegister(FunctionCallsConcurrent)
-	}
-}
+const (
+	PROMETHEUS Implementation = iota
+	OTEL                      = iota
+)
 
 // Context holds the configuration
 // to instrument properly a function.
@@ -77,11 +41,16 @@ type Context struct {
 	// startTime is the start time of a single function execution.
 	// Only autometrics.Instrument should read this value.
 	// Only autometrics.PreInstrument should write this value.
-	startTime time.Time
+	//
+	// This value is only exported for the child packages "prometheus" and "otel"
+	StartTime time.Time
 	// callInfo contains all the relevant data for caller information.
 	// Only autometrics.Instrument should read this value.
 	// Only autometrics.PreInstrument should write/read this value.
-	callInfo CallInfo
+	//
+	// This value is only exported for the child packages "prometheus" and "otel"
+	CallInfo CallInfo
+	Context  context.Context
 }
 
 // CallInfo holds the information about the current function call and its parent names.
@@ -101,10 +70,11 @@ func NewContext() Context {
 		TrackConcurrentCalls: true,
 		TrackCallerName:      true,
 		AlertConf:            nil,
+		Context:              context.Background(),
 	}
 }
 
-func (c Context) Validate() error {
+func (c Context) Validate(allowCustomLatencies bool) error {
 	if c.AlertConf != nil {
 		if c.AlertConf.ServiceName == "" {
 			return fmt.Errorf("Cannot have an AlertConfiguration without a service name")
@@ -122,6 +92,10 @@ func (c Context) Validate() error {
 			return fmt.Errorf("Cannot have a target success rate that is strictly greater than 100 (more than 100%%)")
 		}
 
+		if c.AlertConf.Success != nil && !contains(DefObjectives, c.AlertConf.Success.Objective) {
+			return fmt.Errorf("Cannot have a target success rate that is not one of the predetermined ones by generated rules files (valid targets are %v)", DefObjectives)
+		}
+
 		if c.AlertConf.Latency != nil {
 			if c.AlertConf.Latency.Objective <= 0 {
 				return fmt.Errorf("Cannot have a target for latency SLO that is negative")
@@ -132,13 +106,28 @@ func (c Context) Validate() error {
 			if c.AlertConf.Latency.Objective > 100 {
 				return fmt.Errorf("Cannot have a target for latency SLO that is greater than 100 (more than 100%%)")
 			}
+			if !contains(DefObjectives, c.AlertConf.Latency.Objective) {
+				return fmt.Errorf("Cannot have a target for latency SLO that is not one of the predetermined in the generated rules files (valid targets are %v)", DefObjectives)
+			}
 			if c.AlertConf.Latency.Target <= 0 {
 				return fmt.Errorf("Cannot have a target latency SLO threshold that is negative (responses expected before the query)")
+			}
+			if !allowCustomLatencies && !contains(DefBuckets, c.AlertConf.Latency.Target.Seconds()) {
+				return fmt.Errorf("Cannot have a target latency SLO threshold that does not match a bucket (valid threshold in seconds are %v). If you set custom latencies in your Init call, then you can add the %v flag to the //go:generate invocation to remove this error", DefBuckets, AllowCustomLatenciesFlag)
 			}
 		}
 	}
 
 	return nil
+}
+
+func contains[T comparable](s []T, e T) bool {
+	for _, v := range s {
+		if v == e {
+			return true
+		}
+	}
+	return false
 }
 
 // AlertConfiguration is the configuration for autometric alerting.

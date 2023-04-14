@@ -1,0 +1,14 @@
+#!/usr/bin/env sh
+
+set -euo pipefail
+
+while true
+do
+    if [ "$(($RANDOM % 2))" == "0" ]; then
+        curl http://localhost:62086/random-error
+    fi
+    if [ "$(($RANDOM % 4))" == "0" ]; then
+        curl http://localhost:62086/
+    fi
+    sleep 1
+done
