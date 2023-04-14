@@ -45,7 +45,8 @@ And then in your main function initialize the metrics
 am.Init(nil, am.DefBuckets)
 ```
 
-**_Warning_**: if you want to enable alerting from Autometrics, you **MUST**
+> **Warning**
+> If you want to enable alerting from Autometrics, you **MUST**
 have the `--latency-ms` values to match the values given in your buckets. The
 values in the buckets are given in _seconds_. By default, the generator will
 error and tell you the valid default values if they don't match.
