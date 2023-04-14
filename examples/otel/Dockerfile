@@ -1,5 +1,5 @@
 FROM golang:1.20-alpine
-    MAINTAINER Fiberplane <info@fiberplane.com>
+MAINTAINER Fiberplane <info@fiberplane.com>
 
 # Cannot really build the demo image from
 # the examples subfolder because of

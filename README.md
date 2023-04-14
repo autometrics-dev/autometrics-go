@@ -29,6 +29,14 @@ to install it through go:
 go install github.com/autometrics-dev/autometrics-go/cmd/autometrics@latest
 ```
 
+In order to have `autometrics` visible then, make sure that the directory
+`$GOBIN` (or the default `$GOPATH/bin`) is in your `$PATH`:
+
+``` console
+$ echo "$PATH" | grep -q "${GOBIN:-$GOPATH/bin}" && echo "GOBIN in PATH" || echo "GOBIN not in PATH, please add it"
+GOBIN in PATH
+```
+
 ### Import the libraries and initialize the metrics
 
 In the main entrypoint of your program, you need to both add package
@@ -158,7 +166,8 @@ The valid arguments for alert generation are:
   of calls must last less than `latency-ms` milliseconds). You must specify both
   latency options, or none.
   
-**_Warning_**: the generator will error out if you use targets that are not
+> **Warning**
+> The generator will error out if you use targets that are not
 supported by the bundled [Alerting rules file](./configs/autometrics.rules.yml).
 Support for custom target is planned but not present at the moment
   
