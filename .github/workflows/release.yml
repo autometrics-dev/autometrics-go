@@ -1,0 +1,42 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - v**
+
+jobs:
+  go-generator:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Go
+        uses: actions/setup-go@v3
+        with:
+          go-version: "1.20"
+          check-latest: true
+          cache: true
+      - name: Linux x86
+        run: |
+          GOOS=linux GOARCH=amd64 go build cmd/autometrics/main.go
+          tar -c -f autometrics-linux_amd64.tar.gz -z autometrics
+      - name: Windows x86
+        run: |
+          GOOS=windows GOARCH=amd64 go build cmd/autometrics/main.go
+          zip autometrics-windows_amd64.zip -z autometrics.exe
+      - name: MacOS x86
+        run: |
+          GOOS=darwin GOARCH=amd64 go build cmd/autometrics/main.go
+          tar -c -f autometrics-darwin_amd64.tar.gz -z autometrics
+      - name: MacOS ARM
+        run: |
+          GOOS=darwin GOARCH=arm64 go build cmd/autometrics/main.go
+          tar -c -f autometrics-darwin_arm64.tar.gz -z autometrics
+      - name: Release with Notes
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            *.tar.gz
+            *.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
