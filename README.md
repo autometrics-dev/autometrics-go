@@ -43,14 +43,14 @@ In the main entrypoint of your program, you need to both add package
 
 ``` go
 import (
-	am "github.com/autometrics-dev/autometrics-go/pkg/autometrics/prometheus"
+	amImpl "github.com/autometrics-dev/autometrics-go/pkg/autometrics/prometheus"
 )
 ```
 
 And then in your main function initialize the metrics
 
 ``` go
-am.Init(nil, am.DefBuckets)
+amImpl.Init(nil, am.DefBuckets)
 ```
 
 > **Warning**
@@ -128,13 +128,13 @@ For Prometheus the shortest way is to add the handler code in your main entrypoi
 
 ``` go
 import (
-	am "github.com/autometrics-dev/autometrics-go/pkg/autometrics/prometheus"
+	amImpl "github.com/autometrics-dev/autometrics-go/pkg/autometrics/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 
 func main() {
-	am.Init(nil, am.DefBuckets)
+	amImpl.Init(nil, am.DefBuckets)
 	http.Handle("/metrics", promhttp.Handler())
 }
 ```
@@ -179,8 +179,8 @@ Prometheus to publish the metrics. The changes you need to make are:
 - change where the `amImpl` import points to
 ```patch
 import (
--	am "github.com/autometrics-dev/autometrics-go/pkg/autometrics/prometheus"
-+	am "github.com/autometrics-dev/autometrics-go/pkg/autometrics/otel"
+-	amImpl "github.com/autometrics-dev/autometrics-go/pkg/autometrics/prometheus"
++	amImpl "github.com/autometrics-dev/autometrics-go/pkg/autometrics/otel"
 )
 ```
 - change the call to `amImpl.Init` to the new signature: instead of a registry,
@@ -188,8 +188,8 @@ the `Init` function takes a meter name for the `otel_scope` label of the exporte
 metric. You can use the name of the application or its version for example
 
 ``` patch
--	am.Init(nil, am.DefBuckets)
-+	am.Init("myApp/v2/prod", am.DefBuckets)
+-	amImpl.Init(nil, am.DefBuckets)
++	amImpl.Init("myApp/v2/prod", am.DefBuckets)
 ```
 
 - add the `-otel` flag to the `//go:generate` directive
