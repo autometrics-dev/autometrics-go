@@ -19,19 +19,27 @@ jobs:
       - name: Linux x86
         run: |
           GOOS=linux GOARCH=amd64 go build cmd/autometrics/main.go
-          tar -c -f autometrics-linux_amd64.tar.gz -z autometrics
+          mv main autometrics
+          tar -c -f autometrics-linux_amd64.tar.gz -v -z autometrics
+          rm -v autometrics
       - name: Windows x86
         run: |
           GOOS=windows GOARCH=amd64 go build cmd/autometrics/main.go
-          zip autometrics-windows_amd64.zip -z autometrics.exe
+          mv main.exe autometrics.exe
+          zip autometrics-windows_amd64.zip -v -z autometrics.exe
+          rm -v autometrics.exe
       - name: MacOS x86
         run: |
           GOOS=darwin GOARCH=amd64 go build cmd/autometrics/main.go
-          tar -c -f autometrics-darwin_amd64.tar.gz -z autometrics
+          mv main autometrics
+          tar -c -f autometrics-darwin_amd64.tar.gz -v -z autometrics
+          rm -v autometrics
       - name: MacOS ARM
         run: |
           GOOS=darwin GOARCH=arm64 go build cmd/autometrics/main.go
-          tar -c -f autometrics-darwin_arm64.tar.gz -z autometrics
+          mv main autometrics
+          tar -c -f autometrics-darwin_arm64.tar.gz -v -z autometrics
+          rm -v autometrics
       - name: Release with Notes
         uses: softprops/action-gh-release@v1
         with:
