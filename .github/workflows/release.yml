@@ -1,9 +1,8 @@
-name: Release
+name: Build and Release Binaries
 
-on:
-  push:
-    tags:
-      - v**
+on: [push]
+permissions:
+  contents: write
 
 jobs:
   build:
@@ -12,7 +11,6 @@ jobs:
     strategy:
       matrix:
         build: [linux_amd64, windows_amd64, darwin_amd64, darwin_arm64]
-        compress: [tar]
         include:
           - build: linux_amd64
             goos: linux
@@ -22,7 +20,6 @@ jobs:
             goos: windows
             goarch: amd64
             ext: '.exe'
-            compress: zip
           - build: darwin_amd64
             goos: darwin
             goarch: amd64
@@ -43,34 +40,20 @@ jobs:
           GOOS=${{ matrix.goos }} GOARCH=${{ matrix.goarch }} go build cmd/autometrics/main.go
           mv main${{ matrix.ext }} autometrics${{ matrix.ext }}
 
-      - name: Pack (Tar)
-        if: matrix.compress == 'tar'
-        run: |
-          tar -c -f autometrics-${{ matrix.build }}.tar.gz -v -z autometrics${{ matrix.ext }}
-      - name: Upload (Tar)
-        if: matrix.compress == 'tar'
-        uses: actions/upload-artifact@v3
-        with:
-          name: autometrics ${{ matrix.build }}
-          path: autometrics-${{ matrix.build }}.tar.gz
-          if-no-files-found: error
-          retention-days: 1
-
       - name: Pack (Zip)
-        if: matrix.compress == 'zip'
         run: |
           zip autometrics-${{ matrix.build }}.zip -v -z autometrics${{ matrix.ext }}
       - name: Upload (Zip)
-        if: matrix.compress == 'zip'
         uses: actions/upload-artifact@v3
         with:
           name: autometrics ${{ matrix.build }}
           path: autometrics-${{ matrix.build }}.zip
           if-no-files-found: error
-          retention-days: 1
+          retention-days: 7
 
   add_assets:
     name: 'Add Assets'
+    if: startsWith(github.ref, 'refs/tags/')
     runs-on: ubuntu-latest
     needs: [build]
     steps:
@@ -94,7 +77,6 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           files: |
-            *.tar.gz
             *.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
