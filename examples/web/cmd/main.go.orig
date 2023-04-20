@@ -19,7 +19,18 @@ import (
 func main() {
 	rand.Seed(time.Now().UnixNano())
 
-	amImpl.Init(nil, amImpl.DefBuckets)
+	// Everything in BuildInfo is optional.
+	// You can also use any string variable whose value is
+	// injected at build time by ldflags.
+	amImpl.Init(
+		nil,
+		amImpl.DefBuckets,
+		amImpl.BuildInfo{
+			Version: "0.4.0",
+			Commit: "anySHA",
+			BuildTime: "",
+		},
+	)
 
 	http.HandleFunc("/", errorable(indexHandler))
 	http.HandleFunc("/random-error", errorable(randomErrorHandler))

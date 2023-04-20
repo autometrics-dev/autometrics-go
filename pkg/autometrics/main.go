@@ -1,4 +1,4 @@
-package autometrics
+package autometrics // import "github.com/autometrics-dev/autometrics-go/pkg/autometrics"
 
 import (
 	"context"
@@ -38,19 +38,25 @@ type Context struct {
 	TrackCallerName bool
 	// AlertConf is an optional configuration to add alerting capabilities to the metrics.
 	AlertConf *AlertConfiguration
-	// startTime is the start time of a single function execution.
-	// Only autometrics.Instrument should read this value.
-	// Only autometrics.PreInstrument should write this value.
+	// StartTime is the start time of a single function execution.
+	// Only amImpl.Instrument should read this value.
+	// Only amImpl.PreInstrument should write this value.
 	//
 	// This value is only exported for the child packages "prometheus" and "otel"
 	StartTime time.Time
-	// callInfo contains all the relevant data for caller information.
-	// Only autometrics.Instrument should read this value.
-	// Only autometrics.PreInstrument should write/read this value.
+	// CallInfo contains all the relevant data for caller information.
+	// Only amImpl.Instrument should read this value.
+	// Only amImpl.PreInstrument should write/read this value.
 	//
 	// This value is only exported for the child packages "prometheus" and "otel"
 	CallInfo CallInfo
-	Context  context.Context
+	// BuildInfo contains all the relevant data for caller information.
+	// Only amImpl.Instrument and PreInstrument should read this value.
+	// Only amImpl.Init should write/read this value.
+	//
+	// This value is only exported for the child packages "prometheus" and "otel"
+	BuildInfo BuildInfo
+	Context   context.Context
 }
 
 // CallInfo holds the information about the current function call and its parent names.
@@ -65,6 +71,16 @@ type CallInfo struct {
 	ParentModuleName string
 }
 
+// BuildInfo holds the information about the current build of the instrumented code.
+type BuildInfo struct {
+	// Commit is the commit of the code.
+	Commit string
+	// Version is the version of the code.
+	Version string
+	// BuildTime is the timestamp of the build of the codebase.
+	BuildTime string
+}
+
 func NewContext() Context {
 	return Context{
 		TrackConcurrentCalls: true,
@@ -72,6 +88,12 @@ func NewContext() Context {
 		AlertConf:            nil,
 		Context:              context.Background(),
 	}
+}
+
+func (c *Context) FillBuildInfo() {
+	c.BuildInfo.Version = GetVersion()
+	c.BuildInfo.Commit = GetCommit()
+	c.BuildInfo.BuildTime = GetBuildTime()
 }
 
 func (c Context) Validate(allowCustomLatencies bool) error {

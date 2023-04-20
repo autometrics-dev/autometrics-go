@@ -14,7 +14,7 @@ import (
 //
 // The first argument SHOULD be a call to PreInstrument so that
 // the "concurrent calls" gauge is correctly setup.
-func  Instrument(ctx *autometrics.Context, err *error) {
+func Instrument(ctx *autometrics.Context, err *error) {
 	result := "ok"
 
 	if err != nil && *err != nil {
@@ -47,6 +47,9 @@ func  Instrument(ctx *autometrics.Context, err *error) {
 		ResultLabel:            result,
 		TargetSuccessRateLabel: successObjective,
 		SloNameLabel:           sloName,
+		BuildTimeLabel:         ctx.BuildInfo.BuildTime,
+		CommitLabel:            ctx.BuildInfo.Commit,
+		VersionLabel:           ctx.BuildInfo.Version,
 	}).Inc()
 	functionCallsDuration.With(prometheus.Labels{
 		FunctionLabel:          ctx.CallInfo.FuncName,
@@ -55,13 +58,19 @@ func  Instrument(ctx *autometrics.Context, err *error) {
 		TargetLatencyLabel:     latencyTarget,
 		TargetSuccessRateLabel: latencyObjective,
 		SloNameLabel:           sloName,
+		BuildTimeLabel:         ctx.BuildInfo.BuildTime,
+		CommitLabel:            ctx.BuildInfo.Commit,
+		VersionLabel:           ctx.BuildInfo.Version,
 	}).Observe(time.Since(ctx.StartTime).Seconds())
 
 	if ctx.TrackConcurrentCalls {
 		functionCallsConcurrent.With(prometheus.Labels{
-			FunctionLabel: ctx.CallInfo.FuncName,
-			ModuleLabel:   ctx.CallInfo.ModuleName,
-			CallerLabel:   callerLabel,
+			FunctionLabel:  ctx.CallInfo.FuncName,
+			ModuleLabel:    ctx.CallInfo.ModuleName,
+			CallerLabel:    callerLabel,
+			BuildTimeLabel: ctx.BuildInfo.BuildTime,
+			CommitLabel:    ctx.BuildInfo.Commit,
+			VersionLabel:   ctx.BuildInfo.Version,
 		}).Dec()
 	}
 }
@@ -70,8 +79,9 @@ func  Instrument(ctx *autometrics.Context, err *error) {
 //
 // It is meant to be called as the first argument to Instrument in a
 // defer call.
-func  PreInstrument(ctx *autometrics.Context) *autometrics.Context {
+func PreInstrument(ctx *autometrics.Context) *autometrics.Context {
 	ctx.CallInfo = autometrics.CallerInfo()
+	ctx.FillBuildInfo()
 
 	var callerLabel string
 	if ctx.TrackCallerName {
@@ -80,9 +90,12 @@ func  PreInstrument(ctx *autometrics.Context) *autometrics.Context {
 
 	if ctx.TrackConcurrentCalls {
 		functionCallsConcurrent.With(prometheus.Labels{
-			FunctionLabel: ctx.CallInfo.FuncName,
-			ModuleLabel:   ctx.CallInfo.ModuleName,
-			CallerLabel:   callerLabel,
+			FunctionLabel:  ctx.CallInfo.FuncName,
+			ModuleLabel:    ctx.CallInfo.ModuleName,
+			CallerLabel:    callerLabel,
+			BuildTimeLabel: ctx.BuildInfo.BuildTime,
+			CommitLabel:    ctx.BuildInfo.Commit,
+			VersionLabel:   ctx.BuildInfo.Version,
 		}).Inc()
 	}
 

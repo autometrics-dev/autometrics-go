@@ -50,7 +50,18 @@ import (
 And then in your main function initialize the metrics
 
 ``` go
-amImpl.Init(nil, am.DefBuckets)
+	// Everything in BuildInfo is optional.
+	// You can also use any string variable whose value is
+	// injected at build time by ldflags.
+	amImpl.Init(
+		nil,
+		amImpl.DefBuckets,
+		amImpl.BuildInfo{
+			Version: "0.4.0",
+			Commit: "anySHA",
+			BuildTime: "",
+		},
+	)
 ```
 
 > **Warning**
@@ -134,7 +145,15 @@ import (
 
 
 func main() {
-	amImpl.Init(nil, am.DefBuckets)
+	amImpl.Init(
+		nil,
+		amImpl.DefBuckets,
+		amImpl.BuildInfo{
+			Version: "0.4.0",
+			Commit: "anySHA",
+			BuildTime: "",
+		},
+	)
 	http.Handle("/metrics", promhttp.Handler())
 }
 ```
@@ -188,8 +207,16 @@ the `Init` function takes a meter name for the `otel_scope` label of the exporte
 metric. You can use the name of the application or its version for example
 
 ``` patch
--	amImpl.Init(nil, am.DefBuckets)
-+	amImpl.Init("myApp/v2/prod", am.DefBuckets)
+	amImpl.Init(
+-		nil,
++		"myApp/v2/prod",
+		amImpl.DefBuckets,
+		amImpl.BuildInfo{
+			Version: "2.1.37",
+			Commit: "anySHA",
+			BuildTime: "",
+		},
+	)
 ```
 
 - add the `-otel` flag to the `//go:generate` directive

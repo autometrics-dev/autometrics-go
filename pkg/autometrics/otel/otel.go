@@ -1,10 +1,12 @@
 package otel // import "github.com/autometrics-dev/autometrics-go/pkg/autometrics/otel"
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/autometrics-dev/autometrics-go/pkg/autometrics"
 
+	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/exporters/prometheus"
 	"go.opentelemetry.io/otel/metric/instrument"
 	"go.opentelemetry.io/otel/sdk/instrumentation"
@@ -16,6 +18,7 @@ var (
 	functionCallsCount      instrument.Int64UpDownCounter
 	functionCallsDuration   instrument.Float64Histogram
 	functionCallsConcurrent instrument.Int64UpDownCounter
+	buildInfo               instrument.Int64UpDownCounter
 	DefBuckets              = autometrics.DefBuckets
 )
 
@@ -26,6 +29,8 @@ const (
 	FunctionCallsDurationName = "function.calls.duration"
 	// FunctionCallsConcurrentName is the name of the openTelemetry metric for the number of simulateneously active calls to specific functions.
 	FunctionCallsConcurrentName = "function.calls.concurrent"
+	// BuildInfo is the name of the openTelemetry metric for the version of the monitored codebase.
+	BuildInfoName = "build_info"
 
 	// FunctionLabel is the openTelemetry attribute that describes the function name.
 	//
@@ -56,12 +61,24 @@ const (
 	TargetSuccessRateLabel = "objective.percentile"
 	// SloLabelName is the openTelemetry attribute that describes the name of the Service Level Objective.
 	SloNameLabel = "objective.name"
-)
 
+	// CommitLabel is the openTelemetry attribute that describes the commit of the monitored codebase.
+	CommitLabel = "commit"
+	// VersionLabel is the openTelemetry attribute that describes the version of the monitored codebase.
+	VersionLabel = "version"
+	// BuildTimeLabel is the openTelemetry attribute that describes the timestamp of the build of the monitored codebase.
+	BuildTimeLabel = "build_time"
+)
 
 func completeMeterName(meterName string) string {
 	return fmt.Sprintf("autometrics/%v", meterName)
 }
+
+// BuildInfo holds meta information about the build of the instrumented code.
+//
+// This is a reexport of the autometrics type to allow [Init] to work with only
+// the current (prometheus) package imported at the call site.
+type BuildInfo = autometrics.BuildInfo
 
 // Init sets up the metrics required for autometrics' decorated functions and registers
 // them to the Prometheus exporter
@@ -69,7 +86,11 @@ func completeMeterName(meterName string) string {
 // Make sure that all the latency targets you want to use for SLOs are
 // present in the histogramBuckets array, otherwise the alerts will fail
 // to work (they will never trigger.)
-func Init(meterName string, histogramBuckets []float64) error {
+func Init(meterName string, histogramBuckets []float64, buildInformation BuildInfo) error {
+	autometrics.SetCommit(buildInformation.Commit)
+	autometrics.SetVersion(buildInformation.Version)
+	autometrics.SetBuildTime(buildInformation.BuildTime)
+
 	exporter, err := prometheus.New(
 		// The units are removed from the exporter so that the names of the
 		// exported metrics after the View rename are consistent with the
@@ -113,6 +134,18 @@ func Init(meterName string, histogramBuckets []float64) error {
 	if err != nil {
 		return fmt.Errorf("error initializing %v metric: %w", FunctionCallsConcurrentName, err)
 	}
+
+	buildInfo, err = meter.Int64UpDownCounter(BuildInfoName, instrument.WithDescription("The information of the current build."))
+	if err != nil {
+		return fmt.Errorf("error initializing %v metric: %w", BuildInfoName, err)
+	}
+
+	buildInfo.Add(context.Background(), 1,
+		[]attribute.KeyValue{
+			attribute.Key(CommitLabel).String(buildInformation.Commit),
+			attribute.Key(VersionLabel).String(buildInformation.Version),
+			attribute.Key(BuildTimeLabel).String(buildInformation.BuildTime),
+		}...)
 
 	return nil
 }

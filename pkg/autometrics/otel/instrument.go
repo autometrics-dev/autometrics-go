@@ -15,7 +15,7 @@ import (
 //
 // The first argument SHOULD be a call to PreInstrument so that
 // the "concurrent calls" gauge is correctly setup.
-func  Instrument(ctx *autometrics.Context, err *error) {
+func Instrument(ctx *autometrics.Context, err *error) {
 	result := "ok"
 
 	if err != nil && *err != nil {
@@ -49,6 +49,9 @@ func  Instrument(ctx *autometrics.Context, err *error) {
 			attribute.Key(ResultLabel).String(result),
 			attribute.Key(TargetSuccessRateLabel).String(successObjective),
 			attribute.Key(SloNameLabel).String(sloName),
+			attribute.Key(CommitLabel).String(ctx.BuildInfo.Commit),
+			attribute.Key(VersionLabel).String(ctx.BuildInfo.Version),
+			attribute.Key(BuildTimeLabel).String(ctx.BuildInfo.BuildTime),
 		}...)
 	functionCallsDuration.Record(ctx.Context, time.Since(ctx.StartTime).Seconds(),
 		[]attribute.KeyValue{
@@ -58,6 +61,9 @@ func  Instrument(ctx *autometrics.Context, err *error) {
 			attribute.Key(TargetLatencyLabel).String(latencyTarget),
 			attribute.Key(TargetSuccessRateLabel).String(latencyObjective),
 			attribute.Key(SloNameLabel).String(sloName),
+			attribute.Key(CommitLabel).String(ctx.BuildInfo.Commit),
+			attribute.Key(VersionLabel).String(ctx.BuildInfo.Version),
+			attribute.Key(BuildTimeLabel).String(ctx.BuildInfo.BuildTime),
 		}...)
 
 	if ctx.TrackConcurrentCalls {
@@ -66,6 +72,9 @@ func  Instrument(ctx *autometrics.Context, err *error) {
 				attribute.Key(FunctionLabel).String(ctx.CallInfo.FuncName),
 				attribute.Key(ModuleLabel).String(ctx.CallInfo.ModuleName),
 				attribute.Key(CallerLabel).String(callerLabel),
+				attribute.Key(CommitLabel).String(ctx.BuildInfo.Commit),
+				attribute.Key(VersionLabel).String(ctx.BuildInfo.Version),
+				attribute.Key(BuildTimeLabel).String(ctx.BuildInfo.BuildTime),
 			}...)
 	}
 }
@@ -74,8 +83,9 @@ func  Instrument(ctx *autometrics.Context, err *error) {
 //
 // It is meant to be called as the first argument to Instrument in a
 // defer call.
-func  PreInstrument(ctx *autometrics.Context) *autometrics.Context {
+func PreInstrument(ctx *autometrics.Context) *autometrics.Context {
 	ctx.CallInfo = autometrics.CallerInfo()
+	ctx.FillBuildInfo()
 	ctx.Context = context.Background()
 
 	var callerLabel string
@@ -89,6 +99,9 @@ func  PreInstrument(ctx *autometrics.Context) *autometrics.Context {
 				attribute.Key(FunctionLabel).String(ctx.CallInfo.FuncName),
 				attribute.Key(ModuleLabel).String(ctx.CallInfo.ModuleName),
 				attribute.Key(CallerLabel).String(callerLabel),
+				attribute.Key(CommitLabel).String(ctx.BuildInfo.Commit),
+				attribute.Key(VersionLabel).String(ctx.BuildInfo.Version),
+				attribute.Key(BuildTimeLabel).String(ctx.BuildInfo.BuildTime),
 			}...)
 	}
 
