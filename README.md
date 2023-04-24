@@ -13,7 +13,16 @@ trigger alerts directly from production usage:
 ![a Slack bot is posting an alert directly in the channel](./assets/slack-alert-example.png)
 
 A fully working use-case and example of library usage is available in the
-[examples/web](./examples/web) subdirectory
+[examples/web](./examples/web) subdirectory. You can build and run load on the
+example server using:
+
+```console
+git submodule update --init
+docker compose -f docker-compose.prometheus-example.yaml up
+```
+
+And then explore the generated links by opening the [main
+file](./examples/web/cmd/main.go).
 
 ## How to use
 

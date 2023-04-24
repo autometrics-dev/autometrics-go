@@ -68,7 +68,7 @@ func requestRateQuery(counterName, labelKey, labelValue string) string {
 }
 
 func errorRatioQuery(counterName, labelKey, labelValue string) string {
-	return fmt.Sprintf("sum by (%s, %s, %s, %s) (rate(%s{%s=\"%s\",%s=\"error\"}[5m]) %s)",
+	return fmt.Sprintf("(sum by (%s, %s, %s, %s) (rate(%s{%s=\"%s\",%s=\"error\"}[5m]) %s)) / (%s)",
 		prometheus.FunctionLabel,
 		prometheus.ModuleLabel,
 		prometheus.VersionLabel,
@@ -78,6 +78,7 @@ func errorRatioQuery(counterName, labelKey, labelValue string) string {
 		labelValue,
 		prometheus.ResultLabel,
 		addBuildInfoLabels(),
+		requestRateQuery(counterName, labelKey, labelValue),
 	)
 }
 

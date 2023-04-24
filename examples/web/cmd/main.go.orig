@@ -16,6 +16,10 @@ import (
 // README
 //go:generate go run ../../../cmd/autometrics/main.go
 
+var Version = "development"
+var Commit = "n/a"
+var BuildTime string
+
 func main() {
 	rand.Seed(time.Now().UnixNano())
 
@@ -26,9 +30,9 @@ func main() {
 		nil,
 		amImpl.DefBuckets,
 		amImpl.BuildInfo{
-			Version: "0.4.0",
-			Commit: "anySHA",
-			BuildTime: "",
+			Version: Version,
+			Commit: Commit,
+			BuildTime: BuildTime,
 		},
 	)
 

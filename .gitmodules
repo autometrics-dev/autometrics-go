@@ -1,0 +1,3 @@
+[submodule "autometrics-shared"]
+	path = configs/shared
+	url = https://github.com/autometrics-dev/autometrics-shared.git
