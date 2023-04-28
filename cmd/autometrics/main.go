@@ -3,119 +3,75 @@ package main
 import (
 	"fmt"
 	"log"
-	"os"
+	"strings"
 
 	internal "github.com/autometrics-dev/autometrics-go/internal/autometrics"
 	"github.com/autometrics-dev/autometrics-go/internal/build"
 	"github.com/autometrics-dev/autometrics-go/internal/generate"
 	"github.com/autometrics-dev/autometrics-go/pkg/autometrics"
+
+	arg "github.com/alexflint/go-arg"
 )
 
 const (
-	prometheusAddressEnvironmentVariable = "AM_PROMETHEUS_URL"
-	useOtelFlag                          = "-otel"
-	allowCustomLatencies                 = "-custom-latency"
-	shortVersionFlag                     = "-v"
-	longVersionFlag                      = "-version"
-	shortHelpFlag                        = "-h"
-	longHelpFlag                         = "-help"
-	DefaultPrometheusInstanceUrl         = "http://localhost:9090/"
+	DefaultPrometheusInstanceUrl = "http://localhost:9090/"
 )
 
+type args struct {
+	FileName             string `arg:"-f,--,required,env:GOFILE" placeholder:"FILE_NAME" help:"File to transform."`
+	ModuleName           string `arg:"-m,--,required,env:GOPACKAGE" placeholder:"MODULE_NAME" help:"Module containing the file to transform."`
+	PrometheusUrl        string `arg:"--prom_url,env:AM_PROMETHEUS_URL" placeholder:"PROMETHEUS_URL" default:"http://localhost:9090" help:"Base URL of the Prometheus instance to generate links to."`
+	UseOtel              bool   `arg:"--otel" default:"false" help:"Use OpenTelemetry client library to instrument code instead of default Prometheus."`
+	AllowCustomLatencies bool   `arg:"--custom-latency" default:"false" help:"Allow non-default latencies to be used in latency-based SLOs."`
+}
+
+func (args) Version() string {
+	var buf strings.Builder
+
+	fmt.Fprintf(&buf, "Autometrics %s", build.Version)
+	if build.Time != "" {
+		fmt.Fprintf(&buf, " (Built on %s)", build.Time)
+	}
+
+	return buf.String()
+}
+
+func (args) Description() string {
+	var buf strings.Builder
+
+	fmt.Fprintf(&buf,
+		"Autometrics instruments annotated functions, and adds links in their doc comments to graphs of their live usage.\n\n")
+
+	fmt.Fprintf(&buf,
+		"It is meant to be used in a Go generator context. As such, it takes mandatory arguments in the form of environment variables.\n"+
+			"You can also control the base URL of the prometheus instance in doc comments with an environment variable.\n")
+	fmt.Fprintf(&buf,
+		"\tNote: If you do not use the custom latencies in the SLO, the allowed latencies (in seconds) are %v\n\n",
+		autometrics.DefBuckets)
+
+	fmt.Fprintln(&buf,
+		"Check https://github.com/autometrics-dev/autometrics-go for more help (including examples) and information.")
+	fmt.Fprintf(&buf,
+		"Autometrics is built by Fiberplane -- https://autometrics.dev\n")
+
+	return buf.String()
+}
+
 func main() {
-	fileName := os.Getenv("GOFILE")
-	moduleName := os.Getenv("GOPACKAGE")
-	args := os.Args
-
-	if contains(args, longVersionFlag) || contains(args, shortVersionFlag) {
-		printVersion()
-		os.Exit(0)
-	}
-
-	if contains(args, longHelpFlag) || contains(args, shortHelpFlag) {
-		printHelp()
-		os.Exit(0)
-	}
-
-	if fileName == "" {
-		printHelp()
-		os.Exit(1)
-	}
-
-	prometheusUrl, envVarExists := os.LookupEnv(prometheusAddressEnvironmentVariable)
-	if !envVarExists {
-		prometheusUrl = DefaultPrometheusInstanceUrl
-	}
+	var args args
+	arg.MustParse(&args)
 
 	implementation := autometrics.PROMETHEUS
-	if contains(args, useOtelFlag) {
+	if args.UseOtel {
 		implementation = autometrics.OTEL
 	}
 
-	ctx, err := internal.NewGeneratorContext(implementation, prometheusUrl, contains(args, allowCustomLatencies))
+	ctx, err := internal.NewGeneratorContext(implementation, args.PrometheusUrl, args.AllowCustomLatencies)
 	if err != nil {
 		log.Fatalf("error initialising autometrics context: %s", err)
 	}
 
-	if err := generate.TransformFile(ctx, fileName, moduleName); err != nil {
-		log.Fatalf("error transforming %s: %s", fileName, err)
+	if err := generate.TransformFile(ctx, args.FileName, args.ModuleName); err != nil {
+		log.Fatalf("error transforming %s: %s", args.FileName, err)
 	}
-}
-
-func contains[T comparable](s []T, e T) bool {
-	for _, v := range s {
-		if v == e {
-			return true
-		}
-	}
-	return false
-}
-
-func printVersion() {
-	fmt.Printf("%s\n", build.Version)
-	if build.Time != "" {
-		fmt.Printf("Built on %s\n", build.Time)
-	}
-}
-
-func printHelp() {
-	fmt.Printf("Autometrics %s", build.Version)
-	if build.Time != "" {
-		fmt.Printf(" (%s)", build.Time)
-	}
-	fmt.Printf("\nBuilt by Autometrics team -- https://autometrics.dev\n\n")
-
-	fmt.Printf(
-		"usage: %s [%s | %s] [%s | %s] [%s] [%s] \n\n",
-		os.Args[0],
-		shortVersionFlag,
-		longVersionFlag,
-		shortHelpFlag,
-		longHelpFlag,
-		useOtelFlag,
-		allowCustomLatencies,
-	)
-
-	fmt.Println("Autometrics is meant to be used in a Go generator context. As such, it takes mandatory arguments in the form of environment variables:")
-	fmt.Println("    GOFILE\tPath to the file to transform.")
-	fmt.Println("    GOPACKAGE\tName to the containing package.")
-	fmt.Printf("\n\n")
-
-	fmt.Println("Autometrics generates links to a prometheus instance in the doc comments of instrumented functions. You can control the base URL of the pointed to instance with an environment variable:")
-	fmt.Printf("    %s\tBase URL of the Prometheus instance to generate links to (default: %s)\n",
-		prometheusAddressEnvironmentVariable,
-		DefaultPrometheusInstanceUrl,
-	)
-	fmt.Printf("\n\n")
-
-	fmt.Printf("    %s\tUse OpenTelemetry client library to instrument code instead of default Prometheus\n",
-		useOtelFlag,
-	)
-	fmt.Printf("    %s\tAllow non-default latencies to be used in latency-based SLOs (the default values in seconds are %v)\n",
-		allowCustomLatencies,
-		autometrics.DefBuckets,
-	)
-	fmt.Printf("\n")
-
-	fmt.Println("Check https://github.com/autometrics-dev/autometrics-go for more help (including examples) and usage information.")
 }

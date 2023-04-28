@@ -79,11 +79,11 @@ have the `--latency-ms` values to match the values given in your buckets. The
 values in the buckets are given in _seconds_. By default, the generator will
 error and tell you the valid default values if they don't match.
 If the default values do not match your use case, you can change the buckets in
-the init call, and add a `-custom-latency` argument to the `//go:generate` invocation.
+the init call, and add a `--custom-latency` argument to the `//go:generate` invocation.
 
 ```patch
 -//go:generate autometrics
-+//go:generate autometrics -custom-latency
++//go:generate autometrics --custom-latency
 ```
 
 ### Add cookies in your code
@@ -228,11 +228,11 @@ metric. You can use the name of the application or its version for example
 	)
 ```
 
-- add the `-otel` flag to the `//go:generate` directive
+- add the `--otel` flag to the `//go:generate` directive
 
 ```patch
 -//go:generate autometrics
-+//go:generate autometrics -otel
++//go:generate autometrics --otel
 ```
 
 ## (OPTIONAL) Git hook

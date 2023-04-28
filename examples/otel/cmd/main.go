@@ -14,7 +14,7 @@ import (
 
 // This should be `//go:generate autometrics` in practice. Those are hacks to get the example working, see
 // README
-//go:generate go run ../../../cmd/autometrics/main.go -otel
+//go:generate go run ../../../cmd/autometrics/main.go --otel
 
 func main() {
 	rand.Seed(time.Now().UnixNano())
