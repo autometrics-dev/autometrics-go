@@ -22,7 +22,7 @@ docker compose -f docker-compose.prometheus-example.yaml up
 ```
 
 And then explore the generated links by opening the [main
-file](./examples/web/cmd/main.go).
+file](./examples/web/cmd/main.go) in your editor.
 
 ## How to use
 
@@ -52,7 +52,7 @@ In the main entrypoint of your program, you need to both add package
 
 ``` go
 import (
-	amImpl "github.com/autometrics-dev/autometrics-go/pkg/autometrics/prometheus"
+	autometrics "github.com/autometrics-dev/autometrics-go/pkg/autometrics/prometheus"
 )
 ```
 
@@ -62,13 +62,13 @@ And then in your main function initialize the metrics
 	// Everything in BuildInfo is optional.
 	// You can also use any string variable whose value is
 	// injected at build time by ldflags.
-	amImpl.Init(
+	autometrics.Init(
 		nil,
-		amImpl.DefBuckets,
-		amImpl.BuildInfo{
+		autometrics.DefBuckets,
+		autometrics.BuildInfo{
 			Version: "0.4.0",
 			Commit: "anySHA",
-			BuildTime: "",
+			Branch: "",
 		},
 	)
 ```
@@ -148,19 +148,19 @@ For Prometheus the shortest way is to add the handler code in your main entrypoi
 
 ``` go
 import (
-	amImpl "github.com/autometrics-dev/autometrics-go/pkg/autometrics/prometheus"
+	autometrics "github.com/autometrics-dev/autometrics-go/pkg/autometrics/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 
 func main() {
-	amImpl.Init(
+	autometrics.Init(
 		nil,
-		amImpl.DefBuckets,
-		amImpl.BuildInfo{
+		autometrics.DefBuckets,
+		autometrics.BuildInfo{
 			Version: "0.4.0",
 			Commit: "anySHA",
-			BuildTime: "",
+			Branch: "",
 		},
 	)
 	http.Handle("/metrics", promhttp.Handler())
@@ -182,11 +182,11 @@ func RouteHandler(args interface{}) (err error) {
 }
 ```
 
-Then **you need to add** the [bundled](./configs/autometrics.rules.yml)
+Then **you need to add** the [bundled](./configs/shared/autometrics.rules.yml)
 recording rules to your prometheus configuration.
 
 The valid arguments for alert generation are:
-- `--slo` (*MANDATORY*): name of the service for which the objective is relevant
+- `--slo` (*MANDATORY* for alert generation): name of the service for which the objective is relevant
 - `--success-rate` : target success rate of the function, between 0 and 100 (you
   must name the `error` return value of the function for detection to work.)
 - `--latency-ms` : maximum latency allowed for the function, in milliseconds.
@@ -196,7 +196,7 @@ The valid arguments for alert generation are:
   
 > **Warning**
 > The generator will error out if you use targets that are not
-supported by the bundled [Alerting rules file](./configs/autometrics.rules.yml).
+supported by the bundled [Alerting rules file](./configs/shared/autometrics.rules.yml).
 Support for custom target is planned but not present at the moment
   
 ## (OPTIONAL) OpenTelemetry Support
@@ -204,26 +204,26 @@ Support for custom target is planned but not present at the moment
 Autometrics supports using OpenTelemetry with a prometheus exporter instead of using
 Prometheus to publish the metrics. The changes you need to make are:
 
-- change where the `amImpl` import points to
+- change where the `autometrics` import points to
 ```patch
 import (
--	amImpl "github.com/autometrics-dev/autometrics-go/pkg/autometrics/prometheus"
-+	amImpl "github.com/autometrics-dev/autometrics-go/pkg/autometrics/otel"
+-	autometrics "github.com/autometrics-dev/autometrics-go/pkg/autometrics/prometheus"
++	autometrics "github.com/autometrics-dev/autometrics-go/pkg/autometrics/otel"
 )
 ```
-- change the call to `amImpl.Init` to the new signature: instead of a registry,
+- change the call to `autometrics.Init` to the new signature: instead of a registry,
 the `Init` function takes a meter name for the `otel_scope` label of the exported
 metric. You can use the name of the application or its version for example
 
 ``` patch
-	amImpl.Init(
+	autometrics.Init(
 -		nil,
 +		"myApp/v2/prod",
-		amImpl.DefBuckets,
-		amImpl.BuildInfo{
+		autometrics.DefBuckets,
+		autometrics.BuildInfo{
 			Version: "2.1.37",
 			Commit: "anySHA",
-			BuildTime: "",
+			Branch: "",
 		},
 	)
 ```
@@ -264,4 +264,4 @@ The alerting system for SLOs that Autometrics uses is based on
 [Sloth](https://github.com/slok/sloth), and it has native Go types for
 marshalling/unmarshalling rules, so it should be possible to provide an extra
 binary in this repository, that only takes care of generating a new [rules
-file](./configs/autometrics.rules.yml) with custom objectives.
+file](./configs/shared/autometrics.rules.yml) with custom objectives.

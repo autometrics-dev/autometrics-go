@@ -8,7 +8,7 @@ import (
 	"net/http"
 	"time"
 
-	amImpl "github.com/autometrics-dev/autometrics-go/pkg/autometrics/prometheus"
+	autometrics "github.com/autometrics-dev/autometrics-go/pkg/autometrics/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
@@ -28,10 +28,10 @@ func main() {
 	// Everything in BuildInfo is optional.
 	// You can also use any string variable whose value is
 	// injected at build time by ldflags.
-	amImpl.Init(
+	autometrics.Init(
 		nil,
-		amImpl.DefBuckets,
-		amImpl.BuildInfo{
+		autometrics.DefBuckets,
+		autometrics.BuildInfo{
 			Version: Version,
 			Commit:  Commit,
 			Branch:  Branch,
