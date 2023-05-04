@@ -42,19 +42,34 @@ type Context struct {
 	// Only amImpl.Instrument should read this value.
 	// Only amImpl.PreInstrument should write this value.
 	//
-	// This value is only exported for the child packages "prometheus" and "otel"
+	// (amImpl is either the [Prometheus] or the [Open Telemetry] implementation)
+	//
+	// This value is only exported for the child packages [Prometheus] and [Open Telemetry]
+	//
+	// [Prometheus]: https://godoc.org/github.com/autometrics-dev/autometrics-go/pkg/autometrics/prometheus
+	// [Open Telemetry]: https://godoc.org/github.com/autometrics-dev/autometrics-go/pkg/autometrics/otel
 	StartTime time.Time
 	// CallInfo contains all the relevant data for caller information.
 	// Only amImpl.Instrument should read this value.
 	// Only amImpl.PreInstrument should write/read this value.
 	//
-	// This value is only exported for the child packages "prometheus" and "otel"
+	// (amImpl is either the [Prometheus] or the [Open Telemetry] implementation)
+	//
+	// This value is only exported for the child packages [Prometheus] and [Open Telemetry]
+	//
+	// [Prometheus]: https://godoc.org/github.com/autometrics-dev/autometrics-go/pkg/autometrics/prometheus
+	// [Open Telemetry]: https://godoc.org/github.com/autometrics-dev/autometrics-go/pkg/autometrics/otel
 	CallInfo CallInfo
 	// BuildInfo contains all the relevant data for caller information.
 	// Only amImpl.Instrument and PreInstrument should read this value.
 	// Only amImpl.Init should write/read this value.
 	//
-	// This value is only exported for the child packages "prometheus" and "otel"
+	// (amImpl is either the [Prometheus] or the [Open Telemetry] implementation)
+	//
+	// This value is only exported for the child packages [Prometheus] and [Open Telemetry]
+	//
+	// [Prometheus]: https://godoc.org/github.com/autometrics-dev/autometrics-go/pkg/autometrics/prometheus
+	// [Open Telemetry]: https://godoc.org/github.com/autometrics-dev/autometrics-go/pkg/autometrics/otel
 	BuildInfo BuildInfo
 	Context   context.Context
 }
@@ -77,8 +92,8 @@ type BuildInfo struct {
 	Commit string
 	// Version is the version of the code.
 	Version string
-	// BuildTime is the timestamp of the build of the codebase.
-	BuildTime string
+	// Branch is the branch of the build of the codebase.
+	Branch string
 }
 
 func NewContext() Context {
@@ -93,7 +108,7 @@ func NewContext() Context {
 func (c *Context) FillBuildInfo() {
 	c.BuildInfo.Version = GetVersion()
 	c.BuildInfo.Commit = GetCommit()
-	c.BuildInfo.BuildTime = GetBuildTime()
+	c.BuildInfo.Branch = GetBranch()
 }
 
 func (c Context) Validate(allowCustomLatencies bool) error {

@@ -4,7 +4,6 @@ set -euo pipefail
 
 BUILD_PACK="github.com/autometrics-dev/autometrics-go/internal/build"
 VERSION=`git describe --tags`
-BUILD_TIME=`date -u`
 SCRIPT_DIR="$( dirname -- "$( readlink -f -- "$0"; )"; )"
 
-go build -v -ldflags="-X '${BUILD_PACK}.Version=${VERSION}' -X '${BUILD_PACK}.Time=${BUILD_TIME}'" ${SCRIPT_DIR}/../cmd/autometrics/main.go
+go build -v -ldflags="-X '${BUILD_PACK}.Version=${VERSION}'" ${SCRIPT_DIR}/../cmd/autometrics/main.go

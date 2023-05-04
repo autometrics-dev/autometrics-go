@@ -57,8 +57,8 @@ const (
 	CommitLabel = "commit"
 	// VersionLabel is the prometheus label that describes the version of the monitored codebase.
 	VersionLabel = "version"
-	// BuildTimeLabel is the prometheus label that describes the timestamp of the build of the monitored codebase.
-	BuildTimeLabel = "build_time"
+	// BranchLabel is the prometheus label that describes the branch of the build of the monitored codebase.
+	BranchLabel = "branch"
 )
 
 // BuildInfo holds meta information about the build of the instrumented code.
@@ -79,24 +79,24 @@ type BuildInfo = autometrics.BuildInfo
 func Init(reg *prometheus.Registry, histogramBuckets []float64, buildInformation BuildInfo) error {
 	autometrics.SetCommit(buildInformation.Commit)
 	autometrics.SetVersion(buildInformation.Version)
-	autometrics.SetBuildTime(buildInformation.BuildTime)
+	autometrics.SetBranch(buildInformation.Branch)
 
 	functionCallsCount = prometheus.NewCounterVec(prometheus.CounterOpts{
 		Name: FunctionCallsCountName,
-	}, []string{FunctionLabel, ModuleLabel, CallerLabel, ResultLabel, TargetSuccessRateLabel, SloNameLabel, CommitLabel, VersionLabel, BuildTimeLabel})
+	}, []string{FunctionLabel, ModuleLabel, CallerLabel, ResultLabel, TargetSuccessRateLabel, SloNameLabel, CommitLabel, VersionLabel, BranchLabel})
 
 	functionCallsDuration = prometheus.NewHistogramVec(prometheus.HistogramOpts{
 		Name:    FunctionCallsDurationName,
 		Buckets: histogramBuckets,
-	}, []string{FunctionLabel, ModuleLabel, CallerLabel, TargetLatencyLabel, TargetSuccessRateLabel, SloNameLabel, CommitLabel, VersionLabel, BuildTimeLabel})
+	}, []string{FunctionLabel, ModuleLabel, CallerLabel, TargetLatencyLabel, TargetSuccessRateLabel, SloNameLabel, CommitLabel, VersionLabel, BranchLabel})
 
 	functionCallsConcurrent = prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Name: FunctionCallsConcurrentName,
-	}, []string{FunctionLabel, ModuleLabel, CallerLabel, CommitLabel, VersionLabel, BuildTimeLabel})
+	}, []string{FunctionLabel, ModuleLabel, CallerLabel, CommitLabel, VersionLabel, BranchLabel})
 
 	buildInfo = prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Name: BuildInfoName,
-	}, []string{CommitLabel, VersionLabel, BuildTimeLabel})
+	}, []string{CommitLabel, VersionLabel, BranchLabel})
 
 	if reg != nil {
 		reg.MustRegister(functionCallsCount)
@@ -113,7 +113,7 @@ func Init(reg *prometheus.Registry, histogramBuckets []float64, buildInformation
 	buildInfo.With(prometheus.Labels{
 		CommitLabel: buildInformation.Commit,
 		VersionLabel: buildInformation.Version,
-		BuildTimeLabel: buildInformation.BuildTime,
+		BranchLabel: buildInformation.Branch,
 	}).Set(1)
 
 	return nil

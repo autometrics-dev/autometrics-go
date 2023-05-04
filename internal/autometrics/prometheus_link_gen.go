@@ -47,7 +47,7 @@ func (p Prometheus) makePrometheusUrl(query, comment string) url.URL {
 }
 
 func addBuildInfoLabels() string {
-	return fmt.Sprintf("* on (instance, job) group_left(%s, %s) %s",
+	return fmt.Sprintf("* on (instance, job) group_left(%s, %s) last_over_time(%s[1s])",
 		prometheus.VersionLabel,
 		prometheus.CommitLabel,
 		prometheus.BuildInfoName,
@@ -94,7 +94,12 @@ func latencyQuery(bucketName, labelKey, labelValue string) string {
 		addBuildInfoLabels(),
 	)
 
-	return fmt.Sprintf("histogram_quantile(0.99, %s) or histogram_quantile(0.95, %s)", latency, latency)
+	return fmt.Sprintf(
+		"label_replace(histogram_quantile(0.99, %s), \"percentile_latency\", \"99\", \"\", \"\") or "+
+			"label_replace(histogram_quantile(0.95, %s),\"percentile_latency\", \"95\", \"\", \"\")",
+		latency,
+		latency,
+	)
 }
 
 func concurrentCallsQuery(gaugeName, labelKey, labelValue string) string {

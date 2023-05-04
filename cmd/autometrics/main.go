@@ -29,9 +29,6 @@ func (args) Version() string {
 	var buf strings.Builder
 
 	fmt.Fprintf(&buf, "Autometrics %s", build.Version)
-	if build.Time != "" {
-		fmt.Fprintf(&buf, " (Built on %s)", build.Time)
-	}
 
 	return buf.String()
 }

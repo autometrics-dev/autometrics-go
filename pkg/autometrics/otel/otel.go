@@ -66,8 +66,8 @@ const (
 	CommitLabel = "commit"
 	// VersionLabel is the openTelemetry attribute that describes the version of the monitored codebase.
 	VersionLabel = "version"
-	// BuildTimeLabel is the openTelemetry attribute that describes the timestamp of the build of the monitored codebase.
-	BuildTimeLabel = "build_time"
+	// BranchLabel is the openTelemetry attribute that describes the branch of the build of the monitored codebase.
+	BranchLabel = "branch"
 )
 
 func completeMeterName(meterName string) string {
@@ -89,7 +89,7 @@ type BuildInfo = autometrics.BuildInfo
 func Init(meterName string, histogramBuckets []float64, buildInformation BuildInfo) error {
 	autometrics.SetCommit(buildInformation.Commit)
 	autometrics.SetVersion(buildInformation.Version)
-	autometrics.SetBuildTime(buildInformation.BuildTime)
+	autometrics.SetBranch(buildInformation.Branch)
 
 	exporter, err := prometheus.New(
 		// The units are removed from the exporter so that the names of the
@@ -144,7 +144,7 @@ func Init(meterName string, histogramBuckets []float64, buildInformation BuildIn
 		[]attribute.KeyValue{
 			attribute.Key(CommitLabel).String(buildInformation.Commit),
 			attribute.Key(VersionLabel).String(buildInformation.Version),
-			attribute.Key(BuildTimeLabel).String(buildInformation.BuildTime),
+			attribute.Key(BranchLabel).String(buildInformation.Branch),
 		}...)
 
 	return nil

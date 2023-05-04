@@ -51,7 +51,7 @@ func Instrument(ctx *autometrics.Context, err *error) {
 			attribute.Key(SloNameLabel).String(sloName),
 			attribute.Key(CommitLabel).String(ctx.BuildInfo.Commit),
 			attribute.Key(VersionLabel).String(ctx.BuildInfo.Version),
-			attribute.Key(BuildTimeLabel).String(ctx.BuildInfo.BuildTime),
+			attribute.Key(BranchLabel).String(ctx.BuildInfo.Branch),
 		}...)
 	functionCallsDuration.Record(ctx.Context, time.Since(ctx.StartTime).Seconds(),
 		[]attribute.KeyValue{
@@ -63,7 +63,7 @@ func Instrument(ctx *autometrics.Context, err *error) {
 			attribute.Key(SloNameLabel).String(sloName),
 			attribute.Key(CommitLabel).String(ctx.BuildInfo.Commit),
 			attribute.Key(VersionLabel).String(ctx.BuildInfo.Version),
-			attribute.Key(BuildTimeLabel).String(ctx.BuildInfo.BuildTime),
+			attribute.Key(BranchLabel).String(ctx.BuildInfo.Branch),
 		}...)
 
 	if ctx.TrackConcurrentCalls {
@@ -74,7 +74,7 @@ func Instrument(ctx *autometrics.Context, err *error) {
 				attribute.Key(CallerLabel).String(callerLabel),
 				attribute.Key(CommitLabel).String(ctx.BuildInfo.Commit),
 				attribute.Key(VersionLabel).String(ctx.BuildInfo.Version),
-				attribute.Key(BuildTimeLabel).String(ctx.BuildInfo.BuildTime),
+				attribute.Key(BranchLabel).String(ctx.BuildInfo.Branch),
 			}...)
 	}
 }
@@ -101,7 +101,7 @@ func PreInstrument(ctx *autometrics.Context) *autometrics.Context {
 				attribute.Key(CallerLabel).String(callerLabel),
 				attribute.Key(CommitLabel).String(ctx.BuildInfo.Commit),
 				attribute.Key(VersionLabel).String(ctx.BuildInfo.Version),
-				attribute.Key(BuildTimeLabel).String(ctx.BuildInfo.BuildTime),
+				attribute.Key(BranchLabel).String(ctx.BuildInfo.Branch),
 			}...)
 	}
 

@@ -47,7 +47,7 @@ func Instrument(ctx *autometrics.Context, err *error) {
 		ResultLabel:            result,
 		TargetSuccessRateLabel: successObjective,
 		SloNameLabel:           sloName,
-		BuildTimeLabel:         ctx.BuildInfo.BuildTime,
+		BranchLabel:         ctx.BuildInfo.Branch,
 		CommitLabel:            ctx.BuildInfo.Commit,
 		VersionLabel:           ctx.BuildInfo.Version,
 	}).Inc()
@@ -58,7 +58,7 @@ func Instrument(ctx *autometrics.Context, err *error) {
 		TargetLatencyLabel:     latencyTarget,
 		TargetSuccessRateLabel: latencyObjective,
 		SloNameLabel:           sloName,
-		BuildTimeLabel:         ctx.BuildInfo.BuildTime,
+		BranchLabel:         ctx.BuildInfo.Branch,
 		CommitLabel:            ctx.BuildInfo.Commit,
 		VersionLabel:           ctx.BuildInfo.Version,
 	}).Observe(time.Since(ctx.StartTime).Seconds())
@@ -68,7 +68,7 @@ func Instrument(ctx *autometrics.Context, err *error) {
 			FunctionLabel:  ctx.CallInfo.FuncName,
 			ModuleLabel:    ctx.CallInfo.ModuleName,
 			CallerLabel:    callerLabel,
-			BuildTimeLabel: ctx.BuildInfo.BuildTime,
+			BranchLabel: ctx.BuildInfo.Branch,
 			CommitLabel:    ctx.BuildInfo.Commit,
 			VersionLabel:   ctx.BuildInfo.Version,
 		}).Dec()
@@ -93,7 +93,7 @@ func PreInstrument(ctx *autometrics.Context) *autometrics.Context {
 			FunctionLabel:  ctx.CallInfo.FuncName,
 			ModuleLabel:    ctx.CallInfo.ModuleName,
 			CallerLabel:    callerLabel,
-			BuildTimeLabel: ctx.BuildInfo.BuildTime,
+			BranchLabel: ctx.BuildInfo.Branch,
 			CommitLabel:    ctx.BuildInfo.Commit,
 			VersionLabel:   ctx.BuildInfo.Version,
 		}).Inc()

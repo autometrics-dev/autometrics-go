@@ -1,8 +1,11 @@
 package autometrics // import "github.com/autometrics-dev/autometrics-go/pkg/autometrics"
 
+// These variables are describing the state of the application being autometricized,
+// _not_ the build information of the binary
+
 var version string
 var commit string
-var buildTime string
+var branch string
 
 // GetVersion returns the version of the codebase being instrumented.
 func GetVersion() string {
@@ -24,12 +27,12 @@ func SetCommit(newCommit string) {
 	commit = newCommit
 }
 
-// GetBuildTime returns the build timestamp of the codebase being instrumented.
-func GetBuildTime() string {
-	return buildTime
+// GetBranch returns the branch of the build of the codebase being instrumented.
+func GetBranch() string {
+	return branch
 }
 
-// SetBuildTime sets the build timestamp of the codebase being instrumented.
-func SetBuildTime(newBuildTime string) {
-	buildTime = newBuildTime
+// SetBranch sets the branch of the build of the codebase being instrumented.
+func SetBranch(newBranch string) {
+	branch = newBranch
 }

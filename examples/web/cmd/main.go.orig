@@ -16,9 +16,11 @@ import (
 // README
 //go:generate go run ../../../cmd/autometrics/main.go
 
-var Version = "development"
-var Commit = "n/a"
-var BuildTime string
+var (
+	Version = "development"
+	Commit  = "n/a"
+	Branch  string
+)
 
 func main() {
 	rand.Seed(time.Now().UnixNano())
@@ -31,8 +33,8 @@ func main() {
 		amImpl.DefBuckets,
 		amImpl.BuildInfo{
 			Version: Version,
-			Commit: Commit,
-			BuildTime: BuildTime,
+			Commit:  Commit,
+			Branch:  Branch,
 		},
 	)
 
