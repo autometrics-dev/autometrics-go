@@ -5,8 +5,8 @@ go 1.18
 require github.com/prometheus/client_golang v1.14.0
 
 require (
+	github.com/alexflint/go-arg v1.4.3
 	github.com/google/shlex v0.0.0-20191202100458-e7afc7fbc510
-	github.com/slok/sloth v0.11.0
 	go.opentelemetry.io/otel v1.14.0
 	go.opentelemetry.io/otel/exporters/prometheus v0.37.0
 	go.opentelemetry.io/otel/metric v0.37.0
@@ -16,6 +16,7 @@ require (
 )
 
 require (
+	github.com/alexflint/go-scalar v1.1.0 // indirect
 	github.com/go-logr/logr v1.2.3 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	go.opentelemetry.io/otel/trace v1.14.0 // indirect

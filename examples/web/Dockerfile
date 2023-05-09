@@ -1,16 +1,24 @@
 FROM golang:1.20-alpine
 MAINTAINER Fiberplane <info@fiberplane.com>
+ARG version=development
 
-# Cannot really build the demo image from
-# the examples subfolder because of
-# relative imports shenanigans that go out of build context (i.e. upwards)
-#
-# Use
-# GOOS=linux GOARCH=amd64 go build -o web-server ./cmd/main.go
-#
-# To build the web-server app
+RUN apk update && apk add git
 
-COPY web-server /
+WORKDIR /app
+
+COPY . ./
+
+RUN go mod download
+
+WORKDIR /app/examples/web
+
+RUN go generate cmd/main.go
+
+ENV VERSION="$version"
+
+RUN scripts/build_server
+
+RUN cp web-server /
 
 EXPOSE 62086
 

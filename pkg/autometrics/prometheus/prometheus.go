@@ -9,6 +9,7 @@ var (
 	functionCallsCount      *prometheus.CounterVec
 	functionCallsDuration   *prometheus.HistogramVec
 	functionCallsConcurrent *prometheus.GaugeVec
+	buildInfo               *prometheus.GaugeVec
 	DefBuckets              = autometrics.DefBuckets
 )
 
@@ -19,6 +20,8 @@ const (
 	FunctionCallsDurationName = "function_calls_duration"
 	// FunctionCallsConcurrentName is the name of the prometheus metric for the number of simulateneously active calls to specific functions.
 	FunctionCallsConcurrentName = "function_calls_concurrent"
+	// BuildInfo is the name of the prometheus metric for the version of the monitored codebase.
+	BuildInfoName = "build_info"
 
 	// FunctionLabel is the prometheus label that describes the function name.
 	//
@@ -47,9 +50,22 @@ const (
 	// In the case of success objectives, it describes the percentage of calls
 	// that must be successful (i.e. have their [ResultLabel] be 'ok').
 	TargetSuccessRateLabel = "objective_percentile"
-	// SloLabelName is the prometheus label that describes the name of the Service Level Objective.
+	// SloLabel is the prometheus label that describes the name of the Service Level Objective.
 	SloNameLabel = "objective_name"
+
+	// CommitLabel is the prometheus label that describes the commit of the monitored codebase.
+	CommitLabel = "commit"
+	// VersionLabel is the prometheus label that describes the version of the monitored codebase.
+	VersionLabel = "version"
+	// BranchLabel is the prometheus label that describes the branch of the build of the monitored codebase.
+	BranchLabel = "branch"
 )
+
+// BuildInfo holds meta information about the build of the instrumented code.
+//
+// This is a reexport of the autometrics type to allow [Init] to work with only
+// the current (prometheus) package imported at the call site.
+type BuildInfo = autometrics.BuildInfo
 
 // Init sets up the metrics required for autometrics' decorated functions and registers
 // them to the argument registry.
@@ -60,29 +76,45 @@ const (
 // Make sure that all the latency targets you want to use for SLOs are
 // present in the histogramBuckets array, otherwise the alerts will fail
 // to work (they will never trigger.)
-func Init(reg *prometheus.Registry, histogramBuckets []float64) error {
+func Init(reg *prometheus.Registry, histogramBuckets []float64, buildInformation BuildInfo) error {
+	autometrics.SetCommit(buildInformation.Commit)
+	autometrics.SetVersion(buildInformation.Version)
+	autometrics.SetBranch(buildInformation.Branch)
+
 	functionCallsCount = prometheus.NewCounterVec(prometheus.CounterOpts{
 		Name: FunctionCallsCountName,
-	}, []string{FunctionLabel, ModuleLabel, CallerLabel, ResultLabel, TargetSuccessRateLabel, SloNameLabel})
+	}, []string{FunctionLabel, ModuleLabel, CallerLabel, ResultLabel, TargetSuccessRateLabel, SloNameLabel, CommitLabel, VersionLabel, BranchLabel})
 
 	functionCallsDuration = prometheus.NewHistogramVec(prometheus.HistogramOpts{
 		Name:    FunctionCallsDurationName,
 		Buckets: histogramBuckets,
-	}, []string{FunctionLabel, ModuleLabel, CallerLabel, TargetLatencyLabel, TargetSuccessRateLabel, SloNameLabel})
+	}, []string{FunctionLabel, ModuleLabel, CallerLabel, TargetLatencyLabel, TargetSuccessRateLabel, SloNameLabel, CommitLabel, VersionLabel, BranchLabel})
 
 	functionCallsConcurrent = prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Name: FunctionCallsConcurrentName,
-	}, []string{FunctionLabel, ModuleLabel, CallerLabel})
+	}, []string{FunctionLabel, ModuleLabel, CallerLabel, CommitLabel, VersionLabel, BranchLabel})
+
+	buildInfo = prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Name: BuildInfoName,
+	}, []string{CommitLabel, VersionLabel, BranchLabel})
 
 	if reg != nil {
 		reg.MustRegister(functionCallsCount)
 		reg.MustRegister(functionCallsDuration)
 		reg.MustRegister(functionCallsConcurrent)
+		reg.MustRegister(buildInfo)
 	} else {
 		prometheus.DefaultRegisterer.MustRegister(functionCallsCount)
 		prometheus.DefaultRegisterer.MustRegister(functionCallsDuration)
 		prometheus.DefaultRegisterer.MustRegister(functionCallsConcurrent)
+		prometheus.DefaultRegisterer.MustRegister(buildInfo)
 	}
+
+	buildInfo.With(prometheus.Labels{
+		CommitLabel: buildInformation.Commit,
+		VersionLabel: buildInformation.Version,
+		BranchLabel: buildInformation.Branch,
+	}).Set(1)
 
 	return nil
 }

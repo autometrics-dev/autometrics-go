@@ -46,22 +46,73 @@ func (p Prometheus) makePrometheusUrl(query, comment string) url.URL {
 	return ret
 }
 
+func addBuildInfoLabels() string {
+	return fmt.Sprintf("* on (instance, job) group_left(%s, %s) last_over_time(%s[1s])",
+		prometheus.VersionLabel,
+		prometheus.CommitLabel,
+		prometheus.BuildInfoName,
+	)
+}
+
 func requestRateQuery(counterName, labelKey, labelValue string) string {
-	return fmt.Sprintf("sum by (%s, %s) (rate(%s{%s=\"%s\"}[5m]))", prometheus.FunctionLabel, prometheus.ModuleLabel, counterName, labelKey, labelValue)
+	return fmt.Sprintf("sum by (%s, %s, %s, %s) (rate(%s{%s=\"%s\"}[5m]) %s)",
+		prometheus.FunctionLabel,
+		prometheus.ModuleLabel,
+		prometheus.VersionLabel,
+		prometheus.CommitLabel,
+		counterName,
+		labelKey,
+		labelValue,
+		addBuildInfoLabels(),
+	)
 }
 
 func errorRatioQuery(counterName, labelKey, labelValue string) string {
-	return fmt.Sprintf("sum by (%s, %s) (rate(%s{%s=\"%s\",%s=\"error\"}[5m]))", prometheus.FunctionLabel, prometheus.ModuleLabel, counterName, labelKey, labelValue, prometheus.ResultLabel)
+	return fmt.Sprintf("(sum by (%s, %s, %s, %s) (rate(%s{%s=\"%s\",%s=\"error\"}[5m]) %s)) / (%s)",
+		prometheus.FunctionLabel,
+		prometheus.ModuleLabel,
+		prometheus.VersionLabel,
+		prometheus.CommitLabel,
+		counterName,
+		labelKey,
+		labelValue,
+		prometheus.ResultLabel,
+		addBuildInfoLabels(),
+		requestRateQuery(counterName, labelKey, labelValue),
+	)
 }
 
 func latencyQuery(bucketName, labelKey, labelValue string) string {
-	latency := fmt.Sprintf("sum by (le, %s, %s) (rate(%s_bucket{%s=\"%s\"}[5m]))", prometheus.FunctionLabel, prometheus.ModuleLabel, bucketName, labelKey, labelValue)
+	latency := fmt.Sprintf("sum by (le, %s, %s, %s, %s) (rate(%s_bucket{%s=\"%s\"}[5m]) %s)",
+		prometheus.FunctionLabel,
+		prometheus.ModuleLabel,
+		prometheus.VersionLabel,
+		prometheus.CommitLabel,
+		bucketName,
+		labelKey,
+		labelValue,
+		addBuildInfoLabels(),
+	)
 
-	return fmt.Sprintf("histogram_quantile(0.99, %s) or histogram_quantile(0.95, %s)", latency, latency)
+	return fmt.Sprintf(
+		"label_replace(histogram_quantile(0.99, %s), \"percentile_latency\", \"99\", \"\", \"\") or "+
+			"label_replace(histogram_quantile(0.95, %s),\"percentile_latency\", \"95\", \"\", \"\")",
+		latency,
+		latency,
+	)
 }
 
 func concurrentCallsQuery(gaugeName, labelKey, labelValue string) string {
-	return fmt.Sprintf("sum by (%s, %s) %s{%s=\"%s\"}", prometheus.FunctionLabel, prometheus.ModuleLabel, gaugeName, labelKey, labelValue)
+	return fmt.Sprintf("sum by (%s, %s, %s, %s) (%s{%s=\"%s\"} %s)",
+		prometheus.FunctionLabel,
+		prometheus.ModuleLabel,
+		prometheus.VersionLabel,
+		prometheus.CommitLabel,
+		gaugeName,
+		labelKey,
+		labelValue,
+		addBuildInfoLabels(),
+	)
 }
 
 func (p Prometheus) GenerateAutometricsComment(ctx GeneratorContext, funcName, moduleName string) []string {

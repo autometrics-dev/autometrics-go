@@ -8,9 +8,12 @@ It shows the generator usage and sets up Prometheus to showcase the
 ## Quick start
 
 ``` sh
-GOOS=linux GOARCH=amd64 go build -o web-server ./cmd/main.go
-docker compose up -d
-./poll_server
+# Go to the root of the repo
+cd ../..
+# Build all the images
+docker compose -f docker-compose.prometheus-example.yaml build
+# Run all the services
+docker compose -f docker-compose.prometheus-example.yaml up
 ```
 
 Then open [main](./cmd/main.go) in your editor and interact with the documentation links!
@@ -21,7 +24,8 @@ Then open [main](./cmd/main.go) in your editor and interact with the documentati
 
 Optionnally, create a slack integration with an "incoming webhook" for one of
 your channels, and put the URL of the webhook (a secret!) in `slack_url.txt` in
-the directory. That will enable alerting in Slack directly through Alertmanager.
+the [configs](./configs) directory. That will enable alerting in Slack directly
+through Alertmanager.
 
 You can see that the name of the service "API" comes directly from the annotation in the code.
 
@@ -36,7 +40,6 @@ You can even monitor all the alerts triggering through Prometheus or Alertmanage
 
 In order to run this example you need:
 
-- Go (at least 1.18)
 - Docker
 - Docker Compose
 
@@ -66,20 +69,24 @@ The generator is idempotent.
 
 ### Building the docker image
 
-Build the web-server for the image architecture:
+Build the web-server in an image. There are 2 important things in the
+image [recipe](./Dockerfile):
+- The context of the image is the root of the repository, only so that this
+  example runs the `development` version of the code, and
+- There is a specific [build script](./scripts/build_server) that uses
+  Go linker flags to inject build and version information in the binary.
 
 ```sh
-GOOS=linux GOARCH=amd64 go build -o web-server ./cmd/main.go
-docker compose build
+docker build --build-arg VERSION=1.0.0 -t web-server .
 ```
 
 ### Start the services
 
-In one terminal you can launch the stack and the small helper script to poll the the server:
+In one terminal you can launch the image and the small helper script to poll the the server:
 
 ```sh
-docker compose up -d
-./poll_server
+cd ../..
+docker compose -f docker-compose.prometheus-example.yaml up
 ```
 
 ### Check the links on Prometheus
@@ -104,9 +111,9 @@ configuration to the correct notification service:
 
 ![Alertmanager alerts dashboard showing the alerts firing](../../assets/alertmanager-alert-example.png)
 
-This demo example has a [minimal configuration](./alertmanager.yml) for alerts
+This demo example has a [minimal configuration](./configs/alertmanager.yml) for alerts
 that expects a file `slack_url.txt` to be passed in docker-compose context.
-Create the file in the same folder as this README, and if the file exists, the
+Create the file in the [configs folder](./configs), and if the file exists, the
 triggered alerts automatically go on Slack to the configured channel:
 
 ![a Slack bot is posting an alert directly in the channel](../../assets/slack-alert-example.png)

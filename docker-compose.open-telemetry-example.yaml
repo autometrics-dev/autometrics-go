@@ -20,8 +20,8 @@ services:
     container_name: alertmanager
     restart: unless-stopped
     volumes:
-      - ./alertmanager.yml:/etc/alertmanager/alertmanager.yml
-      - ./slack_url.txt:/etc/alertmanager/slack_url
+      - ./examples/otel/configs/alertmanager.yml:/etc/alertmanager/alertmanager.yml
+      - ./examples/otel/configs/slack_url.txt:/etc/alertmanager/slack_url
     command:
       - '--config.file=/etc/alertmanager/alertmanager.yml'
     expose:
@@ -34,8 +34,8 @@ services:
     container_name: prometheus
     restart: unless-stopped
     volumes:
-      - ./prometheus.yaml:/etc/prometheus/prometheus.yaml
-      - ./autometrics.rules.yml:/etc/prometheus/autometrics.rules.yml
+      - ./examples/otel/configs/prometheus.yaml:/etc/prometheus/prometheus.yaml
+      - ./examples/otel/configs/autometrics.rules.yml:/etc/prometheus/autometrics.rules.yml
     command:
       - '--config.file=/etc/prometheus/prometheus.yaml'
     expose:
@@ -48,7 +48,9 @@ services:
       - web-server
 
   web-server:
-    build: .
+    build:
+      context: .
+      dockerfile: examples/otel/Dockerfile
     container_name: web-server
     restart: unless-stopped
     expose:

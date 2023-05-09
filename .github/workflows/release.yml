@@ -30,6 +30,9 @@ jobs:
             ext: ''
     steps:
       - uses: actions/checkout@v3
+        with:
+          # We need all tags
+          fetch-depth: 0
       - name: Set up Go
         uses: actions/setup-go@v4
         with:
@@ -37,7 +40,7 @@ jobs:
           check-latest: true
       - name: Build
         run: |
-          GOOS=${{ matrix.goos }} GOARCH=${{ matrix.goarch }} go build cmd/autometrics/main.go
+          GOOS=${{ matrix.goos }} GOARCH=${{ matrix.goarch }} ./scripts/build_generator
           mv main${{ matrix.ext }} autometrics${{ matrix.ext }}
 
       - name: Pack (Zip)
