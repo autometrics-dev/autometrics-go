@@ -23,13 +23,14 @@ const (
 	SuccessObjArgument = "--success-target"
 	LatencyMsArgument  = "--latency-ms"
 	LatencyObjArgument = "--latency-target"
+	NoDocArgument      = "--no-doc"
 
 	AmPromPackage = "\"github.com/autometrics-dev/autometrics-go/pkg/autometrics/prometheus\""
 	AmOtelPackage = "\"github.com/autometrics-dev/autometrics-go/pkg/autometrics/otel\""
 )
 
 // TransformFile takes a file path and generates the documentation
-// for the `//autometrics:doc` functions.
+// for the `//autometrics:inst` functions.
 //
 // It also replaces the file in place.
 func TransformFile(ctx internal.GeneratorContext, path, moduleName string) error {
@@ -65,7 +66,7 @@ func TransformFile(ctx internal.GeneratorContext, path, moduleName string) error
 }
 
 // GenerateDocumentationAndInstrumentation takes the raw source code from a file and generates
-// the documentation for the `//autometrics:doc` functions.
+// the documentation for the `//autometrics:inst` functions.
 //
 // It returns the new source code with augmented documentation.
 func GenerateDocumentationAndInstrumentation(ctx internal.GeneratorContext, sourceCode, moduleName string) (string, error) {
@@ -185,8 +186,12 @@ func GenerateDocumentationAndInstrumentation(ctx internal.GeneratorContext, sour
 			listIndex := ctx.FuncCtx.CommentIndex
 			if listIndex >= 0 {
 				// Insert comments
-				autometricsComment := generateAutometricsComment(ctx)
-				funcDeclaration.Decorations().Start.Replace(insertComments(docComments, listIndex, autometricsComment)...)
+				if !ctx.DisableDocGeneration && !ctx.FuncCtx.DisableDocGeneration {
+					autometricsComment := generateAutometricsComment(ctx)
+					funcDeclaration.Decorations().Start.Replace(insertComments(docComments, listIndex, autometricsComment)...)
+				} else {
+					funcDeclaration.Decorations().Start.Replace(docComments...)
+				}
 
 				// defer statement
 				firstStatement := funcDeclaration.Body.List[0]
@@ -351,6 +356,9 @@ func buildAutometricsDeferStatement(ctx internal.GeneratorContext, secondVar str
 func parseAutometricsFnContext(ctx *internal.GeneratorContext, commentGroup []string) error {
 	for i, comment := range commentGroup {
 		if args, found := cutPrefix(comment, "//autometrics:"); found {
+			if !strings.Contains(comment, "autometrics:doc") && !strings.Contains(comment, "autometrics:inst") {
+				return fmt.Errorf("invalid directive comment '%s': only '//autometrics:doc' and '//autometrics:inst' are allowed.", comment)
+			}
 			ctx.FuncCtx.CommentIndex = i
 			ctx.RuntimeCtx = autometrics.NewContext()
 
@@ -474,6 +482,9 @@ func parseAutometricsFnContext(ctx *internal.GeneratorContext, commentGroup []st
 						}
 					}
 					// Advance past the "value"
+					tokenIndex = tokenIndex + 1
+				case token == NoDocArgument:
+					ctx.FuncCtx.DisableDocGeneration = true
 					tokenIndex = tokenIndex + 1
 				default:
 					// Advance past the "value"
