@@ -50,10 +50,10 @@ func main() {
 //
 // It always succeeds and says hello.
 //
-//autometrics:doc --slo "API" --latency-target 99 --latency-ms 250
+//autometrics:doc --slo "API" --latency-target 99 --latency-ms 100
 func indexHandler(w http.ResponseWriter, _ *http.Request) error {
 
-	time.Sleep(time.Duration(rand.Intn(500)) * time.Millisecond)
+	time.Sleep(time.Duration(rand.Intn(200)) * time.Millisecond)
 
 	_, err := fmt.Fprintf(w, "Hello, World!\n")
 	return err
@@ -67,9 +67,9 @@ var handlerError = errors.New("failed to handle request")
 //
 //autometrics:doc --slo "API" --success-target 90
 func randomErrorHandler(w http.ResponseWriter, _ *http.Request) (err error) {
-	isErr := rand.Intn(2) == 0
+	isOk := rand.Intn(10) == 0
 
-	if isErr {
+	if !isOk {
 		err = handlerError
 	} else {
 		w.WriteHeader(http.StatusOK)

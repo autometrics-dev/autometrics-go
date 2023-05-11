@@ -75,16 +75,16 @@ func main() {
 // [Request Rate Callee]: http://localhost:9090/graph?g0.expr=%23+Rate+of+function+calls+emanating+from+%60indexHandler%60+function+per+second%2C+averaged+over+5+minute+windows%0A%0Asum+by+%28function%2C+module%2C+version%2C+commit%29+%28rate%28function_calls_count%7Bcaller%3D%22main.indexHandler%22%7D%5B5m%5D%29+%2A+on+%28instance%2C+job%29+group_left%28version%2C+commit%29+last_over_time%28build_info%5B1s%5D%29%29&g0.tab=0
 // [Error Ratio Callee]: http://localhost:9090/graph?g0.expr=%23+Percentage+of+function+emanating+from+%60indexHandler%60+function+that+return+errors%2C+averaged+over+5+minute+windows%0A%0A%28sum+by+%28function%2C+module%2C+version%2C+commit%29+%28rate%28function_calls_count%7Bcaller%3D%22main.indexHandler%22%2Cresult%3D%22error%22%7D%5B5m%5D%29+%2A+on+%28instance%2C+job%29+group_left%28version%2C+commit%29+last_over_time%28build_info%5B1s%5D%29%29%29+%2F+%28sum+by+%28function%2C+module%2C+version%2C+commit%29+%28rate%28function_calls_count%7Bcaller%3D%22main.indexHandler%22%7D%5B5m%5D%29+%2A+on+%28instance%2C+job%29+group_left%28version%2C+commit%29+last_over_time%28build_info%5B1s%5D%29%29%29&g0.tab=0
 //
-//autometrics:doc --slo "API" --latency-target 99 --latency-ms 250
+//autometrics:doc --slo "API" --latency-target 99 --latency-ms 100
 func indexHandler(w http.ResponseWriter, _ *http.Request) error {
 	defer autometrics.Instrument(autometrics.PreInstrument(autometrics.NewContext(
 		autometrics.WithConcurrentCalls(true),
 		autometrics.WithCallerName(true),
 		autometrics.WithSloName("API"),
-		autometrics.WithAlertLatency(250000000*time.Nanosecond, 99),
+		autometrics.WithAlertLatency(100000000*time.Nanosecond, 99),
 	)), nil) //autometrics:defer
 
-	time.Sleep(time.Duration(rand.Intn(500)) * time.Millisecond)
+	time.Sleep(time.Duration(rand.Intn(200)) * time.Millisecond)
 
 	_, err := fmt.Fprintf(w, "Hello, World!\n")
 	return err
@@ -130,9 +130,9 @@ func randomErrorHandler(w http.ResponseWriter, _ *http.Request) (err error) {
 		autometrics.WithAlertSuccess(90),
 	)), &err) //autometrics:defer
 
-	isErr := rand.Intn(2) == 0
+	isOk := rand.Intn(10) == 0
 
-	if isErr {
+	if !isOk {
 		err = handlerError
 	} else {
 		w.WriteHeader(http.StatusOK)
