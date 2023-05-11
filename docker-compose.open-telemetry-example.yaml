@@ -51,9 +51,20 @@ services:
     build:
       context: .
       dockerfile: examples/otel/Dockerfile
-    container_name: web-server
+    container_name: web-server-otel
     restart: unless-stopped
     expose:
       - 62086
     ports:
       - "62086:62086"
+
+  load-server:
+    build:
+      context: .
+      dockerfile: examples/otel/load.Dockerfile
+    environment:
+      TARGET_HOST: web-server-otel
+    container_name: load-server-otel
+    restart: unless-stopped
+    depends_on:
+      - web-server

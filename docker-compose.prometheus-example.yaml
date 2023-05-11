@@ -51,7 +51,7 @@ services:
     build:
       context: .
       dockerfile: examples/web/Dockerfile
-    container_name: web-server
+    container_name: web-server-prom
     restart: unless-stopped
     expose:
       - 62086
@@ -63,8 +63,8 @@ services:
       context: .
       dockerfile: examples/web/load.Dockerfile
     environment:
-      TARGET_HOST: web-server
-    container_name: load-server
+      TARGET_HOST: web-server-prom
+    container_name: load-server-prom
     restart: unless-stopped
     depends_on:
       - web-server
