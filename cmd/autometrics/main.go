@@ -23,6 +23,7 @@ type args struct {
 	PrometheusUrl        string `arg:"--prom_url,env:AM_PROMETHEUS_URL" placeholder:"PROMETHEUS_URL" default:"http://localhost:9090" help:"Base URL of the Prometheus instance to generate links to."`
 	UseOtel              bool   `arg:"--otel" default:"false" help:"Use OpenTelemetry client library to instrument code instead of default Prometheus."`
 	AllowCustomLatencies bool   `arg:"--custom-latency" default:"false" help:"Allow non-default latencies to be used in latency-based SLOs."`
+	DisableDocGeneration bool   `arg:"--no-doc,env:AM_NO_DOCGEN" default:"false" help:"Disable documentation links generation for all instrumented functions. Has the same effect as --no-doc in the //autometrics:inst directive."`
 }
 
 func (args) Version() string {
@@ -63,7 +64,12 @@ func main() {
 		implementation = autometrics.OTEL
 	}
 
-	ctx, err := internal.NewGeneratorContext(implementation, args.PrometheusUrl, args.AllowCustomLatencies)
+	ctx, err := internal.NewGeneratorContext(
+		implementation,
+		args.PrometheusUrl,
+		args.AllowCustomLatencies,
+		args.DisableDocGeneration,
+	)
 	if err != nil {
 		log.Fatalf("error initialising autometrics context: %s", err)
 	}

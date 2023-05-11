@@ -12,10 +12,18 @@ versioning](https://go.dev/doc/modules/version-numbers).
 
 - Changelog to summarize changes in a single place
 - Pull Request template for the repository
+- `--no-doc` argument to the generator to prevent the generator from
+  generating documentation links in the doc comments in the given file
+- `--no-doc` argument to the `autometrics:inst` directive to prevent
+  the generator from generating links on specific functions
 
 ### Changed
 
+- The `//autometrics:doc` directive has been renamed `//autometrics:inst`
+
 ### Deprecated
+
+- The `//autometrics:doc` directive has been renamed `//autometrics:inst`
 
 ### Removed
 

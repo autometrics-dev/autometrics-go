@@ -28,7 +28,7 @@ import (
 
 // This comment is associated with the main function.
 //
-//autometrics:doc --slo "Service Test" --success-target 99
+//autometrics:inst --slo "Service Test" --success-target 99
 func main() {
 	fmt.Println(hello) // line comment 3
 }
@@ -69,7 +69,7 @@ func main() {
 		"// [Request Rate Callee]: http://localhost:9090/graph?g0.expr=%23+Rate+of+function+calls+emanating+from+%60main%60+function+per+second%2C+averaged+over+5+minute+windows%0A%0Asum+by+%28function%2C+module%2C+version%2C+commit%29+%28rate%28function_calls_count%7Bcaller%3D%22main.main%22%7D%5B5m%5D%29+%2A+on+%28instance%2C+job%29+group_left%28version%2C+commit%29+last_over_time%28build_info%5B1s%5D%29%29&g0.tab=0\n" +
 		"// [Error Ratio Callee]: http://localhost:9090/graph?g0.expr=%23+Percentage+of+function+emanating+from+%60main%60+function+that+return+errors%2C+averaged+over+5+minute+windows%0A%0A%28sum+by+%28function%2C+module%2C+version%2C+commit%29+%28rate%28function_calls_count%7Bcaller%3D%22main.main%22%2Cresult%3D%22error%22%7D%5B5m%5D%29+%2A+on+%28instance%2C+job%29+group_left%28version%2C+commit%29+last_over_time%28build_info%5B1s%5D%29%29%29+%2F+%28sum+by+%28function%2C+module%2C+version%2C+commit%29+%28rate%28function_calls_count%7Bcaller%3D%22main.main%22%7D%5B5m%5D%29+%2A+on+%28instance%2C+job%29+group_left%28version%2C+commit%29+last_over_time%28build_info%5B1s%5D%29%29%29&g0.tab=0\n" +
 		"//\n" +
-		"//autometrics:doc --slo \"Service Test\" --success-target 99\n" +
+		"//autometrics:inst --slo \"Service Test\" --success-target 99\n" +
 		"func main() {\n" +
 		"\tdefer prom.Instrument(prom.PreInstrument(prom.NewContext(\n" +
 		"\t\tprom.WithConcurrentCalls(true),\n" +
@@ -81,7 +81,7 @@ func main() {
 		"	fmt.Println(hello) // line comment 3\n" +
 		"}\n"
 
-	ctx, err := internal.NewGeneratorContext(autometrics.PROMETHEUS, DefaultPrometheusInstanceUrl, false)
+	ctx, err := internal.NewGeneratorContext(autometrics.PROMETHEUS, DefaultPrometheusInstanceUrl, false, false)
 	if err != nil {
 		t.Fatalf("error creating the generation context: %s", err)
 	}
@@ -114,7 +114,7 @@ import (
 //
 //   autometrics:doc-end DO NOT EDIT
 //
-//autometrics:doc --slo "API" --latency-target 99.9 --latency-ms 500
+//autometrics:inst --slo "API" --latency-target 99.9 --latency-ms 500
 func main() {
 	fmt.Println(hello) // line comment 3
 }
@@ -155,7 +155,7 @@ func main() {
 		"// [Request Rate Callee]: http://localhost:9090/graph?g0.expr=%23+Rate+of+function+calls+emanating+from+%60main%60+function+per+second%2C+averaged+over+5+minute+windows%0A%0Asum+by+%28function%2C+module%2C+version%2C+commit%29+%28rate%28function_calls_count%7Bcaller%3D%22main.main%22%7D%5B5m%5D%29+%2A+on+%28instance%2C+job%29+group_left%28version%2C+commit%29+last_over_time%28build_info%5B1s%5D%29%29&g0.tab=0\n" +
 		"// [Error Ratio Callee]: http://localhost:9090/graph?g0.expr=%23+Percentage+of+function+emanating+from+%60main%60+function+that+return+errors%2C+averaged+over+5+minute+windows%0A%0A%28sum+by+%28function%2C+module%2C+version%2C+commit%29+%28rate%28function_calls_count%7Bcaller%3D%22main.main%22%2Cresult%3D%22error%22%7D%5B5m%5D%29+%2A+on+%28instance%2C+job%29+group_left%28version%2C+commit%29+last_over_time%28build_info%5B1s%5D%29%29%29+%2F+%28sum+by+%28function%2C+module%2C+version%2C+commit%29+%28rate%28function_calls_count%7Bcaller%3D%22main.main%22%7D%5B5m%5D%29+%2A+on+%28instance%2C+job%29+group_left%28version%2C+commit%29+last_over_time%28build_info%5B1s%5D%29%29%29&g0.tab=0\n" +
 		"//\n" +
-		"//autometrics:doc --slo \"API\" --latency-target 99.9 --latency-ms 500\n" +
+		"//autometrics:inst --slo \"API\" --latency-target 99.9 --latency-ms 500\n" +
 		"func main() {\n" +
 		"\tdefer prom.Instrument(prom.PreInstrument(prom.NewContext(\n" +
 		"\t\tprom.WithConcurrentCalls(true),\n" +
@@ -167,7 +167,131 @@ func main() {
 		"	fmt.Println(hello) // line comment 3\n" +
 		"}\n"
 
-	ctx, err := internal.NewGeneratorContext(autometrics.PROMETHEUS, DefaultPrometheusInstanceUrl, false)
+	ctx, err := internal.NewGeneratorContext(autometrics.PROMETHEUS, DefaultPrometheusInstanceUrl, false, false)
+	if err != nil {
+		t.Fatalf("error creating the generation context: %s", err)
+	}
+
+	actual, err := GenerateDocumentationAndInstrumentation(ctx, sourceCode, "main")
+	if err != nil {
+		t.Fatalf("error generating the documentation: %s", err)
+	}
+
+	assert.Equal(t, want, actual, "The generated source code is not as expected.")
+}
+
+// TestCommentDelete calls GenerateDocumentationAndInstrumentation on a
+// decorated function that already has a comment, making sure that the autometrics
+// directive deletes the comment section about autometrics, from the `--no-doc` argument
+// on the directive
+func TestCommentDelete(t *testing.T) {
+	sourceCode := `// This is the package comment.
+package main
+
+import (
+	"github.com/autometrics-dev/autometrics-go/pkg/autometrics"
+	prom "github.com/autometrics-dev/autometrics-go/pkg/autometrics/prometheus"
+)
+
+// This comment is associated with the main function.
+//
+//   autometrics:doc-start
+//
+// Obviously not a good comment
+//
+//   autometrics:doc-end DO NOT EDIT
+//
+//autometrics:inst --no-doc --slo "API" --latency-target 99.9 --latency-ms 500
+func main() {
+	fmt.Println(hello) // line comment 3
+}
+`
+
+	want := "// This is the package comment.\n" +
+		"package main\n" +
+		"\n" +
+		"import (\n" +
+		"\t\"github.com/autometrics-dev/autometrics-go/pkg/autometrics\"\n" +
+		"\tprom \"github.com/autometrics-dev/autometrics-go/pkg/autometrics/prometheus\"\n" +
+		")\n" +
+		"\n" +
+		"// This comment is associated with the main function.\n" +
+		"//\n" +
+		"//autometrics:inst --no-doc --slo \"API\" --latency-target 99.9 --latency-ms 500\n" +
+		"func main() {\n" +
+		"\tdefer prom.Instrument(prom.PreInstrument(prom.NewContext(\n" +
+		"\t\tprom.WithConcurrentCalls(true),\n" +
+		"\t\tprom.WithCallerName(true),\n" +
+		"\t\tprom.WithSloName(\"API\"),\n" +
+		"\t\tprom.WithAlertLatency(500000000*time.Nanosecond, 99.9),\n" +
+		"\t)), nil) //autometrics:defer\n" +
+		"\n" +
+		"	fmt.Println(hello) // line comment 3\n" +
+		"}\n"
+
+	ctx, err := internal.NewGeneratorContext(autometrics.PROMETHEUS, DefaultPrometheusInstanceUrl, false, false)
+	if err != nil {
+		t.Fatalf("error creating the generation context: %s", err)
+	}
+
+	actual, err := GenerateDocumentationAndInstrumentation(ctx, sourceCode, "main")
+	if err != nil {
+		t.Fatalf("error generating the documentation: %s", err)
+	}
+
+	assert.Equal(t, want, actual, "The generated source code is not as expected.")
+}
+
+// TestCommentDeleteGlobalFlag calls GenerateDocumentationAndInstrumentation on a
+// decorated function that already has a comment, making sure that the autometrics
+// directive deletes the comment section about autometrics, from the global flag,
+// emulated in the GeneratorContext constructor
+func TestCommentDeleteGlobalFlag(t *testing.T) {
+	sourceCode := `// This is the package comment.
+package main
+
+import (
+	"github.com/autometrics-dev/autometrics-go/pkg/autometrics"
+	prom "github.com/autometrics-dev/autometrics-go/pkg/autometrics/prometheus"
+)
+
+// This comment is associated with the main function.
+//
+//   autometrics:doc-start
+//
+// Obviously not a good comment
+//
+//   autometrics:doc-end DO NOT EDIT
+//
+//autometrics:inst --slo "API" --latency-target 99.9 --latency-ms 500
+func main() {
+	fmt.Println(hello) // line comment 3
+}
+`
+
+	want := "// This is the package comment.\n" +
+		"package main\n" +
+		"\n" +
+		"import (\n" +
+		"\t\"github.com/autometrics-dev/autometrics-go/pkg/autometrics\"\n" +
+		"\tprom \"github.com/autometrics-dev/autometrics-go/pkg/autometrics/prometheus\"\n" +
+		")\n" +
+		"\n" +
+		"// This comment is associated with the main function.\n" +
+		"//\n" +
+		"//autometrics:inst --slo \"API\" --latency-target 99.9 --latency-ms 500\n" +
+		"func main() {\n" +
+		"\tdefer prom.Instrument(prom.PreInstrument(prom.NewContext(\n" +
+		"\t\tprom.WithConcurrentCalls(true),\n" +
+		"\t\tprom.WithCallerName(true),\n" +
+		"\t\tprom.WithSloName(\"API\"),\n" +
+		"\t\tprom.WithAlertLatency(500000000*time.Nanosecond, 99.9),\n" +
+		"\t)), nil) //autometrics:defer\n" +
+		"\n" +
+		"	fmt.Println(hello) // line comment 3\n" +
+		"}\n"
+
+	ctx, err := internal.NewGeneratorContext(autometrics.PROMETHEUS, DefaultPrometheusInstanceUrl, false, true)
 	if err != nil {
 		t.Fatalf("error creating the generation context: %s", err)
 	}
@@ -191,12 +315,12 @@ import (
 
 // This comment is associated with the main function.
 //
-//autometrics:doc --slo "Service Test" --success-target 12394
+//autometrics:inst --slo "Service Test" --success-target 12394
 func main() {
 	fmt.Println(hello) // line comment 3
 }
 `
-	ctx, err := internal.NewGeneratorContext(autometrics.PROMETHEUS, DefaultPrometheusInstanceUrl, false)
+	ctx, err := internal.NewGeneratorContext(autometrics.PROMETHEUS, DefaultPrometheusInstanceUrl, false, false)
 	if err != nil {
 		t.Fatalf("error creating the generation context: %s", err)
 	}
@@ -214,12 +338,12 @@ import (
 
 // This comment is associated with the main function.
 //
-//autometrics:doc --slo "Service Test" --success-target -49
+//autometrics:inst --slo "Service Test" --success-target -49
 func main() {
 	fmt.Println(hello) // line comment 3
 }
 `
-	ctx, err = internal.NewGeneratorContext(autometrics.PROMETHEUS, DefaultPrometheusInstanceUrl, false)
+	ctx, err = internal.NewGeneratorContext(autometrics.PROMETHEUS, DefaultPrometheusInstanceUrl, false, false)
 	if err != nil {
 		t.Fatalf("error creating the generation context: %s", err)
 	}
@@ -237,12 +361,12 @@ import (
 
 // This comment is associated with the main function.
 //
-//autometrics:doc --success-target 90
+//autometrics:inst --success-target 90
 func main() {
 	fmt.Println(hello) // line comment 3
 }
 `
-	ctx, err = internal.NewGeneratorContext(autometrics.PROMETHEUS, DefaultPrometheusInstanceUrl, false)
+	ctx, err = internal.NewGeneratorContext(autometrics.PROMETHEUS, DefaultPrometheusInstanceUrl, false, false)
 	if err != nil {
 		t.Fatalf("error creating the generation context: %s", err)
 	}
@@ -260,12 +384,12 @@ import (
 
 // This comment is associated with the main function.
 //
-//autometrics:doc --latency-ms 5000 --latency-target 99.9
+//autometrics:inst --latency-ms 5000 --latency-target 99.9
 func main() {
 	fmt.Println(hello) // line comment 3
 }
 `
-	ctx, err = internal.NewGeneratorContext(autometrics.PROMETHEUS, DefaultPrometheusInstanceUrl, false)
+	ctx, err = internal.NewGeneratorContext(autometrics.PROMETHEUS, DefaultPrometheusInstanceUrl, false, false)
 	if err != nil {
 		t.Fatalf("error creating the generation context: %s", err)
 	}
@@ -283,12 +407,12 @@ import (
 
 // This comment is associated with the main function.
 //
-//autometrics:doc --slo "API" --latency-target 90
+//autometrics:inst --slo "API" --latency-target 90
 func main() {
 	fmt.Println(hello) // line comment 3
 }
 `
-	ctx, err = internal.NewGeneratorContext(autometrics.PROMETHEUS, DefaultPrometheusInstanceUrl, false)
+	ctx, err = internal.NewGeneratorContext(autometrics.PROMETHEUS, DefaultPrometheusInstanceUrl, false, false)
 	if err != nil {
 		t.Fatalf("error creating the generation context: %s", err)
 	}
@@ -306,12 +430,12 @@ import (
 
 // This comment is associated with the main function.
 //
-//autometrics:doc --slo "API" --latency-ms 1000
+//autometrics:inst --slo "API" --latency-ms 1000
 func main() {
 	fmt.Println(hello) // line comment 3
 }
 `
-	ctx, err = internal.NewGeneratorContext(autometrics.PROMETHEUS, DefaultPrometheusInstanceUrl, false)
+	ctx, err = internal.NewGeneratorContext(autometrics.PROMETHEUS, DefaultPrometheusInstanceUrl, false, false)
 	if err != nil {
 		t.Fatalf("error creating the generation context: %s", err)
 	}
@@ -329,12 +453,12 @@ import (
 
 // This comment is associated with the main function.
 //
-//autometrics:doc --slo "API" --latency-ms -5000 --latency-target 99.9
+//autometrics:inst --slo "API" --latency-ms -5000 --latency-target 99.9
 func main() {
 	fmt.Println(hello) // line comment 3
 }
 `
-	ctx, err = internal.NewGeneratorContext(autometrics.PROMETHEUS, DefaultPrometheusInstanceUrl, false)
+	ctx, err = internal.NewGeneratorContext(autometrics.PROMETHEUS, DefaultPrometheusInstanceUrl, false, false)
 	if err != nil {
 		t.Fatalf("error creating the generation context: %s", err)
 	}
@@ -352,12 +476,12 @@ import (
 
 // This comment is associated with the main function.
 //
-//autometrics:doc --slo "API" --latency-ms 5000 --latency-target 49999
+//autometrics:inst --slo "API" --latency-ms 5000 --latency-target 49999
 func main() {
 	fmt.Println(hello) // line comment 3
 }
 `
-	ctx, err = internal.NewGeneratorContext(autometrics.PROMETHEUS, DefaultPrometheusInstanceUrl, false)
+	ctx, err = internal.NewGeneratorContext(autometrics.PROMETHEUS, DefaultPrometheusInstanceUrl, false, false)
 	if err != nil {
 		t.Fatalf("error creating the generation context: %s", err)
 	}
@@ -375,12 +499,12 @@ import (
 
 // This comment is associated with the main function.
 //
-//autometrics:doc --slo "API" --latency-ms 5000 --latency-target -123
+//autometrics:inst --slo "API" --latency-ms 5000 --latency-target -123
 func main() {
 	fmt.Println(hello) // line comment 3
 }
 `
-	ctx, err = internal.NewGeneratorContext(autometrics.PROMETHEUS, DefaultPrometheusInstanceUrl, false)
+	ctx, err = internal.NewGeneratorContext(autometrics.PROMETHEUS, DefaultPrometheusInstanceUrl, false, false)
 	if err != nil {
 		t.Fatalf("error creating the generation context: %s", err)
 	}
