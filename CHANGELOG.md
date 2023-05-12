@@ -20,6 +20,8 @@ versioning](https://go.dev/doc/modules/version-numbers).
 ### Changed
 
 - The `//autometrics:doc` directive has been renamed `//autometrics:inst`
+- The type of counter for `function.calls.count` metric has been changed to
+  a monotonic Int64 counter
 
 ### Deprecated
 
