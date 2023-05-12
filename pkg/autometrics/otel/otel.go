@@ -15,7 +15,7 @@ import (
 )
 
 var (
-	functionCallsCount      instrument.Int64UpDownCounter
+	functionCallsCount      instrument.Int64Counter
 	functionCallsDuration   instrument.Float64Histogram
 	functionCallsConcurrent instrument.Int64UpDownCounter
 	buildInfo               instrument.Int64UpDownCounter
@@ -116,11 +116,7 @@ func Init(meterName string, histogramBuckets []float64, buildInformation BuildIn
 	)
 	meter := provider.Meter(completeMeterName(meterName))
 
-	// We are using an UpDown counter instead of the natural Counter because with a monotonic counter
-	// there is no way to remove the '_total' suffix from the exported metric name. This suffix
-	// makes the exported metrics incompatible with the autometrics.rules.yml file.
-	// Ref: https://github.com/open-telemetry/opentelemetry-go/blob/6b7e207953ce0a13d38da628a6aa48ad56058d2a/exporters/prometheus/exporter.go#L212-L215
-	functionCallsCount, err = meter.Int64UpDownCounter(FunctionCallsCountName, instrument.WithDescription("The number of times the function has been called"))
+	functionCallsCount, err = meter.Int64Counter(FunctionCallsCountName, instrument.WithDescription("The number of times the function has been called"))
 	if err != nil {
 		return fmt.Errorf("error initializing %v metric: %w", FunctionCallsCountName, err)
 	}
