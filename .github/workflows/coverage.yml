@@ -1,0 +1,19 @@
+name: "Go Coverage"
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+jobs:
+  coverage:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        fetch-depth: 10
+
+    - uses: gwatts/go-coverage-action@v1
+      id: coverage
+      with:
+        cover-pkg: ./...
