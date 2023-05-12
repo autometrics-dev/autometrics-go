@@ -22,7 +22,6 @@ func TestCommentDirective(t *testing.T) {
 package main
 
 import (
-	"github.com/autometrics-dev/autometrics-go/pkg/autometrics"
 	prom "github.com/autometrics-dev/autometrics-go/pkg/autometrics/prometheus"
 )
 
@@ -38,7 +37,6 @@ func main() {
 		"package main\n" +
 		"\n" +
 		"import (\n" +
-		"\t\"github.com/autometrics-dev/autometrics-go/pkg/autometrics\"\n" +
 		"\tprom \"github.com/autometrics-dev/autometrics-go/pkg/autometrics/prometheus\"\n" +
 		")\n" +
 		"\n" +
@@ -102,7 +100,6 @@ func TestCommentRefresh(t *testing.T) {
 package main
 
 import (
-	"github.com/autometrics-dev/autometrics-go/pkg/autometrics"
 	prom "github.com/autometrics-dev/autometrics-go/pkg/autometrics/prometheus"
 )
 
@@ -124,7 +121,6 @@ func main() {
 		"package main\n" +
 		"\n" +
 		"import (\n" +
-		"\t\"github.com/autometrics-dev/autometrics-go/pkg/autometrics\"\n" +
 		"\tprom \"github.com/autometrics-dev/autometrics-go/pkg/autometrics/prometheus\"\n" +
 		")\n" +
 		"\n" +
@@ -188,10 +184,7 @@ func TestCommentDelete(t *testing.T) {
 	sourceCode := `// This is the package comment.
 package main
 
-import (
-	"github.com/autometrics-dev/autometrics-go/pkg/autometrics"
-	prom "github.com/autometrics-dev/autometrics-go/pkg/autometrics/prometheus"
-)
+import "github.com/autometrics-dev/autometrics-go/pkg/autometrics/prometheus" 
 
 // This comment is associated with the main function.
 //
@@ -210,20 +203,17 @@ func main() {
 	want := "// This is the package comment.\n" +
 		"package main\n" +
 		"\n" +
-		"import (\n" +
-		"\t\"github.com/autometrics-dev/autometrics-go/pkg/autometrics\"\n" +
-		"\tprom \"github.com/autometrics-dev/autometrics-go/pkg/autometrics/prometheus\"\n" +
-		")\n" +
+		"import " +
+		"\"github.com/autometrics-dev/autometrics-go/pkg/autometrics/prometheus\"\n" +
 		"\n" +
 		"// This comment is associated with the main function.\n" +
-		"//\n" +
 		"//autometrics:inst --no-doc --slo \"API\" --latency-target 99.9 --latency-ms 500\n" +
 		"func main() {\n" +
-		"\tdefer prom.Instrument(prom.PreInstrument(prom.NewContext(\n" +
-		"\t\tprom.WithConcurrentCalls(true),\n" +
-		"\t\tprom.WithCallerName(true),\n" +
-		"\t\tprom.WithSloName(\"API\"),\n" +
-		"\t\tprom.WithAlertLatency(500000000*time.Nanosecond, 99.9),\n" +
+		"\tdefer prometheus.Instrument(prometheus.PreInstrument(prometheus.NewContext(\n" +
+		"\t\tprometheus.WithConcurrentCalls(true),\n" +
+		"\t\tprometheus.WithCallerName(true),\n" +
+		"\t\tprometheus.WithSloName(\"API\"),\n" +
+		"\t\tprometheus.WithAlertLatency(500000000*time.Nanosecond, 99.9),\n" +
 		"\t)), nil) //autometrics:defer\n" +
 		"\n" +
 		"	fmt.Println(hello) // line comment 3\n" +
@@ -304,7 +294,7 @@ func main() {
 	assert.Equal(t, want, actual, "The generated source code is not as expected.")
 }
 
-func TestCommentDirectiveErrors(t *testing.T) {
+func TestInputValidationSuccessRateErrors(t *testing.T) {
 	sourceCode := `// This is the package comment.
 package main
 
@@ -350,7 +340,6 @@ func main() {
 
 	_, err = GenerateDocumentationAndInstrumentation(ctx, sourceCode, "main")
 	assert.Error(t, err, "Calling generation must fail if the target success rate is unrealistic.")
-
 	sourceCode = `// This is the package comment.
 package main
 
@@ -374,7 +363,10 @@ func main() {
 	_, err = GenerateDocumentationAndInstrumentation(ctx, sourceCode, "main")
 	assert.Error(t, err, "Calling generation must fail if no service name is given.")
 
-	sourceCode = `// This is the package comment.
+}
+
+func TestInputValidationLatencyErrors(t *testing.T) {
+	sourceCode := `// This is the package comment.
 package main
 
 import (
@@ -389,7 +381,7 @@ func main() {
 	fmt.Println(hello) // line comment 3
 }
 `
-	ctx, err = internal.NewGeneratorContext(autometrics.PROMETHEUS, DefaultPrometheusInstanceUrl, false, false)
+	ctx, err := internal.NewGeneratorContext(autometrics.PROMETHEUS, DefaultPrometheusInstanceUrl, false, false)
 	if err != nil {
 		t.Fatalf("error creating the generation context: %s", err)
 	}
@@ -511,6 +503,166 @@ func main() {
 
 	_, err = GenerateDocumentationAndInstrumentation(ctx, sourceCode, "main")
 	assert.Error(t, err, "Calling generation must fail if latency expectations are unrealistic.")
+
+	sourceCode = `// This is the package comment.
+package main
+
+import (
+	"github.com/autometrics-dev/autometrics-go/pkg/autometrics"
+	prom "github.com/autometrics-dev/autometrics-go/pkg/autometrics/prometheus"
+)
+
+// This comment is associated with the main function.
+//
+//autometrics:inst --slo "API" --latency-ms 122345 --latency-target 99
+func main() {
+	fmt.Println(hello) // line comment 3
+}
+`
+	ctx, err = internal.NewGeneratorContext(autometrics.PROMETHEUS, DefaultPrometheusInstanceUrl, false, false)
+	if err != nil {
+		t.Fatalf("error creating the generation context: %s", err)
+	}
+
+	_, err = GenerateDocumentationAndInstrumentation(ctx, sourceCode, "main")
+	assert.Error(t, err, "Calling generation must fail if latency target is not in the default buckets.")
+
+	ctx, err = internal.NewGeneratorContext(autometrics.PROMETHEUS, DefaultPrometheusInstanceUrl, true, false)
+	if err != nil {
+		t.Fatalf("error creating the generation context: %s", err)
+	}
+
+	_, err = GenerateDocumentationAndInstrumentation(ctx, sourceCode, "main")
+	if err != nil {
+		t.Fatalf("error generating instrumentation with custom latency and the 'allowCustomLatencies' flag: %s", err)
+	}
+}
+
+func TestInputValidationDocComments(t *testing.T) {
+	sourceCode := `// This is the package comment.
+package main
+
+import (
+	"github.com/autometrics-dev/autometrics-go/pkg/autometrics"
+	prom "github.com/autometrics-dev/autometrics-go/pkg/autometrics/prometheus"
+)
+
+// This comment is associated with the main function.
+//
+//   autometrics:doc-start
+//autometrics:inst
+func main() {
+	fmt.Println(hello) // line comment 3
+}
+`
+	ctx, err := internal.NewGeneratorContext(autometrics.PROMETHEUS, DefaultPrometheusInstanceUrl, false, false)
+	if err != nil {
+		t.Fatalf("error creating the generation context: %s", err)
+	}
+
+	_, err = GenerateDocumentationAndInstrumentation(ctx, sourceCode, "main")
+	assert.Error(t, err, "Calling generation must fail if there is only a documentation start cookie.")
+
+	sourceCode = `// This is the package comment.
+package main
+
+import (
+	"github.com/autometrics-dev/autometrics-go/pkg/autometrics"
+	prom "github.com/autometrics-dev/autometrics-go/pkg/autometrics/prometheus"
+)
+
+// This comment is associated with the main function.
+//
+//   autometrics:doc-end
+//autometrics:inst
+func main() {
+	fmt.Println(hello) // line comment 3
+}
+`
+	ctx, err = internal.NewGeneratorContext(autometrics.PROMETHEUS, DefaultPrometheusInstanceUrl, false, false)
+	if err != nil {
+		t.Fatalf("error creating the generation context: %s", err)
+	}
+
+	_, err = GenerateDocumentationAndInstrumentation(ctx, sourceCode, "main")
+	assert.Error(t, err, "Calling generation must fail if there is only a documentation end cookie.")
+
+	sourceCode = `// This is the package comment.
+package main
+
+import (
+	"github.com/autometrics-dev/autometrics-go/pkg/autometrics"
+	prom "github.com/autometrics-dev/autometrics-go/pkg/autometrics/prometheus"
+)
+
+// This comment is associated with the main function.
+//
+//   autometrics:doc-start
+//   autometrics:doc-start
+//   autometrics:doc-end
+//autometrics:inst
+func main() {
+	fmt.Printstart ln(hello) // line comment 3
+}
+`
+	ctx, err = internal.NewGeneratorContext(autometrics.PROMETHEUS, DefaultPrometheusInstanceUrl, false, false)
+	if err != nil {
+		t.Fatalf("error creating the generation context: %s", err)
+	}
+
+	_, err = GenerateDocumentationAndInstrumentation(ctx, sourceCode, "main")
+	assert.Error(t, err, "Calling generation must fail if there are 2 documentation start cookies.")
+
+	sourceCode = `// This is the package comment.
+package main
+
+import (
+	"github.com/autometrics-dev/autometrics-go/pkg/autometrics"
+	prom "github.com/autometrics-dev/autometrics-go/pkg/autometrics/prometheus"
+)
+
+// This comment is associated with the main function.
+//
+//   autometrics:doc-start
+//   autometrics:doc-end
+//   autometrics:doc-end
+//autometrics:inst
+func main() {
+	fmt.Println(hello) // line comment 3
+}
+`
+	ctx, err = internal.NewGeneratorContext(autometrics.PROMETHEUS, DefaultPrometheusInstanceUrl, false, false)
+	if err != nil {
+		t.Fatalf("error creating the generation context: %s", err)
+	}
+
+	_, err = GenerateDocumentationAndInstrumentation(ctx, sourceCode, "main")
+	assert.Error(t, err, "Calling generation must fail if there are 2 documentation end cookies.")
+
+	sourceCode = `// This is the package comment.
+package main
+
+import (
+	"github.com/autometrics-dev/autometrics-go/pkg/autometrics"
+	prom "github.com/autometrics-dev/autometrics-go/pkg/autometrics/prometheus"
+)
+
+// This comment is associated with the main function.
+//
+//   autometrics:doc-end
+//   autometrics:doc-start
+//autometrics:inst
+func main() {
+	fmt.Println(hello) // line comment 3
+}
+`
+	ctx, err = internal.NewGeneratorContext(autometrics.PROMETHEUS, DefaultPrometheusInstanceUrl, false, false)
+	if err != nil {
+		t.Fatalf("error creating the generation context: %s", err)
+	}
+
+	_, err = GenerateDocumentationAndInstrumentation(ctx, sourceCode, "main")
+	assert.Error(t, err, "Calling generation must fail if the end cookie comes before the start cookie.")
 }
 
 func TestNamedReturnDetectionNothing(t *testing.T) {
