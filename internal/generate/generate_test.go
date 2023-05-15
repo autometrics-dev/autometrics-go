@@ -15,7 +15,7 @@ import (
 	"github.com/autometrics-dev/autometrics-go/pkg/autometrics"
 )
 
-const DefaultPrometheusInstanceUrl = "http://localhost:9090/"
+const defaultPrometheusInstanceUrl = "http://localhost:9090/"
 
 func TestCommentDirective(t *testing.T) {
 	sourceCode := `// This is the package comment.
@@ -60,16 +60,17 @@ func main() {
 		"//\n" +
 		"//\tautometrics:doc-end Generated documentation by Autometrics.\n" +
 		"//\n" +
-		"// [Request Rate]: http://localhost:9090/graph?g0.expr=%23+Rate+of+calls+to+the+%60main%60+function+per+second%2C+averaged+over+5+minute+windows%0A%0Asum+by+%28function%2C+module%2C+version%2C+commit%29+%28rate%28function_calls_count%7Bfunction%3D%22main%22%7D%5B5m%5D%29+%2A+on+%28instance%2C+job%29+group_left%28version%2C+commit%29+last_over_time%28build_info%5B1s%5D%29%29&g0.tab=0\n" +
-		"// [Error Ratio]: http://localhost:9090/graph?g0.expr=%23+Percentage+of+calls+to+the+%60main%60+function+that+return+errors%2C+averaged+over+5+minute+windows%0A%0A%28sum+by+%28function%2C+module%2C+version%2C+commit%29+%28rate%28function_calls_count%7Bfunction%3D%22main%22%2Cresult%3D%22error%22%7D%5B5m%5D%29+%2A+on+%28instance%2C+job%29+group_left%28version%2C+commit%29+last_over_time%28build_info%5B1s%5D%29%29%29+%2F+%28sum+by+%28function%2C+module%2C+version%2C+commit%29+%28rate%28function_calls_count%7Bfunction%3D%22main%22%7D%5B5m%5D%29+%2A+on+%28instance%2C+job%29+group_left%28version%2C+commit%29+last_over_time%28build_info%5B1s%5D%29%29%29&g0.tab=0\n" +
+		"// [Request Rate]: http://localhost:9090/graph?g0.expr=%23+Rate+of+calls+to+the+%60main%60+function+per+second%2C+averaged+over+5+minute+windows%0A%0Asum+by+%28function%2C+module%2C+version%2C+commit%29+%28rate%28function_calls_count_total%7Bfunction%3D%22main%22%7D%5B5m%5D%29+%2A+on+%28instance%2C+job%29+group_left%28version%2C+commit%29+last_over_time%28build_info%5B1s%5D%29%29&g0.tab=0\n" +
+		"// [Error Ratio]: http://localhost:9090/graph?g0.expr=%23+Percentage+of+calls+to+the+%60main%60+function+that+return+errors%2C+averaged+over+5+minute+windows%0A%0A%28sum+by+%28function%2C+module%2C+version%2C+commit%29+%28rate%28function_calls_count_total%7Bfunction%3D%22main%22%2Cresult%3D%22error%22%7D%5B5m%5D%29+%2A+on+%28instance%2C+job%29+group_left%28version%2C+commit%29+last_over_time%28build_info%5B1s%5D%29%29%29+%2F+%28sum+by+%28function%2C+module%2C+version%2C+commit%29+%28rate%28function_calls_count_total%7Bfunction%3D%22main%22%7D%5B5m%5D%29+%2A+on+%28instance%2C+job%29+group_left%28version%2C+commit%29+last_over_time%28build_info%5B1s%5D%29%29%29&g0.tab=0\n" +
 		"// [Latency (95th and 99th percentiles)]: http://localhost:9090/graph?g0.expr=%23+95th+and+99th+percentile+latencies+%28in+seconds%29+for+the+%60main%60+function%0A%0Alabel_replace%28histogram_quantile%280.99%2C+sum+by+%28le%2C+function%2C+module%2C+version%2C+commit%29+%28rate%28function_calls_duration_bucket%7Bfunction%3D%22main%22%7D%5B5m%5D%29+%2A+on+%28instance%2C+job%29+group_left%28version%2C+commit%29+last_over_time%28build_info%5B1s%5D%29%29%29%2C+%22percentile_latency%22%2C+%2299%22%2C+%22%22%2C+%22%22%29+or+label_replace%28histogram_quantile%280.95%2C+sum+by+%28le%2C+function%2C+module%2C+version%2C+commit%29+%28rate%28function_calls_duration_bucket%7Bfunction%3D%22main%22%7D%5B5m%5D%29+%2A+on+%28instance%2C+job%29+group_left%28version%2C+commit%29+last_over_time%28build_info%5B1s%5D%29%29%29%2C%22percentile_latency%22%2C+%2295%22%2C+%22%22%2C+%22%22%29&g0.tab=0\n" +
 		"// [Concurrent Calls]: http://localhost:9090/graph?g0.expr=%23+Concurrent+calls+to+the+%60main%60+function%0A%0Asum+by+%28function%2C+module%2C+version%2C+commit%29+%28function_calls_concurrent%7Bfunction%3D%22main%22%7D+%2A+on+%28instance%2C+job%29+group_left%28version%2C+commit%29+last_over_time%28build_info%5B1s%5D%29%29&g0.tab=0\n" +
-		"// [Request Rate Callee]: http://localhost:9090/graph?g0.expr=%23+Rate+of+function+calls+emanating+from+%60main%60+function+per+second%2C+averaged+over+5+minute+windows%0A%0Asum+by+%28function%2C+module%2C+version%2C+commit%29+%28rate%28function_calls_count%7Bcaller%3D%22main.main%22%7D%5B5m%5D%29+%2A+on+%28instance%2C+job%29+group_left%28version%2C+commit%29+last_over_time%28build_info%5B1s%5D%29%29&g0.tab=0\n" +
-		"// [Error Ratio Callee]: http://localhost:9090/graph?g0.expr=%23+Percentage+of+function+emanating+from+%60main%60+function+that+return+errors%2C+averaged+over+5+minute+windows%0A%0A%28sum+by+%28function%2C+module%2C+version%2C+commit%29+%28rate%28function_calls_count%7Bcaller%3D%22main.main%22%2Cresult%3D%22error%22%7D%5B5m%5D%29+%2A+on+%28instance%2C+job%29+group_left%28version%2C+commit%29+last_over_time%28build_info%5B1s%5D%29%29%29+%2F+%28sum+by+%28function%2C+module%2C+version%2C+commit%29+%28rate%28function_calls_count%7Bcaller%3D%22main.main%22%7D%5B5m%5D%29+%2A+on+%28instance%2C+job%29+group_left%28version%2C+commit%29+last_over_time%28build_info%5B1s%5D%29%29%29&g0.tab=0\n" +
+		"// [Request Rate Callee]: http://localhost:9090/graph?g0.expr=%23+Rate+of+function+calls+emanating+from+%60main%60+function+per+second%2C+averaged+over+5+minute+windows%0A%0Asum+by+%28function%2C+module%2C+version%2C+commit%29+%28rate%28function_calls_count_total%7Bcaller%3D%22main.main%22%7D%5B5m%5D%29+%2A+on+%28instance%2C+job%29+group_left%28version%2C+commit%29+last_over_time%28build_info%5B1s%5D%29%29&g0.tab=0\n" +
+		"// [Error Ratio Callee]: http://localhost:9090/graph?g0.expr=%23+Percentage+of+function+emanating+from+%60main%60+function+that+return+errors%2C+averaged+over+5+minute+windows%0A%0A%28sum+by+%28function%2C+module%2C+version%2C+commit%29+%28rate%28function_calls_count_total%7Bcaller%3D%22main.main%22%2Cresult%3D%22error%22%7D%5B5m%5D%29+%2A+on+%28instance%2C+job%29+group_left%28version%2C+commit%29+last_over_time%28build_info%5B1s%5D%29%29%29+%2F+%28sum+by+%28function%2C+module%2C+version%2C+commit%29+%28rate%28function_calls_count_total%7Bcaller%3D%22main.main%22%7D%5B5m%5D%29+%2A+on+%28instance%2C+job%29+group_left%28version%2C+commit%29+last_over_time%28build_info%5B1s%5D%29%29%29&g0.tab=0\n" +
 		"//\n" +
 		"//autometrics:inst --slo \"Service Test\" --success-target 99\n" +
 		"func main() {\n" +
 		"\tdefer prom.Instrument(prom.PreInstrument(prom.NewContext(\n" +
+		"\t\tnil,\n" +
 		"\t\tprom.WithConcurrentCalls(true),\n" +
 		"\t\tprom.WithCallerName(true),\n" +
 		"\t\tprom.WithSloName(\"Service Test\"),\n" +
@@ -79,7 +80,7 @@ func main() {
 		"	fmt.Println(hello) // line comment 3\n" +
 		"}\n"
 
-	ctx, err := internal.NewGeneratorContext(autometrics.PROMETHEUS, DefaultPrometheusInstanceUrl, false, false)
+	ctx, err := internal.NewGeneratorContext(autometrics.PROMETHEUS, defaultPrometheusInstanceUrl, false, false)
 	if err != nil {
 		t.Fatalf("error creating the generation context: %s", err)
 	}
@@ -144,16 +145,17 @@ func main() {
 		"//\n" +
 		"//\tautometrics:doc-end Generated documentation by Autometrics.\n" +
 		"//\n" +
-		"// [Request Rate]: http://localhost:9090/graph?g0.expr=%23+Rate+of+calls+to+the+%60main%60+function+per+second%2C+averaged+over+5+minute+windows%0A%0Asum+by+%28function%2C+module%2C+version%2C+commit%29+%28rate%28function_calls_count%7Bfunction%3D%22main%22%7D%5B5m%5D%29+%2A+on+%28instance%2C+job%29+group_left%28version%2C+commit%29+last_over_time%28build_info%5B1s%5D%29%29&g0.tab=0\n" +
-		"// [Error Ratio]: http://localhost:9090/graph?g0.expr=%23+Percentage+of+calls+to+the+%60main%60+function+that+return+errors%2C+averaged+over+5+minute+windows%0A%0A%28sum+by+%28function%2C+module%2C+version%2C+commit%29+%28rate%28function_calls_count%7Bfunction%3D%22main%22%2Cresult%3D%22error%22%7D%5B5m%5D%29+%2A+on+%28instance%2C+job%29+group_left%28version%2C+commit%29+last_over_time%28build_info%5B1s%5D%29%29%29+%2F+%28sum+by+%28function%2C+module%2C+version%2C+commit%29+%28rate%28function_calls_count%7Bfunction%3D%22main%22%7D%5B5m%5D%29+%2A+on+%28instance%2C+job%29+group_left%28version%2C+commit%29+last_over_time%28build_info%5B1s%5D%29%29%29&g0.tab=0\n" +
+		"// [Request Rate]: http://localhost:9090/graph?g0.expr=%23+Rate+of+calls+to+the+%60main%60+function+per+second%2C+averaged+over+5+minute+windows%0A%0Asum+by+%28function%2C+module%2C+version%2C+commit%29+%28rate%28function_calls_count_total%7Bfunction%3D%22main%22%7D%5B5m%5D%29+%2A+on+%28instance%2C+job%29+group_left%28version%2C+commit%29+last_over_time%28build_info%5B1s%5D%29%29&g0.tab=0\n" +
+		"// [Error Ratio]: http://localhost:9090/graph?g0.expr=%23+Percentage+of+calls+to+the+%60main%60+function+that+return+errors%2C+averaged+over+5+minute+windows%0A%0A%28sum+by+%28function%2C+module%2C+version%2C+commit%29+%28rate%28function_calls_count_total%7Bfunction%3D%22main%22%2Cresult%3D%22error%22%7D%5B5m%5D%29+%2A+on+%28instance%2C+job%29+group_left%28version%2C+commit%29+last_over_time%28build_info%5B1s%5D%29%29%29+%2F+%28sum+by+%28function%2C+module%2C+version%2C+commit%29+%28rate%28function_calls_count_total%7Bfunction%3D%22main%22%7D%5B5m%5D%29+%2A+on+%28instance%2C+job%29+group_left%28version%2C+commit%29+last_over_time%28build_info%5B1s%5D%29%29%29&g0.tab=0\n" +
 		"// [Latency (95th and 99th percentiles)]: http://localhost:9090/graph?g0.expr=%23+95th+and+99th+percentile+latencies+%28in+seconds%29+for+the+%60main%60+function%0A%0Alabel_replace%28histogram_quantile%280.99%2C+sum+by+%28le%2C+function%2C+module%2C+version%2C+commit%29+%28rate%28function_calls_duration_bucket%7Bfunction%3D%22main%22%7D%5B5m%5D%29+%2A+on+%28instance%2C+job%29+group_left%28version%2C+commit%29+last_over_time%28build_info%5B1s%5D%29%29%29%2C+%22percentile_latency%22%2C+%2299%22%2C+%22%22%2C+%22%22%29+or+label_replace%28histogram_quantile%280.95%2C+sum+by+%28le%2C+function%2C+module%2C+version%2C+commit%29+%28rate%28function_calls_duration_bucket%7Bfunction%3D%22main%22%7D%5B5m%5D%29+%2A+on+%28instance%2C+job%29+group_left%28version%2C+commit%29+last_over_time%28build_info%5B1s%5D%29%29%29%2C%22percentile_latency%22%2C+%2295%22%2C+%22%22%2C+%22%22%29&g0.tab=0\n" +
 		"// [Concurrent Calls]: http://localhost:9090/graph?g0.expr=%23+Concurrent+calls+to+the+%60main%60+function%0A%0Asum+by+%28function%2C+module%2C+version%2C+commit%29+%28function_calls_concurrent%7Bfunction%3D%22main%22%7D+%2A+on+%28instance%2C+job%29+group_left%28version%2C+commit%29+last_over_time%28build_info%5B1s%5D%29%29&g0.tab=0\n" +
-		"// [Request Rate Callee]: http://localhost:9090/graph?g0.expr=%23+Rate+of+function+calls+emanating+from+%60main%60+function+per+second%2C+averaged+over+5+minute+windows%0A%0Asum+by+%28function%2C+module%2C+version%2C+commit%29+%28rate%28function_calls_count%7Bcaller%3D%22main.main%22%7D%5B5m%5D%29+%2A+on+%28instance%2C+job%29+group_left%28version%2C+commit%29+last_over_time%28build_info%5B1s%5D%29%29&g0.tab=0\n" +
-		"// [Error Ratio Callee]: http://localhost:9090/graph?g0.expr=%23+Percentage+of+function+emanating+from+%60main%60+function+that+return+errors%2C+averaged+over+5+minute+windows%0A%0A%28sum+by+%28function%2C+module%2C+version%2C+commit%29+%28rate%28function_calls_count%7Bcaller%3D%22main.main%22%2Cresult%3D%22error%22%7D%5B5m%5D%29+%2A+on+%28instance%2C+job%29+group_left%28version%2C+commit%29+last_over_time%28build_info%5B1s%5D%29%29%29+%2F+%28sum+by+%28function%2C+module%2C+version%2C+commit%29+%28rate%28function_calls_count%7Bcaller%3D%22main.main%22%7D%5B5m%5D%29+%2A+on+%28instance%2C+job%29+group_left%28version%2C+commit%29+last_over_time%28build_info%5B1s%5D%29%29%29&g0.tab=0\n" +
+		"// [Request Rate Callee]: http://localhost:9090/graph?g0.expr=%23+Rate+of+function+calls+emanating+from+%60main%60+function+per+second%2C+averaged+over+5+minute+windows%0A%0Asum+by+%28function%2C+module%2C+version%2C+commit%29+%28rate%28function_calls_count_total%7Bcaller%3D%22main.main%22%7D%5B5m%5D%29+%2A+on+%28instance%2C+job%29+group_left%28version%2C+commit%29+last_over_time%28build_info%5B1s%5D%29%29&g0.tab=0\n" +
+		"// [Error Ratio Callee]: http://localhost:9090/graph?g0.expr=%23+Percentage+of+function+emanating+from+%60main%60+function+that+return+errors%2C+averaged+over+5+minute+windows%0A%0A%28sum+by+%28function%2C+module%2C+version%2C+commit%29+%28rate%28function_calls_count_total%7Bcaller%3D%22main.main%22%2Cresult%3D%22error%22%7D%5B5m%5D%29+%2A+on+%28instance%2C+job%29+group_left%28version%2C+commit%29+last_over_time%28build_info%5B1s%5D%29%29%29+%2F+%28sum+by+%28function%2C+module%2C+version%2C+commit%29+%28rate%28function_calls_count_total%7Bcaller%3D%22main.main%22%7D%5B5m%5D%29+%2A+on+%28instance%2C+job%29+group_left%28version%2C+commit%29+last_over_time%28build_info%5B1s%5D%29%29%29&g0.tab=0\n" +
 		"//\n" +
 		"//autometrics:inst --slo \"API\" --latency-target 99.9 --latency-ms 500\n" +
 		"func main() {\n" +
 		"\tdefer prom.Instrument(prom.PreInstrument(prom.NewContext(\n" +
+		"\t\tnil,\n" +
 		"\t\tprom.WithConcurrentCalls(true),\n" +
 		"\t\tprom.WithCallerName(true),\n" +
 		"\t\tprom.WithSloName(\"API\"),\n" +
@@ -163,7 +165,7 @@ func main() {
 		"	fmt.Println(hello) // line comment 3\n" +
 		"}\n"
 
-	ctx, err := internal.NewGeneratorContext(autometrics.PROMETHEUS, DefaultPrometheusInstanceUrl, false, false)
+	ctx, err := internal.NewGeneratorContext(autometrics.PROMETHEUS, defaultPrometheusInstanceUrl, false, false)
 	if err != nil {
 		t.Fatalf("error creating the generation context: %s", err)
 	}
@@ -210,6 +212,7 @@ func main() {
 		"//autometrics:inst --no-doc --slo \"API\" --latency-target 99.9 --latency-ms 500\n" +
 		"func main() {\n" +
 		"\tdefer prometheus.Instrument(prometheus.PreInstrument(prometheus.NewContext(\n" +
+		"\t\tnil,\n" +
 		"\t\tprometheus.WithConcurrentCalls(true),\n" +
 		"\t\tprometheus.WithCallerName(true),\n" +
 		"\t\tprometheus.WithSloName(\"API\"),\n" +
@@ -219,7 +222,7 @@ func main() {
 		"	fmt.Println(hello) // line comment 3\n" +
 		"}\n"
 
-	ctx, err := internal.NewGeneratorContext(autometrics.PROMETHEUS, DefaultPrometheusInstanceUrl, false, false)
+	ctx, err := internal.NewGeneratorContext(autometrics.PROMETHEUS, defaultPrometheusInstanceUrl, false, false)
 	if err != nil {
 		t.Fatalf("error creating the generation context: %s", err)
 	}
@@ -272,6 +275,7 @@ func main() {
 		"//autometrics:inst --slo \"API\" --latency-target 99.9 --latency-ms 500\n" +
 		"func main() {\n" +
 		"\tdefer prom.Instrument(prom.PreInstrument(prom.NewContext(\n" +
+		"\t\tnil,\n" +
 		"\t\tprom.WithConcurrentCalls(true),\n" +
 		"\t\tprom.WithCallerName(true),\n" +
 		"\t\tprom.WithSloName(\"API\"),\n" +
@@ -281,7 +285,7 @@ func main() {
 		"	fmt.Println(hello) // line comment 3\n" +
 		"}\n"
 
-	ctx, err := internal.NewGeneratorContext(autometrics.PROMETHEUS, DefaultPrometheusInstanceUrl, false, true)
+	ctx, err := internal.NewGeneratorContext(autometrics.PROMETHEUS, defaultPrometheusInstanceUrl, false, true)
 	if err != nil {
 		t.Fatalf("error creating the generation context: %s", err)
 	}
@@ -310,7 +314,7 @@ func main() {
 	fmt.Println(hello) // line comment 3
 }
 `
-	ctx, err := internal.NewGeneratorContext(autometrics.PROMETHEUS, DefaultPrometheusInstanceUrl, false, false)
+	ctx, err := internal.NewGeneratorContext(autometrics.PROMETHEUS, defaultPrometheusInstanceUrl, false, false)
 	if err != nil {
 		t.Fatalf("error creating the generation context: %s", err)
 	}
@@ -333,7 +337,7 @@ func main() {
 	fmt.Println(hello) // line comment 3
 }
 `
-	ctx, err = internal.NewGeneratorContext(autometrics.PROMETHEUS, DefaultPrometheusInstanceUrl, false, false)
+	ctx, err = internal.NewGeneratorContext(autometrics.PROMETHEUS, defaultPrometheusInstanceUrl, false, false)
 	if err != nil {
 		t.Fatalf("error creating the generation context: %s", err)
 	}
@@ -355,7 +359,7 @@ func main() {
 	fmt.Println(hello) // line comment 3
 }
 `
-	ctx, err = internal.NewGeneratorContext(autometrics.PROMETHEUS, DefaultPrometheusInstanceUrl, false, false)
+	ctx, err = internal.NewGeneratorContext(autometrics.PROMETHEUS, defaultPrometheusInstanceUrl, false, false)
 	if err != nil {
 		t.Fatalf("error creating the generation context: %s", err)
 	}
@@ -381,7 +385,7 @@ func main() {
 	fmt.Println(hello) // line comment 3
 }
 `
-	ctx, err := internal.NewGeneratorContext(autometrics.PROMETHEUS, DefaultPrometheusInstanceUrl, false, false)
+	ctx, err := internal.NewGeneratorContext(autometrics.PROMETHEUS, defaultPrometheusInstanceUrl, false, false)
 	if err != nil {
 		t.Fatalf("error creating the generation context: %s", err)
 	}
@@ -404,7 +408,7 @@ func main() {
 	fmt.Println(hello) // line comment 3
 }
 `
-	ctx, err = internal.NewGeneratorContext(autometrics.PROMETHEUS, DefaultPrometheusInstanceUrl, false, false)
+	ctx, err = internal.NewGeneratorContext(autometrics.PROMETHEUS, defaultPrometheusInstanceUrl, false, false)
 	if err != nil {
 		t.Fatalf("error creating the generation context: %s", err)
 	}
@@ -427,7 +431,7 @@ func main() {
 	fmt.Println(hello) // line comment 3
 }
 `
-	ctx, err = internal.NewGeneratorContext(autometrics.PROMETHEUS, DefaultPrometheusInstanceUrl, false, false)
+	ctx, err = internal.NewGeneratorContext(autometrics.PROMETHEUS, defaultPrometheusInstanceUrl, false, false)
 	if err != nil {
 		t.Fatalf("error creating the generation context: %s", err)
 	}
@@ -450,7 +454,7 @@ func main() {
 	fmt.Println(hello) // line comment 3
 }
 `
-	ctx, err = internal.NewGeneratorContext(autometrics.PROMETHEUS, DefaultPrometheusInstanceUrl, false, false)
+	ctx, err = internal.NewGeneratorContext(autometrics.PROMETHEUS, defaultPrometheusInstanceUrl, false, false)
 	if err != nil {
 		t.Fatalf("error creating the generation context: %s", err)
 	}
@@ -473,7 +477,7 @@ func main() {
 	fmt.Println(hello) // line comment 3
 }
 `
-	ctx, err = internal.NewGeneratorContext(autometrics.PROMETHEUS, DefaultPrometheusInstanceUrl, false, false)
+	ctx, err = internal.NewGeneratorContext(autometrics.PROMETHEUS, defaultPrometheusInstanceUrl, false, false)
 	if err != nil {
 		t.Fatalf("error creating the generation context: %s", err)
 	}
@@ -496,7 +500,7 @@ func main() {
 	fmt.Println(hello) // line comment 3
 }
 `
-	ctx, err = internal.NewGeneratorContext(autometrics.PROMETHEUS, DefaultPrometheusInstanceUrl, false, false)
+	ctx, err = internal.NewGeneratorContext(autometrics.PROMETHEUS, defaultPrometheusInstanceUrl, false, false)
 	if err != nil {
 		t.Fatalf("error creating the generation context: %s", err)
 	}
@@ -519,7 +523,7 @@ func main() {
 	fmt.Println(hello) // line comment 3
 }
 `
-	ctx, err = internal.NewGeneratorContext(autometrics.PROMETHEUS, DefaultPrometheusInstanceUrl, false, false)
+	ctx, err = internal.NewGeneratorContext(autometrics.PROMETHEUS, defaultPrometheusInstanceUrl, false, false)
 	if err != nil {
 		t.Fatalf("error creating the generation context: %s", err)
 	}
@@ -527,7 +531,7 @@ func main() {
 	_, err = GenerateDocumentationAndInstrumentation(ctx, sourceCode, "main")
 	assert.Error(t, err, "Calling generation must fail if latency target is not in the default buckets.")
 
-	ctx, err = internal.NewGeneratorContext(autometrics.PROMETHEUS, DefaultPrometheusInstanceUrl, true, false)
+	ctx, err = internal.NewGeneratorContext(autometrics.PROMETHEUS, defaultPrometheusInstanceUrl, true, false)
 	if err != nil {
 		t.Fatalf("error creating the generation context: %s", err)
 	}
@@ -555,7 +559,7 @@ func main() {
 	fmt.Println(hello) // line comment 3
 }
 `
-	ctx, err := internal.NewGeneratorContext(autometrics.PROMETHEUS, DefaultPrometheusInstanceUrl, false, false)
+	ctx, err := internal.NewGeneratorContext(autometrics.PROMETHEUS, defaultPrometheusInstanceUrl, false, false)
 	if err != nil {
 		t.Fatalf("error creating the generation context: %s", err)
 	}
@@ -579,7 +583,7 @@ func main() {
 	fmt.Println(hello) // line comment 3
 }
 `
-	ctx, err = internal.NewGeneratorContext(autometrics.PROMETHEUS, DefaultPrometheusInstanceUrl, false, false)
+	ctx, err = internal.NewGeneratorContext(autometrics.PROMETHEUS, defaultPrometheusInstanceUrl, false, false)
 	if err != nil {
 		t.Fatalf("error creating the generation context: %s", err)
 	}
@@ -605,7 +609,7 @@ func main() {
 	fmt.Printstart ln(hello) // line comment 3
 }
 `
-	ctx, err = internal.NewGeneratorContext(autometrics.PROMETHEUS, DefaultPrometheusInstanceUrl, false, false)
+	ctx, err = internal.NewGeneratorContext(autometrics.PROMETHEUS, defaultPrometheusInstanceUrl, false, false)
 	if err != nil {
 		t.Fatalf("error creating the generation context: %s", err)
 	}
@@ -631,7 +635,7 @@ func main() {
 	fmt.Println(hello) // line comment 3
 }
 `
-	ctx, err = internal.NewGeneratorContext(autometrics.PROMETHEUS, DefaultPrometheusInstanceUrl, false, false)
+	ctx, err = internal.NewGeneratorContext(autometrics.PROMETHEUS, defaultPrometheusInstanceUrl, false, false)
 	if err != nil {
 		t.Fatalf("error creating the generation context: %s", err)
 	}
@@ -656,7 +660,7 @@ func main() {
 	fmt.Println(hello) // line comment 3
 }
 `
-	ctx, err = internal.NewGeneratorContext(autometrics.PROMETHEUS, DefaultPrometheusInstanceUrl, false, false)
+	ctx, err = internal.NewGeneratorContext(autometrics.PROMETHEUS, defaultPrometheusInstanceUrl, false, false)
 	if err != nil {
 		t.Fatalf("error creating the generation context: %s", err)
 	}
@@ -898,7 +902,7 @@ func main() (cannotGetLuckyCollision, otherError error) {
 	assert.Error(t, err, "Calling the named return detection must fail if there are multiple error values.")
 }
 
-func implementContextCodeGenTest(t *testing.T, contextToSerialize autometrics.Context, expected string) {
+func implementContextCodeGenTest(t *testing.T, contextToSerialize internal.RuntimeCtxInfo, expected string) {
 	sourceContext := internal.GeneratorContext{
 		RuntimeCtx: contextToSerialize,
 		FuncCtx: internal.GeneratorFunctionContext{
@@ -907,7 +911,7 @@ func implementContextCodeGenTest(t *testing.T, contextToSerialize autometrics.Co
 		},
 	}
 
-	node, err := buildAutometricsContextNode(sourceContext)
+	node, err := buildAutometricsContextNode(&sourceContext)
 	if err != nil {
 		t.Fatalf("error building the context node: %s", err)
 	}
@@ -952,8 +956,9 @@ var dummy2 = %v
 
 func TestNewContextCodeGen(t *testing.T) {
 	implementContextCodeGenTest(t,
-		autometrics.NewContext(),
+		internal.DefaultRuntimeCtxInfo(),
 		`autometrics.NewContext(
+	nil,
 	autometrics.WithConcurrentCalls(true),
 	autometrics.WithCallerName(true),
 )`,
@@ -961,12 +966,13 @@ func TestNewContextCodeGen(t *testing.T) {
 }
 
 func TestNoTrackContextCodeGen(t *testing.T) {
-	ctx := autometrics.NewContext()
+	ctx := internal.DefaultRuntimeCtxInfo()
 	ctx.TrackCallerName = false
 	ctx.TrackConcurrentCalls = false
 	implementContextCodeGenTest(t,
 		ctx,
 		`autometrics.NewContext(
+	nil,
 	autometrics.WithConcurrentCalls(false),
 	autometrics.WithCallerName(false),
 )`,
@@ -974,7 +980,7 @@ func TestNoTrackContextCodeGen(t *testing.T) {
 }
 
 func TestLatencyContextCodeGen(t *testing.T) {
-	ctx := autometrics.NewContext()
+	ctx := internal.DefaultRuntimeCtxInfo()
 	ctx.TrackCallerName = false
 	ctx.AlertConf = &autometrics.AlertConfiguration{
 		ServiceName: "api",
@@ -987,6 +993,7 @@ func TestLatencyContextCodeGen(t *testing.T) {
 	implementContextCodeGenTest(t,
 		ctx,
 		`autometrics.NewContext(
+	nil,
 	autometrics.WithConcurrentCalls(true),
 	autometrics.WithCallerName(false),
 	autometrics.WithSloName("api"),
@@ -996,7 +1003,7 @@ func TestLatencyContextCodeGen(t *testing.T) {
 }
 
 func TestSuccessContextCodeGen(t *testing.T) {
-	ctx := autometrics.NewContext()
+	ctx := internal.DefaultRuntimeCtxInfo()
 	ctx.TrackCallerName = false
 	ctx.AlertConf = &autometrics.AlertConfiguration{
 		ServiceName: "api",
@@ -1008,6 +1015,7 @@ func TestSuccessContextCodeGen(t *testing.T) {
 	implementContextCodeGenTest(t,
 		ctx,
 		`autometrics.NewContext(
+	nil,
 	autometrics.WithConcurrentCalls(true),
 	autometrics.WithCallerName(false),
 	autometrics.WithSloName("api"),

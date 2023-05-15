@@ -1,6 +1,7 @@
 package prometheus // import "github.com/autometrics-dev/autometrics-go/pkg/autometrics/prometheus"
 
 import (
+	"encoding/hex"
 	"fmt"
 	"strconv"
 	"time"
@@ -40,6 +41,8 @@ func Instrument(ctx *autometrics.Context, err *error) {
 		}
 	}
 
+	info := exemplars(ctx)
+
 	functionCallsCount.With(prometheus.Labels{
 		FunctionLabel:          ctx.CallInfo.FuncName,
 		ModuleLabel:            ctx.CallInfo.ModuleName,
@@ -47,10 +50,10 @@ func Instrument(ctx *autometrics.Context, err *error) {
 		ResultLabel:            result,
 		TargetSuccessRateLabel: successObjective,
 		SloNameLabel:           sloName,
-		BranchLabel:         ctx.BuildInfo.Branch,
+		BranchLabel:            ctx.BuildInfo.Branch,
 		CommitLabel:            ctx.BuildInfo.Commit,
 		VersionLabel:           ctx.BuildInfo.Version,
-	}).Inc()
+	}).(prometheus.ExemplarAdder).AddWithExemplar(1, info)
 	functionCallsDuration.With(prometheus.Labels{
 		FunctionLabel:          ctx.CallInfo.FuncName,
 		ModuleLabel:            ctx.CallInfo.ModuleName,
@@ -58,20 +61,20 @@ func Instrument(ctx *autometrics.Context, err *error) {
 		TargetLatencyLabel:     latencyTarget,
 		TargetSuccessRateLabel: latencyObjective,
 		SloNameLabel:           sloName,
-		BranchLabel:         ctx.BuildInfo.Branch,
+		BranchLabel:            ctx.BuildInfo.Branch,
 		CommitLabel:            ctx.BuildInfo.Commit,
 		VersionLabel:           ctx.BuildInfo.Version,
-	}).Observe(time.Since(ctx.StartTime).Seconds())
+	}).(prometheus.ExemplarObserver).ObserveWithExemplar(time.Since(ctx.StartTime).Seconds(), info)
 
 	if ctx.TrackConcurrentCalls {
 		functionCallsConcurrent.With(prometheus.Labels{
-			FunctionLabel:  ctx.CallInfo.FuncName,
-			ModuleLabel:    ctx.CallInfo.ModuleName,
-			CallerLabel:    callerLabel,
-			BranchLabel: ctx.BuildInfo.Branch,
-			CommitLabel:    ctx.BuildInfo.Commit,
-			VersionLabel:   ctx.BuildInfo.Version,
-		}).Dec()
+			FunctionLabel: ctx.CallInfo.FuncName,
+			ModuleLabel:   ctx.CallInfo.ModuleName,
+			CallerLabel:   callerLabel,
+			BranchLabel:   ctx.BuildInfo.Branch,
+			CommitLabel:   ctx.BuildInfo.Commit,
+			VersionLabel:  ctx.BuildInfo.Version,
+		}).Add(-1)
 	}
 }
 
@@ -82,6 +85,7 @@ func Instrument(ctx *autometrics.Context, err *error) {
 func PreInstrument(ctx *autometrics.Context) *autometrics.Context {
 	ctx.CallInfo = autometrics.CallerInfo()
 	ctx.FillBuildInfo()
+	ctx.FillTracingInfo()
 
 	var callerLabel string
 	if ctx.TrackCallerName {
@@ -90,16 +94,35 @@ func PreInstrument(ctx *autometrics.Context) *autometrics.Context {
 
 	if ctx.TrackConcurrentCalls {
 		functionCallsConcurrent.With(prometheus.Labels{
-			FunctionLabel:  ctx.CallInfo.FuncName,
-			ModuleLabel:    ctx.CallInfo.ModuleName,
-			CallerLabel:    callerLabel,
-			BranchLabel: ctx.BuildInfo.Branch,
-			CommitLabel:    ctx.BuildInfo.Commit,
-			VersionLabel:   ctx.BuildInfo.Version,
-		}).Inc()
+			FunctionLabel: ctx.CallInfo.FuncName,
+			ModuleLabel:   ctx.CallInfo.ModuleName,
+			CallerLabel:   callerLabel,
+			BranchLabel:   ctx.BuildInfo.Branch,
+			CommitLabel:   ctx.BuildInfo.Commit,
+			VersionLabel:  ctx.BuildInfo.Version,
+		}).Add(1)
 	}
 
 	ctx.StartTime = time.Now()
 
 	return ctx
+}
+
+// Extract exemplars to add to metrics from the context
+func exemplars(ctx *autometrics.Context) prometheus.Labels {
+	labels := make(prometheus.Labels)
+
+	if tid, ok := ctx.GetTraceID(); ok {
+		labels[traceIdExemplar] = hex.EncodeToString(tid[:])
+	}
+
+	if sid, ok := ctx.GetSpanID(); ok {
+		labels[spanIdExemplar] = hex.EncodeToString(sid[:])
+	}
+
+	if psid, ok := ctx.GetParentSpanID(); ok {
+		labels[parentSpanIdExemplar] = hex.EncodeToString(psid[:])
+	}
+
+	return labels
 }

@@ -1,4 +1,4 @@
-package generate
+package generate // import "github.com/autometrics-dev/autometrics-go/internal/generate"
 
 import (
 	"fmt"
@@ -8,8 +8,6 @@ import (
 	"time"
 
 	"github.com/google/shlex"
-
-	"golang.org/x/exp/slices"
 
 	internal "github.com/autometrics-dev/autometrics-go/internal/autometrics"
 	"github.com/autometrics-dev/autometrics-go/pkg/autometrics"
@@ -99,6 +97,14 @@ func GenerateDocumentationAndInstrumentation(ctx internal.GeneratorContext, sour
 				}
 			}
 
+			if importSpec.Name == nil {
+				names := strings.Split(importSpec.Path.Value, "/")
+				name := strings.Trim(names[len(names)-1], "\"")
+				ctx.ImportsMap[name] = strings.Trim(importSpec.Path.Value, "\"")
+			} else {
+				ctx.ImportsMap[importSpec.Name.Name] = strings.Trim(importSpec.Path.Value, "\"")
+			}
+
 			return true
 		}
 
@@ -119,63 +125,17 @@ func GenerateDocumentationAndInstrumentation(ctx internal.GeneratorContext, sour
 			defer ctx.ResetFuncCtx()
 
 			// this block gets run for every function in the file
-			docComments := funcDeclaration.Decorations().Start.All()
-
 			// Clean up old autometrics comments
-			oldStartCommentIndices := autometricsDocStartDirectives(docComments)
-			oldEndCommentIndices := autometricsDocEndDirectives(docComments)
-
-			if len(oldStartCommentIndices) > 0 && len(oldEndCommentIndices) == 0 {
-				inspectErr = fmt.Errorf("Found an autometrics:doc-start cookie for function %s, but no matching :doc-end cookie", funcDeclaration.Name.Name)
+			docComments, err := cleanUpAutometricsComments(ctx, funcDeclaration)
+			if err != nil {
+				inspectErr = fmt.Errorf("error trying to remove autometrics comment from former pass: %w", err)
 				return false
 			}
 
-			if len(oldStartCommentIndices) == 0 && len(oldEndCommentIndices) > 0 {
-				inspectErr = fmt.Errorf("Found an autometrics:doc-end cookie for function %s, but no matching :doc-start cookie", funcDeclaration.Name.Name)
-				return false
-			}
-
-			if len(oldStartCommentIndices) > 1 {
-				inspectErr = fmt.Errorf("Found more than 1 autometrics:doc-start cookie for function %s", funcDeclaration.Name.Name)
-				return false
-			}
-
-			if len(oldEndCommentIndices) > 1 {
-				inspectErr = fmt.Errorf("Found more than 1 autometrics:doc-end cookie for function %s", funcDeclaration.Name.Name)
-				return false
-			}
-
-			if len(oldStartCommentIndices) == 1 && len(oldEndCommentIndices) == 1 {
-				oldStartCommentIndex := oldStartCommentIndices[0]
-				oldEndCommentIndex := oldEndCommentIndices[0]
-
-				if oldStartCommentIndex >= 0 && oldEndCommentIndex <= oldStartCommentIndex {
-					inspectErr = fmt.Errorf("Found an autometrics cookies for function %s, but the end one is after the start one", funcDeclaration.Name.Name)
-					return false
-				}
-
-				if oldStartCommentIndex >= 0 && oldEndCommentIndex > oldStartCommentIndex {
-					// We also remove the header and the footer that are used as block separation
-					docComments = append(docComments[:oldStartCommentIndex-1], docComments[oldEndCommentIndex+2:]...)
-
-					// Remove the generated links from former passes
-					if ctx.DocumentationGenerator != nil {
-						generatedLinks := ctx.DocumentationGenerator.GeneratedLinks()
-						docComments = filter(docComments, func(input string) bool {
-							for _, link := range generatedLinks {
-								if strings.Contains(input, fmt.Sprintf("[%s]", link)) {
-									return false
-								}
-							}
-							return true
-						})
-					}
-				}
-
-			}
+			// TODO: clean up the defer statement inconditionally here as well, if detected
 
 			// Detect autometrics directive
-			err := parseAutometricsFnContext(&ctx, docComments)
+			err = parseAutometricsFnContext(&ctx, docComments)
 			if err != nil {
 				inspectErr = fmt.Errorf(
 					"failed to parse //autometrics directive for %v: %w",
@@ -183,6 +143,8 @@ func GenerateDocumentationAndInstrumentation(ctx internal.GeneratorContext, sour
 					err)
 				return false
 			}
+
+			// This block only runs on functions that still have the autometrics directive
 			listIndex := ctx.FuncCtx.CommentIndex
 			if listIndex >= 0 {
 				// Insert comments
@@ -194,35 +156,10 @@ func GenerateDocumentationAndInstrumentation(ctx internal.GeneratorContext, sour
 				}
 
 				// defer statement
-				firstStatement := funcDeclaration.Body.List[0]
-				variable, err := errorReturnValueName(funcDeclaration)
+				err := injectDeferStatement(&ctx, funcDeclaration)
 				if err != nil {
-					inspectErr = fmt.Errorf("failed to get error return value name: %w", err)
+					inspectErr = fmt.Errorf("failed to inject defer statement: %w", err)
 					return false
-				}
-
-				if len(variable) == 0 {
-					variable = "nil"
-				} else {
-					variable = "&" + variable
-				}
-
-				autometricsDeferStatement, err := buildAutometricsDeferStatement(ctx, variable)
-				if err != nil {
-					inspectErr = fmt.Errorf("failed to build the defer statement for instrumentation: %w", err)
-					return false
-				}
-
-				if deferStatement, ok := firstStatement.(*dst.DeferStmt); ok {
-					decorations := deferStatement.Decorations().End
-
-					if slices.Contains(decorations.All(), "//autometrics:defer") {
-						funcDeclaration.Body.List[0] = &autometricsDeferStatement
-					} else {
-						funcDeclaration.Body.List = append([]dst.Stmt{&autometricsDeferStatement}, funcDeclaration.Body.List...)
-					}
-				} else {
-					funcDeclaration.Body.List = append([]dst.Stmt{&autometricsDeferStatement}, funcDeclaration.Body.List...)
 				}
 			}
 		}
@@ -250,109 +187,6 @@ func GenerateDocumentationAndInstrumentation(ctx internal.GeneratorContext, sour
 	return buf.String(), nil
 }
 
-func buildAutometricsContextNode(agc internal.GeneratorContext) (*dst.CallExpr, error) {
-	// Using https://github.com/dave/dst/issues/73 workaround
-
-	var options []string
-
-	options = append(options,
-		fmt.Sprintf("%v.WithConcurrentCalls(%#v)", agc.FuncCtx.ImplImportName, agc.RuntimeCtx.TrackConcurrentCalls),
-		fmt.Sprintf("%v.WithCallerName(%#v)", agc.FuncCtx.ImplImportName, agc.RuntimeCtx.TrackCallerName),
-	)
-
-	if agc.RuntimeCtx.AlertConf != nil {
-		options = append(options, fmt.Sprintf("%v.WithSloName(%#v)",
-			agc.FuncCtx.ImplImportName,
-			agc.RuntimeCtx.AlertConf.ServiceName,
-		))
-		if agc.RuntimeCtx.AlertConf.Latency != nil {
-			options = append(options, fmt.Sprintf("%v.WithAlertLatency(%#v * time.Nanosecond, %#v)",
-				agc.FuncCtx.ImplImportName,
-				agc.RuntimeCtx.AlertConf.Latency.Target,
-				agc.RuntimeCtx.AlertConf.Latency.Objective,
-			))
-		}
-		if agc.RuntimeCtx.AlertConf.Success != nil {
-			options = append(options, fmt.Sprintf("%v.WithAlertSuccess(%#v)",
-				agc.FuncCtx.ImplImportName,
-				agc.RuntimeCtx.AlertConf.Success.Objective))
-		}
-	}
-
-	var buf strings.Builder
-	_, err := fmt.Fprintf(&buf, `
-package main
-
-var dummy = %v.NewContext(
-`,
-		agc.FuncCtx.ImplImportName)
-	if err != nil {
-		return nil, fmt.Errorf("could not write string builder to build dummy source code: %w", err)
-	}
-
-	for _, o := range options {
-		_, err = fmt.Fprintf(&buf, "\t%s,\n", o)
-		if err != nil {
-			return nil, fmt.Errorf("could not write string builder to build dummy source code: %w", err)
-		}
-	}
-
-	_, err = fmt.Fprint(&buf, ")\n")
-	if err != nil {
-		return nil, fmt.Errorf("could not write string builder to build dummy source code: %w", err)
-	}
-
-	sourceCode := buf.String()
-	sourceAst, err := decorator.Parse(sourceCode)
-	if err != nil {
-		return nil, fmt.Errorf("could not parse dummy code: %w", err)
-	}
-
-	genDeclNode, ok := sourceAst.Decls[0].(*dst.GenDecl)
-	if !ok {
-		return nil, fmt.Errorf("unexpected node in the dummy code (expected dst.GenDecl): %w", err)
-	}
-
-	specNode, ok := genDeclNode.Specs[0].(*dst.ValueSpec)
-	if !ok {
-		return nil, fmt.Errorf("unexpected node in the dummy code (expected dst.ValueSpec): %w", err)
-	}
-
-	callExpr, ok := specNode.Values[0].(*dst.CallExpr)
-	if !ok {
-		return nil, fmt.Errorf("unexpected node in the dummy code (expected dst.CallExpr): %w", err)
-	}
-
-	return callExpr, nil
-}
-
-// buildAutometricsDeferStatement builds the AST for the defer statement to be inserted.
-func buildAutometricsDeferStatement(ctx internal.GeneratorContext, secondVar string) (dst.DeferStmt, error) {
-	preInstrumentArg, err := buildAutometricsContextNode(ctx)
-	if err != nil {
-		return dst.DeferStmt{}, fmt.Errorf("could not generate the runtime context value: %w", err)
-	}
-	statement := dst.DeferStmt{
-		Call: &dst.CallExpr{
-			Fun: dst.NewIdent(fmt.Sprintf("%v.Instrument", ctx.FuncCtx.ImplImportName)),
-			Args: []dst.Expr{
-				&dst.CallExpr{
-					Fun: dst.NewIdent(fmt.Sprintf("%v.PreInstrument", ctx.FuncCtx.ImplImportName)),
-					Args: []dst.Expr{
-						preInstrumentArg,
-					},
-				},
-				dst.NewIdent(secondVar),
-			},
-		},
-	}
-
-	statement.Decs.Before = dst.NewLine
-	statement.Decs.End = []string{"//autometrics:defer"}
-	statement.Decs.After = dst.EmptyLine
-	return statement, nil
-}
-
 func parseAutometricsFnContext(ctx *internal.GeneratorContext, commentGroup []string) error {
 	for i, comment := range commentGroup {
 		if args, found := cutPrefix(comment, "//autometrics:"); found {
@@ -360,7 +194,7 @@ func parseAutometricsFnContext(ctx *internal.GeneratorContext, commentGroup []st
 				return fmt.Errorf("invalid directive comment '%s': only '//autometrics:doc' and '//autometrics:inst' are allowed.", comment)
 			}
 			ctx.FuncCtx.CommentIndex = i
-			ctx.RuntimeCtx = autometrics.NewContext()
+			ctx.RuntimeCtx = internal.DefaultRuntimeCtxInfo()
 
 			tokens, err := shlex.Split(args)
 			if err != nil {
@@ -501,112 +335,6 @@ func parseAutometricsFnContext(ctx *internal.GeneratorContext, commentGroup []st
 	}
 
 	ctx.FuncCtx.CommentIndex = -1
-	ctx.RuntimeCtx = autometrics.NewContext()
+	ctx.RuntimeCtx = internal.DefaultRuntimeCtxInfo()
 	return nil
-}
-
-// autometricsDocStartDirectives return the list of indices in the array where line is a comment start directive.
-func autometricsDocStartDirectives(commentGroup []string) []int {
-	var lines []int
-	for i, comment := range commentGroup {
-		if strings.Contains(comment, "autometrics:doc-start") {
-			lines = append(lines, i)
-		}
-	}
-
-	return lines
-}
-
-// autometricsDocStartDirectives return the list of indices in the array where line is a comment end directive.
-func autometricsDocEndDirectives(commentGroup []string) []int {
-	var lines []int
-	for i, comment := range commentGroup {
-		if strings.Contains(comment, "autometrics:doc-end") {
-			lines = append(lines, i)
-		}
-	}
-
-	return lines
-}
-
-func generateAutometricsComment(ctx internal.GeneratorContext) (commentLines []string) {
-	if ctx.DocumentationGenerator == nil {
-		return
-	}
-
-	l := ctx.DocumentationGenerator.GenerateAutometricsComment(
-		ctx,
-		ctx.FuncCtx.FunctionName,
-		ctx.FuncCtx.ModuleName,
-	)
-	commentLines = append(commentLines, "//")
-	commentLines = append(commentLines, "//\tautometrics:doc-start Generated documentation by Autometrics.")
-	commentLines = append(commentLines, "//")
-	commentLines = append(commentLines, "// # Autometrics")
-	commentLines = append(commentLines, "//")
-	commentLines = append(commentLines, l...)
-	commentLines = append(commentLines, "//")
-	commentLines = append(commentLines, "//\tautometrics:doc-end Generated documentation by Autometrics.")
-	commentLines = append(commentLines, "//")
-
-	return
-}
-
-func insertComments(inputArray []string, index int, values []string) []string {
-	if len(inputArray) == index { // nil or empty slice or after last element
-		return append(inputArray, values...)
-	}
-
-	beginning := inputArray[:index]
-	// Maybe the deep copy is not necessary, wasn't able to
-	// specify the semantics properly here.
-	end := make([]string, len(inputArray[index:]))
-	copy(end, inputArray[index:])
-
-	inputArray = append(beginning, values...)
-	inputArray = append(inputArray, end...)
-
-	return inputArray
-}
-
-// errorReturnValueName returns the name of the error return value if it exists.
-func errorReturnValueName(funcNode *dst.FuncDecl) (string, error) {
-	returnValues := funcNode.Type.Results
-	if returnValues == nil || returnValues.List == nil {
-		return "", nil
-	}
-
-	for _, field := range returnValues.List {
-		fieldType := field.Type
-		if spec, ok := fieldType.(*dst.Ident); ok {
-			if spec.Name == "error" {
-				// Assuming that the `error` type has 0 or 1 name before it.
-				if field.Names == nil {
-					return "", nil
-				} else if len(field.Names) > 1 {
-					return "", fmt.Errorf("expecting a single named `error` return value, got %d instead.", len(field.Names))
-				}
-				return field.Names[0].Name, nil
-			}
-		}
-	}
-
-	return "", nil
-}
-
-func filter(ss []string, test func(string) bool) (ret []string) {
-	for _, s := range ss {
-		if test(s) {
-			ret = append(ret, s)
-		}
-	}
-	return
-}
-
-// Backport of strings.CutPrefix for pre-1.20
-func cutPrefix(s, prefix string) (after string, found bool) {
-	if !strings.HasPrefix(s, prefix) {
-		return s, false
-	}
-	return s[len(prefix):], true
 }

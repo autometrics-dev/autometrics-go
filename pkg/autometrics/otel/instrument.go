@@ -1,7 +1,6 @@
 package otel // import "github.com/autometrics-dev/autometrics-go/pkg/autometrics/otel"
 
 import (
-	"context"
 	"fmt"
 	"strconv"
 	"time"
@@ -86,7 +85,7 @@ func Instrument(ctx *autometrics.Context, err *error) {
 func PreInstrument(ctx *autometrics.Context) *autometrics.Context {
 	ctx.CallInfo = autometrics.CallerInfo()
 	ctx.FillBuildInfo()
-	ctx.Context = context.Background()
+	ctx.FillTracingInfo()
 
 	var callerLabel string
 	if ctx.TrackCallerName {

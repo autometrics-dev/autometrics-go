@@ -1,6 +1,7 @@
 package prometheus // import "github.com/autometrics-dev/autometrics-go/pkg/autometrics/prometheus"
 
 import (
+	"context"
 	"time"
 
 	"github.com/autometrics-dev/autometrics-go/pkg/autometrics"
@@ -12,14 +13,34 @@ func (fn optionFunc) Apply(ctx *autometrics.Context) {
 	fn(ctx)
 }
 
-func NewContext(opts ...autometrics.Option) *autometrics.Context {
-	ctx := autometrics.NewContext()
+func NewContext(ctx context.Context, opts ...autometrics.Option) *autometrics.Context {
+	amCtx := autometrics.NewContext(ctx)
 
 	for _, o := range(opts) {
-		o.Apply(&ctx)
+		o.Apply(&amCtx)
 	}
 
-	return &ctx
+	return &amCtx
+}
+
+func WithTraceID(tid []byte) autometrics.Option {
+	return optionFunc(func(ctx *autometrics.Context) {
+		if tid != nil {
+			var truncatedTid autometrics.TraceID
+			copy(truncatedTid[:], tid)
+			ctx.SetTraceID(truncatedTid)
+		}
+	})
+}
+
+func WithSpanID(sid []byte) autometrics.Option {
+	return optionFunc(func(ctx *autometrics.Context) {
+		if sid != nil {
+			var truncatedSid autometrics.SpanID
+			copy(truncatedSid[:], sid)
+			ctx.SetSpanID(truncatedSid)
+		}
+	})
 }
 
 func WithAlertLatency(target time.Duration, objective float64) autometrics.Option {
