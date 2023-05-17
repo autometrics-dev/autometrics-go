@@ -6,7 +6,21 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Go module
 versioning](https://go.dev/doc/modules/version-numbers).
 
-## [Unreleased](https://github.com/autometrics-dev/autometrics-go/compare/v0.4.0...main)
+## [Unreleased](https://github.com/autometrics-dev/autometrics-go/compare/v0.5.0...main)
+
+### Added
+
+### Changed
+
+### Deprecated
+
+### Removed
+
+### Fixed
+
+### Security
+
+## [0.5.0](https://github.com/autometrics-dev/autometrics-go/releases/tag/v0.5.0) 2023-05-17
 
 ### Added
 
