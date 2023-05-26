@@ -1,6 +1,7 @@
 package autometrics // import "github.com/autometrics-dev/autometrics-go/internal/autometrics"
 
 import (
+	"errors"
 	"fmt"
 	"log"
 	"net/url"
@@ -40,7 +41,7 @@ type GeneratorContext struct {
 // only statically-known information is useful at this point.
 type RuntimeCtxInfo struct {
 	// Name of the variable to use as context.Context when building the autometrics.Context.
-	// The string will be empty iff 'nil' must be used as autometrics.NewContext() argument.
+	// The string will be empty if and only if 'nil' must be used as autometrics.NewContext() argument.
 	ContextVariableName string
 	// Verbatim code to use to fetch the TraceID.
 	// For example, if the instrumented function is detected to use Gin, like
@@ -67,11 +68,11 @@ func DefaultRuntimeCtxInfo() RuntimeCtxInfo {
 func (c RuntimeCtxInfo) Validate(allowCustomLatencies bool) error {
 	if c.AlertConf != nil {
 		if c.AlertConf.ServiceName == "" {
-			return fmt.Errorf("Cannot have an AlertConfiguration without a service name")
+			return errors.New("Cannot have an AlertConfiguration without a service name")
 		}
 
 		if c.AlertConf.Success != nil && c.AlertConf.Success.Objective <= 0 {
-			return fmt.Errorf("Cannot have a target success rate that is negative")
+			return errors.New("Cannot have a target success rate that is negative")
 		}
 
 		if c.AlertConf.Success != nil && c.AlertConf.Success.Objective <= 1 {
@@ -79,7 +80,7 @@ func (c RuntimeCtxInfo) Validate(allowCustomLatencies bool) error {
 		}
 
 		if c.AlertConf.Success != nil && c.AlertConf.Success.Objective > 100 {
-			return fmt.Errorf("Cannot have a target success rate that is strictly greater than 100 (more than 100%%)")
+			return errors.New("Cannot have a target success rate that is strictly greater than 100 (more than 100%)")
 		}
 
 		if c.AlertConf.Success != nil && !contains(autometrics.DefObjectives, c.AlertConf.Success.Objective) {
@@ -88,19 +89,19 @@ func (c RuntimeCtxInfo) Validate(allowCustomLatencies bool) error {
 
 		if c.AlertConf.Latency != nil {
 			if c.AlertConf.Latency.Objective <= 0 {
-				return fmt.Errorf("Cannot have a target for latency SLO that is negative")
+				return errors.New("Cannot have a target for latency SLO that is negative")
 			}
 			if c.AlertConf.Latency.Objective <= 1 {
 				log.Println("Warning: the latency target success rate is between 0 and 1, which is between 0 and 1%%. '1' is 1%% not 100%%!")
 			}
 			if c.AlertConf.Latency.Objective > 100 {
-				return fmt.Errorf("Cannot have a target for latency SLO that is greater than 100 (more than 100%%)")
+				return errors.New("Cannot have a target for latency SLO that is greater than 100 (more than 100%)")
 			}
 			if !contains(autometrics.DefObjectives, c.AlertConf.Latency.Objective) {
 				return fmt.Errorf("Cannot have a target for latency SLO that is not one of the predetermined in the generated rules files (valid targets are %v)", autometrics.DefObjectives)
 			}
 			if c.AlertConf.Latency.Target <= 0 {
-				return fmt.Errorf("Cannot have a target latency SLO threshold that is negative (responses expected before the query)")
+				return errors.New("Cannot have a target latency SLO threshold that is negative (responses expected before the query)")
 			}
 			if !allowCustomLatencies && !contains(autometrics.DefBuckets, c.AlertConf.Latency.Target.Seconds()) {
 				return fmt.Errorf(

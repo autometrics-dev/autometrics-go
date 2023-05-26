@@ -153,7 +153,6 @@ func (c *Context) FillTracingInfo() {
 	_, _ = randSource.Read(sid[:])
 	c.SetSpanID(sid)
 
-	// REVIEW: we might not want to fill the trace ID if it is absent.
 	if _, ok := c.GetTraceID(); !ok {
 		tid := TraceID{}
 		_, _ = randSource.Read(tid[:])
