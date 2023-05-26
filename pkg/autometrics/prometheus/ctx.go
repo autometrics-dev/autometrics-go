@@ -16,7 +16,7 @@ func (fn optionFunc) Apply(ctx *autometrics.Context) {
 func NewContext(ctx context.Context, opts ...autometrics.Option) *autometrics.Context {
 	amCtx := autometrics.NewContext(ctx)
 
-	for _, o := range(opts) {
+	for _, o := range opts {
 		o.Apply(&amCtx)
 	}
 

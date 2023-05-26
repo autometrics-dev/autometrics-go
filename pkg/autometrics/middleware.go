@@ -6,17 +6,17 @@ import (
 )
 
 type autometricsResponseWriter struct {
-    http.ResponseWriter
-    statusCode int
+	http.ResponseWriter
+	statusCode int
 }
 
 func NewResponseWriter(w http.ResponseWriter) *autometricsResponseWriter {
-    return &autometricsResponseWriter{w, http.StatusOK}
+	return &autometricsResponseWriter{w, http.StatusOK}
 }
 
 func (amrw *autometricsResponseWriter) WriteHeader(code int) {
-    amrw.statusCode = code
-    amrw.ResponseWriter.WriteHeader(code)
+	amrw.statusCode = code
+	amrw.ResponseWriter.WriteHeader(code)
 }
 
 // HasHttpError returns non-nil if the response writer is an autometrics wrapper,
