@@ -38,6 +38,7 @@ services:
       - ./examples/web/configs/autometrics.rules.yml:/etc/prometheus/autometrics.rules.yml
     command:
       - '--config.file=/etc/prometheus/prometheus.yaml'
+      - '--enable-feature=exemplar-storage'
     expose:
       - 9090
     ports:

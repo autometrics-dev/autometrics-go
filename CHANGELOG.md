@@ -10,7 +10,22 @@ versioning](https://go.dev/doc/modules/version-numbers).
 
 ### Added
 
+- Support for tracing-like exemplars in metrics. When using the Prometheus
+  instrumentation implementation, `trace_id`, `span_id`, and `parent_id` (for
+  the parent span) are added as exemplars to the metrics when they are observed.
+  Note that the Prometheus server needs to be [configured
+  specifically](https://prometheus.io/docs/prometheus/latest/feature_flags/#exemplars-storage)
+  to read the exemplars.
+- Added new options to context constructors to manipulate the tracing
+  information.
+
 ### Changed
+
+- The runtime autometrics.Context structure now can be used anywhere a
+  `context.Context` can, and will automatically embed a copy of the context
+  present in the annotated function arguments, when relevant.
+- The Context constructor changed signature to allow inclusion of a parent
+  context.
 
 ### Deprecated
 

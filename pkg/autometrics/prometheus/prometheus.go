@@ -15,7 +15,7 @@ var (
 
 const (
 	// FunctionCallsCountName is the name of the prometheus metric for the counter of calls to specific functions.
-	FunctionCallsCountName = "function_calls_count"
+	FunctionCallsCountName = "function_calls_count_total"
 	// FunctionCallsDurationName is the name of the prometheus metric for the duration histogram of calls to specific functions.
 	FunctionCallsDurationName = "function_calls_duration"
 	// FunctionCallsConcurrentName is the name of the prometheus metric for the number of simulateneously active calls to specific functions.
@@ -59,6 +59,10 @@ const (
 	VersionLabel = "version"
 	// BranchLabel is the prometheus label that describes the branch of the build of the monitored codebase.
 	BranchLabel = "branch"
+
+	traceIdExemplar = "trace_id"
+	spanIdExemplar = "span_id"
+	parentSpanIdExemplar = "parent_id"
 )
 
 // BuildInfo holds meta information about the build of the instrumented code.
