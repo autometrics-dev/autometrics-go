@@ -60,8 +60,8 @@ const (
 	// BranchLabel is the prometheus label that describes the branch of the build of the monitored codebase.
 	BranchLabel = "branch"
 
-	traceIdExemplar = "trace_id"
-	spanIdExemplar = "span_id"
+	traceIdExemplar      = "trace_id"
+	spanIdExemplar       = "span_id"
 	parentSpanIdExemplar = "parent_id"
 )
 
@@ -115,9 +115,9 @@ func Init(reg *prometheus.Registry, histogramBuckets []float64, buildInformation
 	}
 
 	buildInfo.With(prometheus.Labels{
-		CommitLabel: buildInformation.Commit,
+		CommitLabel:  buildInformation.Commit,
 		VersionLabel: buildInformation.Version,
-		BranchLabel: buildInformation.Branch,
+		BranchLabel:  buildInformation.Branch,
 	}).Set(1)
 
 	return nil

@@ -875,4 +875,3 @@ func main(thisIsAContext *Context) {
 
 	assert.Equal(t, want, actual, "The generated source code is not as expected.")
 }
-
