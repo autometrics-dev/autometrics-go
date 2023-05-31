@@ -12,6 +12,12 @@ const (
 	currentTraceId contextKey = iota
 	currentSpanId
 	parentSpanId
+	trackConcurrentCalls
+	trackCallerName
+	alertConfiguration
+	startTime
+	callInfo
+	buildInfo
 )
 
 var randSource *rand.Rand
@@ -22,108 +28,203 @@ type TraceID [16]byte
 // Open Telemetry-compatible span ID
 type SpanID [8]byte
 
-// Context holds the configuration
-// to instrument properly a function.
-//
-// This can be viewed as a context for the instrumentation calls
-type Context struct {
-	// Embedded context of the currently instrumented function.
-	//
-	// This allows the context to be passed around wherever a [context.Context] is expected.
-	context.Context
-	// TrackConcurrentCalls triggers the collection of the gauge for concurrent calls of the function.
-	TrackConcurrentCalls bool
-	// TrackCallerName adds a label with the caller name in all the collected metrics.
-	TrackCallerName bool
-	// AlertConf is an optional configuration to add alerting capabilities to the metrics.
-	AlertConf *AlertConfiguration
-	// StartTime is the start time of a single function execution.
-	// Only amImpl.Instrument should read this value.
-	// Only amImpl.PreInstrument should write this value.
-	//
-	// (amImpl is either the [Prometheus] or the [Open Telemetry] implementation)
-	//
-	// This value is only exported for the child packages [Prometheus] and [Open Telemetry]
-	//
-	// [Prometheus]: https://godoc.org/github.com/autometrics-dev/autometrics-go/pkg/autometrics/prometheus
-	// [Open Telemetry]: https://godoc.org/github.com/autometrics-dev/autometrics-go/pkg/autometrics/otel
-	StartTime time.Time
-	// CallInfo contains all the relevant data for caller information.
-	// Only amImpl.Instrument should read this value.
-	// Only amImpl.PreInstrument should write/read this value.
-	//
-	// (amImpl is either the [Prometheus] or the [Open Telemetry] implementation)
-	//
-	// This value is only exported for the child packages [Prometheus] and [Open Telemetry]
-	//
-	// [Prometheus]: https://godoc.org/github.com/autometrics-dev/autometrics-go/pkg/autometrics/prometheus
-	// [Open Telemetry]: https://godoc.org/github.com/autometrics-dev/autometrics-go/pkg/autometrics/otel
-	CallInfo CallInfo
-	// BuildInfo contains all the relevant data for caller information.
-	// Only amImpl.Instrument and PreInstrument should read this value.
-	// Only amImpl.Init should write/read this value.
-	//
-	// (amImpl is either the [Prometheus] or the [Open Telemetry] implementation)
-	//
-	// This value is only exported for the child packages [Prometheus] and [Open Telemetry]
-	//
-	// [Prometheus]: https://godoc.org/github.com/autometrics-dev/autometrics-go/pkg/autometrics/prometheus
-	// [Open Telemetry]: https://godoc.org/github.com/autometrics-dev/autometrics-go/pkg/autometrics/otel
-	BuildInfo BuildInfo
-}
-
 // NewContext is a constructor taking the parent context as argument.
 //
 // It accepts 'nil' as the parent context. In this case the constructor
 // acts as if it received a new, fresh context.Background().
-func NewContext(parentCtx context.Context) Context {
+func NewContext(parentCtx context.Context) context.Context {
 	if parentCtx == nil {
 		parentCtx = context.Background()
 	}
-	return Context{
-		TrackConcurrentCalls: true,
-		TrackCallerName:      true,
-		AlertConf:            nil,
-		Context:              parentCtx,
+	ctx := SetTrackConcurrentCalls(parentCtx, true)
+	ctx = SetTrackCallerName(ctx, true)
+	return ctx
+}
+
+// SetTrackConcurrentCalls sets a flag in the context deciding whether to track how many concurrent calls the instrumented functions observe.
+//
+// TrackConcurrentCalls triggers the collection of the gauge for concurrent calls of the function.
+// The flag defaults to true.
+func SetTrackConcurrentCalls(ctx context.Context, track bool) context.Context {
+	return context.WithValue(ctx, trackConcurrentCalls, track)
+}
+
+// GetTrackConcurrentCalls returns whether autometrics should track how many concurrent calls the instrumented function observe.
+//
+// TrackConcurrentCalls triggers the collection of the gauge for concurrent calls of the function.
+// It defaults to true.
+func GetTrackConcurrentCalls(c context.Context) bool {
+	if c == nil {
+		return true
 	}
+
+	track, ok := c.Value(trackConcurrentCalls).(bool)
+	if !ok {
+		// TODO: log a warning here
+		return true
+	}
+
+	return track
+}
+
+// SetTrackCallerName sets a flag in the context deciding whether to track the names of the callers of instrumented functions.
+//
+// TrackCallerName adds a label with the caller name in all the collected metrics.
+// The flag defaults to true.
+func SetTrackCallerName(ctx context.Context, track bool) context.Context {
+	return context.WithValue(ctx, trackCallerName, track)
+}
+
+// GetTrackCallerName returns default information if the context did not contain any build information.
+//
+// TrackCallerName adds a label with the caller name in all the collected metrics.
+// It defaults to true.
+func GetTrackCallerName(c context.Context) bool {
+	if c == nil {
+		return true
+	}
+
+	track, ok := c.Value(trackCallerName).(bool)
+	if !ok {
+		// TODO: log a warning here
+		return true
+	}
+
+	return track
+}
+
+// SetAlertConfiguration sets the context's [AlertConfiguration]
+//
+// AlertConfiguration is an optional configuration to add alerting capabilities to the metrics.
+func SetAlertConfiguration(ctx context.Context, slo AlertConfiguration) context.Context {
+	return context.WithValue(ctx, alertConfiguration, slo)
+}
+
+// GetAlertConfiguration returns default information if the context did not contain any alerting configuration.
+//
+// AlertConfiguration is an optional configuration to add alerting capabilities to the metrics.
+func GetAlertConfiguration(c context.Context) AlertConfiguration {
+	if c == nil {
+		return AlertConfiguration{}
+	}
+
+	slo, ok := c.Value(alertConfiguration).(AlertConfiguration)
+	if !ok {
+		// TODO: log a warning here
+		return AlertConfiguration{}
+	}
+
+	return slo
+}
+
+// SetCallInfo sets the context's [CallInfo]
+//
+// CallInfo contains all the relevant data for caller information.
+func SetCallInfo(ctx context.Context, build CallInfo) context.Context {
+	return context.WithValue(ctx, callInfo, build)
+}
+
+// GetCallInfo returns default information if the context did not contain any build information.
+//
+// CallInfo contains all the relevant data for caller information.
+func GetCallInfo(c context.Context) CallInfo {
+	if c == nil {
+		return CallInfo{}
+	}
+
+	build, ok := c.Value(callInfo).(CallInfo)
+	if !ok {
+		// TODO: log a warning here
+		return CallInfo{}
+	}
+
+	return build
+}
+
+// SetStartTime sets the context's [StartTime]
+//
+// StartTime is the start time of a single function execution.
+func SetStartTime(ctx context.Context, startTime time.Time) context.Context {
+	return context.WithValue(ctx, startTime, startTime)
+}
+
+// GetStartTime returns default current time if the context did not contain any start time.
+//
+// StartTime is the start time of a single function execution.
+func GetStartTime(c context.Context) time.Time {
+	if c == nil {
+		return time.Now()
+	}
+
+	startTime, ok := c.Value(startTime).(time.Time)
+	if !ok {
+		// TODO: log a warning here
+		return time.Now()
+	}
+
+	return startTime
+}
+
+// SetBuildInfo sets the context's [BuildInfo]
+//
+// BuildInfo contains all the relevant data for caller information.
+func SetBuildInfo(ctx context.Context, build BuildInfo) context.Context {
+	return context.WithValue(ctx, buildInfo, build)
+}
+
+// GetBuildInfo returns default information if the context did not contain any build information.
+//
+// BuildInfo contains all the relevant data for caller information.
+func GetBuildInfo(c context.Context) BuildInfo {
+	if c == nil {
+		return BuildInfo{}
+	}
+
+	build, ok := c.Value(buildInfo).(BuildInfo)
+	if !ok {
+		// TODO: log a warning here
+		return BuildInfo{}
+	}
+
+	return build
 }
 
 // SetTraceID sets the context's [TraceID]
-func (ctx *Context) SetTraceID(tid TraceID) {
-	ctx.Context = context.WithValue(ctx.Context, currentTraceId, tid)
-}
-
-// SetSpanID sets the context's [SpanID]
-func (ctx *Context) SetSpanID(sid SpanID) {
-	ctx.Context = context.WithValue(ctx.Context, currentSpanId, sid)
-}
-
-// SetParentSpanID sets the context's span's parent [SpanID]
-func (ctx *Context) SetParentSpanID(sid SpanID) {
-	ctx.Context = context.WithValue(ctx.Context, parentSpanId, sid)
+func SetTraceID(ctx context.Context, tid TraceID) context.Context {
+	return context.WithValue(ctx, currentTraceId, tid)
 }
 
 // GetTraceID returns (_, false) if the context did not contain any trace id.
-func (c Context) GetTraceID() (TraceID, bool) {
-	if c.Context == nil {
+func GetTraceID(c context.Context) (TraceID, bool) {
+	if c == nil {
 		return TraceID{}, false
 	}
 	tid, ok := c.Value(currentTraceId).(TraceID)
 	return tid, ok
 }
 
+// SetSpanID sets the context's [SpanID]
+func SetSpanID(ctx context.Context, sid SpanID) context.Context {
+	return context.WithValue(ctx, currentSpanId, sid)
+}
+
 // GetSpanID returns (_, false) if the context did not contain the current span id.
-func (c Context) GetSpanID() (SpanID, bool) {
-	if c.Context == nil {
+func GetSpanID(c context.Context) (SpanID, bool) {
+	if c == nil {
 		return SpanID{}, false
 	}
 	sid, ok := c.Value(currentSpanId).(SpanID)
 	return sid, ok
 }
 
+// SetParentSpanID sets the context's span's parent [SpanID]
+func SetParentSpanID(ctx context.Context, sid SpanID) context.Context {
+	return context.WithValue(ctx, parentSpanId, sid)
+}
+
 // GetParentSpanID returns (_, false) if the context did not contain the parent's span id (including when we are in the root span).
-func (c Context) GetParentSpanID() (SpanID, bool) {
-	if c.Context == nil {
+func GetParentSpanID(c context.Context) (SpanID, bool) {
+	if c == nil {
 		return SpanID{}, false
 	}
 	sid, ok := c.Value(parentSpanId).(SpanID)
@@ -135,7 +236,7 @@ func (c Context) GetParentSpanID() (SpanID, bool) {
 // generated IDs in the context to be used later for exemplars
 //
 // The random generator is a PRNG, seeded with the timestamp of the first time new IDs are needed.
-func (c *Context) FillTracingInfo() {
+func FillTracingInfo(ctx context.Context) context.Context {
 	// We are using a PRNG because FillTracingInfo is expected to be called in PreInstrument.
 	// Therefore it can have a noticeable impact on the performance of instrumented code.
 	// Pseudo randomness should be enough for our use cases, true randomness might introduce too much latency.
@@ -145,19 +246,21 @@ func (c *Context) FillTracingInfo() {
 		randSource = rand.New(rand.NewSource(time.Now().UnixNano()))
 	}
 
-	if parentSpanId, ok := c.GetSpanID(); ok {
-		c.SetParentSpanID(parentSpanId)
+	if parentSpanId, ok := GetSpanID(ctx); ok {
+		ctx = SetParentSpanID(ctx, parentSpanId)
 	}
 
 	sid := SpanID{}
 	_, _ = randSource.Read(sid[:])
-	c.SetSpanID(sid)
+	ctx = SetSpanID(ctx, sid)
 
-	if _, ok := c.GetTraceID(); !ok {
+	if _, ok := GetTraceID(ctx); !ok {
 		tid := TraceID{}
 		_, _ = randSource.Read(tid[:])
-		c.SetTraceID(tid)
+		ctx = SetTraceID(ctx, tid)
 	}
+
+	return ctx
 }
 
 // GenerateTraceId generates a new TraceID with a Pseudo-random number generator.
@@ -183,8 +286,94 @@ func WithNewTraceId(ctx context.Context) context.Context {
 }
 
 // FillBuildInfo adds the relevant build information to the current context.
-func (c *Context) FillBuildInfo() {
-	c.BuildInfo.Version = GetVersion()
-	c.BuildInfo.Commit = GetCommit()
-	c.BuildInfo.Branch = GetBranch()
+func FillBuildInfo(ctx context.Context) context.Context {
+	b := BuildInfo{
+		Version: GetVersion(),
+		Commit:  GetCommit(),
+		Branch:  GetBranch(),
+	}
+
+	return SetBuildInfo(ctx, b)
+}
+
+
+type optionFunc func(context.Context) context.Context
+
+func (fn optionFunc) Apply(ctx context.Context) context.Context {
+	return fn(ctx)
+}
+
+func NewContextWithOpts(ctx context.Context, opts ...Option) context.Context {
+	amCtx := NewContext(ctx)
+
+	for _, o := range opts {
+		amCtx = o.Apply(amCtx)
+	}
+
+	return amCtx
+}
+
+func WithTraceID(tid []byte) Option {
+	return optionFunc(func(ctx context.Context) context.Context {
+		if tid != nil {
+			var truncatedTid TraceID
+			copy(truncatedTid[:], tid)
+			return SetTraceID(ctx, truncatedTid)
+		}
+		return ctx
+	})
+}
+
+func WithSpanID(sid []byte) Option {
+	return optionFunc(func(ctx context.Context) context.Context {
+		if sid != nil {
+			var truncatedSid SpanID
+			copy(truncatedSid[:], sid)
+			return SetSpanID(ctx, truncatedSid)
+		}
+		return ctx
+	})
+}
+
+func WithAlertLatency(target time.Duration, objective float64) Option {
+	return optionFunc(func(ctx context.Context) context.Context {
+		latencySlo := &LatencySlo{
+			Target:    target,
+			Objective: objective,
+		}
+		slo := GetAlertConfiguration(ctx)
+		slo.Latency = latencySlo
+		return SetAlertConfiguration(ctx, slo)
+	})
+}
+
+func WithAlertSuccess(objective float64) Option {
+	return optionFunc(func(ctx context.Context) context.Context {
+		successSlo := &SuccessSlo{
+			Objective: objective,
+		}
+		slo := GetAlertConfiguration(ctx)
+		slo.Success = successSlo
+		return SetAlertConfiguration(ctx, slo)
+	})
+}
+
+func WithSloName(name string) Option {
+	return optionFunc(func(ctx context.Context) context.Context {
+		slo := GetAlertConfiguration(ctx)
+		slo.ServiceName = name
+		return SetAlertConfiguration(ctx, slo)
+	})
+}
+
+func WithConcurrentCalls(enabled bool) Option {
+	return optionFunc(func(ctx context.Context) context.Context {
+		return SetTrackConcurrentCalls(ctx, enabled)
+	})
+}
+
+func WithCallerName(enabled bool) Option {
+	return optionFunc(func(ctx context.Context) context.Context {
+		return SetTrackCallerName(ctx, enabled)
+	})
 }

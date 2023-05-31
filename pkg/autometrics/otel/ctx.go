@@ -7,93 +7,34 @@ import (
 	"github.com/autometrics-dev/autometrics-go/pkg/autometrics"
 )
 
-type optionFunc func(*autometrics.Context)
-
-func (fn optionFunc) Apply(ctx *autometrics.Context) {
-	fn(ctx)
-}
-
-func NewContext(ctx context.Context, opts ...autometrics.Option) *autometrics.Context {
-	amCtx := autometrics.NewContext(ctx)
-
-	for _, o := range opts {
-		o.Apply(&amCtx)
-	}
-
-	return &amCtx
+func NewContext(ctx context.Context, opts ...autometrics.Option) context.Context {
+	return autometrics.NewContextWithOpts(ctx, opts...)
 }
 
 func WithTraceID(tid []byte) autometrics.Option {
-	return optionFunc(func(ctx *autometrics.Context) {
-		if tid != nil {
-			var truncatedTid autometrics.TraceID
-			copy(truncatedTid[:], tid)
-			ctx.SetTraceID(truncatedTid)
-		}
-	})
+	return autometrics.WithTraceID(tid)
 }
 
 func WithSpanID(sid []byte) autometrics.Option {
-	return optionFunc(func(ctx *autometrics.Context) {
-		if sid != nil {
-			var truncatedSid autometrics.SpanID
-			copy(truncatedSid[:], sid)
-			ctx.SetSpanID(truncatedSid)
-		}
-	})
+	return autometrics.WithSpanID(sid)
 }
 
 func WithAlertLatency(target time.Duration, objective float64) autometrics.Option {
-	return optionFunc(func(ctx *autometrics.Context) {
-		latencySlo := &autometrics.LatencySlo{
-			Target:    target,
-			Objective: objective,
-		}
-		if ctx.AlertConf != nil {
-			ctx.AlertConf.Latency = latencySlo
-		} else {
-			ctx.AlertConf = &autometrics.AlertConfiguration{
-				Latency: latencySlo,
-			}
-		}
-	})
+	return autometrics.WithAlertLatency(target, objective)
 }
 
 func WithAlertSuccess(objective float64) autometrics.Option {
-	return optionFunc(func(ctx *autometrics.Context) {
-		successSlo := &autometrics.SuccessSlo{
-			Objective: objective,
-		}
-		if ctx.AlertConf != nil {
-			ctx.AlertConf.Success = successSlo
-		} else {
-			ctx.AlertConf = &autometrics.AlertConfiguration{
-				Success: successSlo,
-			}
-		}
-	})
+	return autometrics.WithAlertSuccess(objective)
 }
 
 func WithSloName(name string) autometrics.Option {
-	return optionFunc(func(ctx *autometrics.Context) {
-		if ctx.AlertConf != nil {
-			ctx.AlertConf.ServiceName = name
-		} else {
-			ctx.AlertConf = &autometrics.AlertConfiguration{
-				ServiceName: name,
-			}
-		}
-	})
+	return autometrics.WithSloName(name)
 }
 
 func WithConcurrentCalls(enabled bool) autometrics.Option {
-	return optionFunc(func(ctx *autometrics.Context) {
-		ctx.TrackConcurrentCalls = enabled
-	})
+	return autometrics.WithConcurrentCalls(enabled)
 }
 
 func WithCallerName(enabled bool) autometrics.Option {
-	return optionFunc(func(ctx *autometrics.Context) {
-		ctx.TrackCallerName = enabled
-	})
+	return autometrics.WithCallerName(enabled)
 }

@@ -1,12 +1,13 @@
 package prometheus // import "github.com/autometrics-dev/autometrics-go/pkg/autometrics/prometheus"
 
 import (
+	"context"
 	"encoding/hex"
 	"fmt"
 	"strconv"
 	"time"
 
-	"github.com/autometrics-dev/autometrics-go/pkg/autometrics"
+	am "github.com/autometrics-dev/autometrics-go/pkg/autometrics"
 	"github.com/prometheus/client_golang/prometheus"
 )
 
@@ -15,7 +16,7 @@ import (
 //
 // The first argument SHOULD be a call to PreInstrument so that
 // the "concurrent calls" gauge is correctly setup.
-func Instrument(ctx *autometrics.Context, err *error) {
+func Instrument(ctx context.Context, err *error) {
 	result := "ok"
 
 	if err != nil && *err != nil {
@@ -24,56 +25,60 @@ func Instrument(ctx *autometrics.Context, err *error) {
 
 	var callerLabel, sloName, latencyTarget, latencyObjective, successObjective string
 
-	if ctx.TrackCallerName {
-		callerLabel = fmt.Sprintf("%s.%s", ctx.CallInfo.ParentModuleName, ctx.CallInfo.ParentFuncName)
+	callInfo := am.GetCallInfo(ctx)
+	buildInfo := am.GetBuildInfo(ctx)
+	slo := am.GetAlertConfiguration(ctx)
+
+	if am.GetTrackCallerName(ctx) {
+		callerLabel = fmt.Sprintf("%s.%s", callInfo.ParentModuleName, callInfo.ParentFuncName)
 	}
 
-	if ctx.AlertConf != nil {
-		sloName = ctx.AlertConf.ServiceName
+	if slo.ServiceName != "" {
+		sloName = slo.ServiceName
 
-		if ctx.AlertConf.Latency != nil {
-			latencyTarget = strconv.FormatFloat(ctx.AlertConf.Latency.Target.Seconds(), 'f', -1, 64)
-			latencyObjective = strconv.FormatFloat(ctx.AlertConf.Latency.Objective, 'f', -1, 64)
+		if slo.Latency != nil {
+			latencyTarget = strconv.FormatFloat(slo.Latency.Target.Seconds(), 'f', -1, 64)
+			latencyObjective = strconv.FormatFloat(slo.Latency.Objective, 'f', -1, 64)
 		}
 
-		if ctx.AlertConf.Success != nil {
-			successObjective = strconv.FormatFloat(ctx.AlertConf.Success.Objective, 'f', -1, 64)
+		if slo.Success != nil {
+			successObjective = strconv.FormatFloat(slo.Success.Objective, 'f', -1, 64)
 		}
 	}
 
 	info := exemplars(ctx)
 
 	functionCallsCount.With(prometheus.Labels{
-		FunctionLabel:          ctx.CallInfo.FuncName,
-		ModuleLabel:            ctx.CallInfo.ModuleName,
+		FunctionLabel:          callInfo.FuncName,
+		ModuleLabel:            callInfo.ModuleName,
 		CallerLabel:            callerLabel,
 		ResultLabel:            result,
 		TargetSuccessRateLabel: successObjective,
 		SloNameLabel:           sloName,
-		BranchLabel:            ctx.BuildInfo.Branch,
-		CommitLabel:            ctx.BuildInfo.Commit,
-		VersionLabel:           ctx.BuildInfo.Version,
+		BranchLabel:            buildInfo.Branch,
+		CommitLabel:            buildInfo.Commit,
+		VersionLabel:           buildInfo.Version,
 	}).(prometheus.ExemplarAdder).AddWithExemplar(1, info)
 	functionCallsDuration.With(prometheus.Labels{
-		FunctionLabel:          ctx.CallInfo.FuncName,
-		ModuleLabel:            ctx.CallInfo.ModuleName,
+		FunctionLabel:          callInfo.FuncName,
+		ModuleLabel:            callInfo.ModuleName,
 		CallerLabel:            callerLabel,
 		TargetLatencyLabel:     latencyTarget,
 		TargetSuccessRateLabel: latencyObjective,
 		SloNameLabel:           sloName,
-		BranchLabel:            ctx.BuildInfo.Branch,
-		CommitLabel:            ctx.BuildInfo.Commit,
-		VersionLabel:           ctx.BuildInfo.Version,
-	}).(prometheus.ExemplarObserver).ObserveWithExemplar(time.Since(ctx.StartTime).Seconds(), info)
+		BranchLabel:            buildInfo.Branch,
+		CommitLabel:            buildInfo.Commit,
+		VersionLabel:           buildInfo.Version,
+	}).(prometheus.ExemplarObserver).ObserveWithExemplar(time.Since(am.GetStartTime(ctx)).Seconds(), info)
 
-	if ctx.TrackConcurrentCalls {
+	if am.GetTrackConcurrentCalls(ctx) {
 		functionCallsConcurrent.With(prometheus.Labels{
-			FunctionLabel: ctx.CallInfo.FuncName,
-			ModuleLabel:   ctx.CallInfo.ModuleName,
+			FunctionLabel: callInfo.FuncName,
+			ModuleLabel:   callInfo.ModuleName,
 			CallerLabel:   callerLabel,
-			BranchLabel:   ctx.BuildInfo.Branch,
-			CommitLabel:   ctx.BuildInfo.Commit,
-			VersionLabel:  ctx.BuildInfo.Version,
+			BranchLabel:   buildInfo.Branch,
+			CommitLabel:   buildInfo.Commit,
+			VersionLabel:  buildInfo.Version,
 		}).Add(-1)
 	}
 }
@@ -82,45 +87,47 @@ func Instrument(ctx *autometrics.Context, err *error) {
 //
 // It is meant to be called as the first argument to Instrument in a
 // defer call.
-func PreInstrument(ctx *autometrics.Context) *autometrics.Context {
-	ctx.CallInfo = autometrics.CallerInfo()
-	ctx.FillBuildInfo()
-	ctx.FillTracingInfo()
+func PreInstrument(ctx context.Context) context.Context {
+	callInfo := am.CallerInfo()
+	ctx = am.SetCallInfo(ctx, callInfo)
+	ctx = am.FillBuildInfo(ctx)
+	ctx = am.FillTracingInfo(ctx)
+	buildInfo := am.GetBuildInfo(ctx)
 
 	var callerLabel string
-	if ctx.TrackCallerName {
-		callerLabel = fmt.Sprintf("%s.%s", ctx.CallInfo.ParentModuleName, ctx.CallInfo.ParentFuncName)
+	if am.GetTrackCallerName(ctx) {
+		callerLabel = fmt.Sprintf("%s.%s", callInfo.ParentModuleName, callInfo.ParentFuncName)
 	}
 
-	if ctx.TrackConcurrentCalls {
+	if am.GetTrackConcurrentCalls(ctx) {
 		functionCallsConcurrent.With(prometheus.Labels{
-			FunctionLabel: ctx.CallInfo.FuncName,
-			ModuleLabel:   ctx.CallInfo.ModuleName,
+			FunctionLabel: callInfo.FuncName,
+			ModuleLabel:   callInfo.ModuleName,
 			CallerLabel:   callerLabel,
-			BranchLabel:   ctx.BuildInfo.Branch,
-			CommitLabel:   ctx.BuildInfo.Commit,
-			VersionLabel:  ctx.BuildInfo.Version,
+			BranchLabel:   buildInfo.Branch,
+			CommitLabel:   buildInfo.Commit,
+			VersionLabel:  buildInfo.Version,
 		}).Add(1)
 	}
 
-	ctx.StartTime = time.Now()
+	ctx = am.SetStartTime(ctx, time.Now())
 
 	return ctx
 }
 
 // Extract exemplars to add to metrics from the context
-func exemplars(ctx *autometrics.Context) prometheus.Labels {
+func exemplars(ctx context.Context) prometheus.Labels {
 	labels := make(prometheus.Labels)
 
-	if tid, ok := ctx.GetTraceID(); ok {
+	if tid, ok := am.GetTraceID(ctx); ok {
 		labels[traceIdExemplar] = hex.EncodeToString(tid[:])
 	}
 
-	if sid, ok := ctx.GetSpanID(); ok {
+	if sid, ok := am.GetSpanID(ctx); ok {
 		labels[spanIdExemplar] = hex.EncodeToString(sid[:])
 	}
 
-	if psid, ok := ctx.GetParentSpanID(); ok {
+	if psid, ok := am.GetParentSpanID(ctx); ok {
 		labels[parentSpanIdExemplar] = hex.EncodeToString(psid[:])
 	}
 

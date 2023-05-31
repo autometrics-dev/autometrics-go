@@ -1,13 +1,14 @@
 package autometrics
 
 import (
+	"context"
 	"runtime"
 	"strings"
 )
 
 type Option interface {
 	// Apply the option to the currently created context
-	Apply(*Context)
+	Apply(context.Context) context.Context
 }
 
 // CallerInfo returns the (method name, module name) of the function that called the function that called this function.
