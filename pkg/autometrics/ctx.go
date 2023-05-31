@@ -18,6 +18,7 @@ const (
 	startTime
 	callInfo
 	buildInfo
+	validHttpCodeRanges
 )
 
 var randSource *rand.Rand
@@ -38,6 +39,7 @@ func NewContext(parentCtx context.Context) context.Context {
 	}
 	ctx := SetTrackConcurrentCalls(parentCtx, true)
 	ctx = SetTrackCallerName(ctx, true)
+	ctx = SetValidHttpCodeRanges(ctx, []InclusiveIntRange{{Min: 100, Max: 399}})
 	return ctx
 }
 
@@ -296,84 +298,45 @@ func FillBuildInfo(ctx context.Context) context.Context {
 	return SetBuildInfo(ctx, b)
 }
 
-
-type optionFunc func(context.Context) context.Context
-
-func (fn optionFunc) Apply(ctx context.Context) context.Context {
-	return fn(ctx)
+type InclusiveIntRange struct {
+	Min int
+	Max int
 }
 
-func NewContextWithOpts(ctx context.Context, opts ...Option) context.Context {
-	amCtx := NewContext(ctx)
+func (r InclusiveIntRange) Contains(value int) bool {
+	return value >= r.Min && value <= r.Max
+}
 
-	for _, o := range opts {
-		amCtx = o.Apply(amCtx)
+// SetValidHttpCodeRanges sets the values of http codes that Autometrics should consider as "ok" results on calls.
+//
+// The value to set is an array of `(int, int)` pairs, where each pair contains the inclusive minimum and inclusive maximum of a valid range.
+// For example, `[(100,399)]` is a good default, if we only want 4xx and 5xx status codes to be errors for Autometrics reporting. Another
+// option that might be popular is `[(100, 499)]` to only see server-side errors as errors in Autometrics metrics/dashboards.
+//
+// The ability to specify multiple ranges allow for disjoint sets: `[(100, 399), (418,418)]` would make Autometrics report an error on
+// any 4xx or 5xx status code, _except_ if that code is 418 (I'm a teapot).
+//
+// This setting is only useful when used in conjunction with the [github.com/autometrics-dev/autometrics-go/pkg/middleware/http/middleware.Autometrics] wrapper.
+func SetValidHttpCodeRanges(ctx context.Context, ranges []InclusiveIntRange) context.Context {
+	return context.WithValue(ctx, parentSpanId, ranges)
+}
+
+// GetValidHttpCodeRanges returns the list of values that should be considered as "ok" by Autometrics when computing the success rate of a handler.
+//
+// Look at the documentation of [SetValidHttpCodeRanges] for more information about the semantics of the returned value.
+func GetValidHttpCodeRanges(c context.Context) []InclusiveIntRange {
+	if c == nil {
+		return []InclusiveIntRange{{
+			Min: 100,
+			Max: 399,
+		}}
 	}
 
-	return amCtx
-}
+	ranges, ok := c.Value(parentSpanId).([]InclusiveIntRange)
+	if !ok {
+		// TODO: log a warning
+		return []InclusiveIntRange{}
+	}
 
-func WithTraceID(tid []byte) Option {
-	return optionFunc(func(ctx context.Context) context.Context {
-		if tid != nil {
-			var truncatedTid TraceID
-			copy(truncatedTid[:], tid)
-			return SetTraceID(ctx, truncatedTid)
-		}
-		return ctx
-	})
-}
-
-func WithSpanID(sid []byte) Option {
-	return optionFunc(func(ctx context.Context) context.Context {
-		if sid != nil {
-			var truncatedSid SpanID
-			copy(truncatedSid[:], sid)
-			return SetSpanID(ctx, truncatedSid)
-		}
-		return ctx
-	})
-}
-
-func WithAlertLatency(target time.Duration, objective float64) Option {
-	return optionFunc(func(ctx context.Context) context.Context {
-		latencySlo := &LatencySlo{
-			Target:    target,
-			Objective: objective,
-		}
-		slo := GetAlertConfiguration(ctx)
-		slo.Latency = latencySlo
-		return SetAlertConfiguration(ctx, slo)
-	})
-}
-
-func WithAlertSuccess(objective float64) Option {
-	return optionFunc(func(ctx context.Context) context.Context {
-		successSlo := &SuccessSlo{
-			Objective: objective,
-		}
-		slo := GetAlertConfiguration(ctx)
-		slo.Success = successSlo
-		return SetAlertConfiguration(ctx, slo)
-	})
-}
-
-func WithSloName(name string) Option {
-	return optionFunc(func(ctx context.Context) context.Context {
-		slo := GetAlertConfiguration(ctx)
-		slo.ServiceName = name
-		return SetAlertConfiguration(ctx, slo)
-	})
-}
-
-func WithConcurrentCalls(enabled bool) Option {
-	return optionFunc(func(ctx context.Context) context.Context {
-		return SetTrackConcurrentCalls(ctx, enabled)
-	})
-}
-
-func WithCallerName(enabled bool) Option {
-	return optionFunc(func(ctx context.Context) context.Context {
-		return SetTrackCallerName(ctx, enabled)
-	})
+	return ranges
 }

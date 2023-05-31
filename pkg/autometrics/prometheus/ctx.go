@@ -39,3 +39,7 @@ func WithConcurrentCalls(enabled bool) autometrics.Option {
 func WithCallerName(enabled bool) autometrics.Option {
 	return autometrics.WithCallerName(enabled)
 }
+
+func WithValidHttpCodes(ranges []autometrics.InclusiveIntRange) autometrics.Option {
+	return autometrics.WithValidHttpCodes(ranges)
+}
