@@ -24,7 +24,7 @@ docker compose -f docker-compose.prometheus-example.yaml up
 And then explore the generated links by opening the [main
 file](./examples/web/cmd/main.go) in your editor.
 
-## How to use
+## Quickstart
 
 There is a one-time setup phase to prime the code for autometrics. Once this
 phase is accomplished, only calling `go generate` is necessary.
@@ -38,6 +38,8 @@ to install it through go:
 go install github.com/autometrics-dev/autometrics-go/cmd/autometrics@latest
 ```
 
+<details>
+<summary> Make sure your `$PATH` is set up</summary>
 In order to have `autometrics` visible then, make sure that the directory
 `$GOBIN` (or the default `$GOPATH/bin`) is in your `$PATH`:
 
@@ -45,6 +47,7 @@ In order to have `autometrics` visible then, make sure that the directory
 $ echo "$PATH" | grep -q "${GOBIN:-$GOPATH/bin}" && echo "GOBIN in PATH" || echo "GOBIN not in PATH, please add it"
 GOBIN in PATH
 ```
+</details>
 
 ### Import the libraries and initialize the metrics
 
@@ -59,37 +62,20 @@ import (
 And then in your main function initialize the metrics
 
 ``` go
-	// Everything in BuildInfo is optional.
-	// You can also use any string variable whose value is
-	// injected at build time by ldflags.
+	// Everything in BuildInfo is optional. It will add
+	// relevant information on the metrics for better intelligence.
+	// You can use any string variable whose value is injected at build time by ldflags for example.
 	autometrics.Init(
 		nil,
 		autometrics.DefBuckets,
-		autometrics.BuildInfo{
-			Version: "0.4.0",
-			Commit: "anySHA",
-			Branch: "",
-		},
+		autometrics.BuildInfo{Version: "0.4.0", Commit: "anySHA", Branch: ""},
 	)
-```
-
-> **Warning**
-> If you want to enable alerting from Autometrics, you **MUST**
-have the `--latency-ms` values to match the values given in your buckets. The
-values in the buckets are given in _seconds_. By default, the generator will
-error and tell you the valid default values if they don't match.
-If the default values do not match your use case, you can change the buckets in
-the init call, and add a `--custom-latency` argument to the `//go:generate` invocation.
-
-```patch
--//go:generate autometrics
-+//go:generate autometrics --custom-latency
 ```
 
 ### Add cookies in your code
 
-#### Error returning functions
-
+<details>
+<summary>For error-returning functions</summary>
 Given a starting function like:
 
 ```go
@@ -114,9 +100,10 @@ func AddUser(args interface{}) (err error) { // Name the error return value; thi
 If you want the generated metrics to contain the function success rate, you
 _must_ name the error return value. This is why we recommend to name the error
 value you return for the function you want to instrument.
+</details>
 
-#### HTTP Handlers
-
+<details>
+<summary>For HTTP handler functions</summary>
 Autometrics comes with a middleware library for `net.http` handler functions.
 
 - Import the middleware library
@@ -139,25 +126,27 @@ import "github.com/autometrics-dev/autometrics-go/pkg/autometrics/prometheus/mid
 +		autometrics.WithAlertSuccess(90),
 +	))
 ```
+</details>
 
 ### Generate the documentation and instrumentation code
 
-Install the go generator using `go install` as usual:
-
-``` console
-go install https://github.com/autometrics-dev/autometrics-go/cmd/autometrics
-```
-
-Once you've done this, the `autometrics` generator takes care of the rest, and you can
-simply call `go generate` with an optional environment variable:
+You can now call `go generate`:
 
 ```console
-$ AM_PROMETHEUS_URL=http://localhost:9090/ go generate ./...
+$ go generate ./...
 ```
 
 The generator will augment your doc comment to add quick links to metrics (using
 the Prometheus URL as base URL), and add a unique defer statement that will take
 care of instrumenting your code.
+
+`autometrics --help` will show you all the different arguments that can control behaviour
+through environment variables.
+
+<details>
+<summary>Make the links point to specific Prometheus instances</summary>
+By default, the generated links will point to `localhost:9090`, which the default location
+of Prometheus when run locally.
 
 The environment variable `AM_PROMETHEUS_URL` controls the base URL of the instance that
 is scraping the deployed version of your code. Having an environment variable means you
@@ -166,12 +155,15 @@ is `http://localhost:9090/`.
 
 You can have any value here, the only adverse impact it can
 have is that the links in the doc comment might lead nowhere useful.
+</details>
 
 ### Expose metrics outside
 
 The last step now is to actually expose the generated metrics to the Prometheus instance.
 
-For Prometheus the shortest way is to add the handler code in your main entrypoint:
+<details>
+<summary>Add a Prometheus handler to expose autometrics metrics</summary>
+The shortest way is to add the handler code in your main entrypoint:
 
 ``` go
 import (
@@ -184,11 +176,7 @@ func main() {
 	autometrics.Init(
 		nil,
 		autometrics.DefBuckets,
-		autometrics.BuildInfo{
-			Version: "0.4.0",
-			Commit: "anySHA",
-			Branch: "",
-		},
+		autometrics.BuildInfo{Version: "0.4.0", Commit: "anySHA", Branch: ""},
 	)
 	http.Handle("/metrics", promhttp.Handler())
 }
@@ -196,8 +184,12 @@ func main() {
 
 This is the shortest way to initialize and expose the metrics that autometrics will use
 in the generated code.
+</details>
 
-### (OPTIONAL) Generate alerts automatically
+A Prometheus server can be configured to poll the application, and the autometrics will be
+available! (See the [Web App example](./examples/web) for a simple, complete setup)
+
+## (OPTIONAL) Generate alerts automatically
 
 Change the annotation of the function to automatically generate alerts for it:
 
@@ -222,9 +214,24 @@ The valid arguments for alert generation are:
   latency options, or none.
   
 > **Warning**
-> The generator will error out if you use targets that are not
+> The generator will error out if you use percentile targets that are not
 supported by the bundled [Alerting rules file](./configs/shared/autometrics.rules.yml).
 Support for custom target is planned but not present at the moment
+
+
+> **Warning** 
+> You **MUST** have the `--latency-ms` values to match the values
+ given in the buckets given in the `autometrics.Init` call. The values in the
+ buckets are given in _seconds_. By default, the generator will error and tell
+ you the valid default values if they don't match. If the default values in
+ `autometrics.DefBuckets` do not match your use case, you can change the
+ buckets in the init call, and add a `--custom-latency` argument to the
+ `//go:generate` invocation.
+```patch
+-//go:generate autometrics
++//go:generate autometrics --custom-latency
+```
+
   
 ## (OPTIONAL) OpenTelemetry Support
 
