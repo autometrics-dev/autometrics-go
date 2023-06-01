@@ -74,6 +74,14 @@ And then in your main function initialize the metrics
 
 ### Add cookies in your code
 
+On top of each file you want to use Autometrics in, you need to have a `go generate` cookie:
+
+``` go
+//go:generate autometrics
+```
+
+Then instrumenting functions depend on their signature:
+
 <details>
 <summary>For error-returning functions</summary>
 Given a starting function like:
@@ -88,8 +96,6 @@ func AddUser(args interface{}) error {
 The manual changes you need to do are:
 
 ```go
-//go:generate autometrics
-
 //autometrics:inst
 func AddUser(args interface{}) (err error) { // Name the error return value; this is an optional but recommended change
         // Do stuff
@@ -97,7 +103,8 @@ func AddUser(args interface{}) (err error) { // Name the error return value; thi
 }
 ```
 
-If you want the generated metrics to contain the function success rate, you
+> **Warning**
+> If you want the generated metrics to contain the function success rate, you
 _must_ name the error return value. This is why we recommend to name the error
 value you return for the function you want to instrument.
 </details>
@@ -126,6 +133,9 @@ import "github.com/autometrics-dev/autometrics-go/pkg/autometrics/prometheus/mid
 +		autometrics.WithAlertSuccess(90),
 +	))
 ```
+
+There is only middleware for `net/http` handlers for now, but support for other web frameworks will
+come soon!
 </details>
 
 ### Generate the documentation and instrumentation code
