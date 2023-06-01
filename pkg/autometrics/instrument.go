@@ -1,6 +1,7 @@
 package autometrics
 
 import (
+	"reflect"
 	"runtime"
 	"strings"
 )
@@ -32,7 +33,7 @@ func CallerInfo() (callInfo CallInfo) {
 	index := strings.LastIndex(functionName, ".")
 
 	if index == -1 {
-		callInfo.FuncName = frame.Func.Name()
+		callInfo.FuncName = functionName
 	} else {
 		moduleIndex := strings.LastIndex(functionName[:index], ".")
 		if moduleIndex == -1 {
@@ -55,7 +56,7 @@ func CallerInfo() (callInfo CallInfo) {
 	index = strings.LastIndex(parentFunctionName, ".")
 
 	if index == -1 {
-		callInfo.ParentFuncName = parentFrame.Func.Name()
+		callInfo.ParentFuncName = parentFunctionName
 	} else {
 		moduleIndex := strings.LastIndex(parentFunctionName[:index], ".")
 		if moduleIndex == -1 {
@@ -68,4 +69,28 @@ func CallerInfo() (callInfo CallInfo) {
 	}
 
 	return
+}
+
+// ReflectFunctionModuleName takes any function and returns it's name and module split.
+//
+// There is no `caller` in this context (we just use reflection to extract the information
+// from the function pointer), therefore the caller-related fields in the return value are
+// empty.
+func ReflectFunctionModuleName(f interface{}) (callInfo CallInfo) {
+	functionName := runtime.FuncForPC(reflect.ValueOf(f).Pointer()).Name()
+
+	index := strings.LastIndex(functionName, ".")
+	if index == -1 {
+		callInfo.FuncName = functionName
+	} else {
+		moduleIndex := strings.LastIndex(functionName[:index], ".")
+		if moduleIndex == -1 {
+			callInfo.ModuleName = functionName[:index]
+		} else {
+			callInfo.ModuleName = functionName[moduleIndex+1 : index]
+		}
+		callInfo.FuncName = functionName[index+1:]
+	}
+
+	return callInfo
 }

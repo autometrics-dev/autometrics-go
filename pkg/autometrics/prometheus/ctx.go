@@ -7,6 +7,7 @@ import (
 	"github.com/autometrics-dev/autometrics-go/pkg/autometrics"
 )
 
+type ValidHttpRange = autometrics.InclusiveIntRange
 
 func NewContext(ctx context.Context, opts ...autometrics.Option) context.Context {
 	return autometrics.NewContextWithOpts(ctx, opts...)
@@ -40,6 +41,6 @@ func WithCallerName(enabled bool) autometrics.Option {
 	return autometrics.WithCallerName(enabled)
 }
 
-func WithValidHttpCodes(ranges []autometrics.InclusiveIntRange) autometrics.Option {
+func WithValidHttpCodes(ranges []ValidHttpRange) autometrics.Option {
 	return autometrics.WithValidHttpCodes(ranges)
 }

@@ -1,4 +1,4 @@
-package http // import "github.com/autometrics-dev/autometrics-go/pkg/prometheus/middleware"
+package http // import "github.com/autometrics-dev/autometrics-go/pkg/prometheus/middleware/http"
 
 import (
 	"errors"
@@ -9,18 +9,14 @@ import (
 	mid "github.com/autometrics-dev/autometrics-go/pkg/middleware/http"
 )
 
-func Autometrics(next http.Handler, opts ...am.Option) http.Handler {
+func Autometrics(next http.HandlerFunc, opts ...am.Option) http.HandlerFunc {
 	fn := func(rw http.ResponseWriter, r *http.Request) {
 		arw := mid.NewResponseWriter(rw)
 		ctx := prom.PreInstrument(prom.NewContext(r.Context(), opts...))
-		// The Function name and modules are hardcoded to represent the HTTP route, instead
-		// of autometrics.
-		// The information about the handler's function name is not easily accessible (and what happens if
-		// the handler is an anonymous function?)
-		ctx = am.SetCallInfo(ctx, am.CallInfo{
-			FuncName:   r.RequestURI,
-			ModuleName: r.Host,
-		})
+
+		// Compute then set the function name and module name labels
+		ctx = am.SetCallInfo(ctx, am.ReflectFunctionModuleName(next))
+
 		err := errors.New("Unfinished handler")
 
 		defer prom.Instrument(ctx, &err)

@@ -88,10 +88,12 @@ the init call, and add a `--custom-latency` argument to the `//go:generate` invo
 
 ### Add cookies in your code
 
+#### Error returning functions
+
 Given a starting function like:
 
 ```go
-func RouteHandler(args interface{}) error {
+func AddUser(args interface{}) error {
         // Do stuff
         return nil
 }
@@ -102,8 +104,8 @@ The manual changes you need to do are:
 ```go
 //go:generate autometrics
 
-//autometrics:doc
-func RouteHandler(args interface{}) (err error) { // Name the error return value; this is an optional but recommended change
+//autometrics:inst
+func AddUser(args interface{}) (err error) { // Name the error return value; this is an optional but recommended change
         // Do stuff
         return nil
 }
@@ -112,6 +114,31 @@ func RouteHandler(args interface{}) (err error) { // Name the error return value
 If you want the generated metrics to contain the function success rate, you
 _must_ name the error return value. This is why we recommend to name the error
 value you return for the function you want to instrument.
+
+#### HTTP Handlers
+
+Autometrics comes with a middleware library for `net.http` handler functions.
+
+- Import the middleware library
+
+``` go
+import "github.com/autometrics-dev/autometrics-go/pkg/autometrics/prometheus/middleware/http"
+```
+
+- Wrap your handlers in `Autometrics` handler
+
+``` patch
+
+-	http.Handle("/path", http.HandlerFunc(routeHandler))
++	http.Handle("/path", middleware.Autometrics(
++		http.HandlerFunc(routeHandler),
++		// Optional: override what is considered a success (default is 100-399)
++		autometrics.WithValidHttpCodes([]autometrics.ValidHttpRange{{Min: 200, Max: 299}}),
++		// Optional: Alerting rules
++		autometrics.WithSloName("API"),
++		autometrics.WithAlertSuccess(90),
++	))
+```
 
 ### Generate the documentation and instrumentation code
 
@@ -175,8 +202,8 @@ in the generated code.
 Change the annotation of the function to automatically generate alerts for it:
 
 ``` go
-//autometrics:doc --slo "Api" --success-target 90
-func RouteHandler(args interface{}) (err error) {
+//autometrics:inst --slo "Api" --success-target 90
+func AddUser(args interface{}) (err error) {
         // Do stuff
         return nil
 }
