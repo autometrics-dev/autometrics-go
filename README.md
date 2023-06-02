@@ -55,7 +55,7 @@ In the main entrypoint of your program, you need to both add package
 
 ``` go
 import (
-	autometrics "github.com/autometrics-dev/autometrics-go/pkg/autometrics/prometheus"
+	"github.com/autometrics-dev/autometrics-go/prometheus/autometrics"
 )
 ```
 
@@ -116,7 +116,7 @@ Autometrics comes with a middleware library for `net.http` handler functions.
 - Import the middleware library
 
 ``` go
-import "github.com/autometrics-dev/autometrics-go/pkg/autometrics/prometheus/middleware/http"
+import "github.com/autometrics-dev/autometrics-go/prometheus/midhttp"
 ```
 
 - Wrap your handlers in `Autometrics` handler
@@ -124,7 +124,7 @@ import "github.com/autometrics-dev/autometrics-go/pkg/autometrics/prometheus/mid
 ``` patch
 
 -	http.Handle("/path", http.HandlerFunc(routeHandler))
-+	http.Handle("/path", middleware.Autometrics(
++	http.Handle("/path", midhttp.Autometrics(
 +		http.HandlerFunc(routeHandler),
 +		// Optional: override what is considered a success (default is 100-399)
 +		autometrics.WithValidHttpCodes([]autometrics.ValidHttpRange{{Min: 200, Max: 299}}),
@@ -177,7 +177,7 @@ The shortest way is to add the handler code in your main entrypoint:
 
 ``` go
 import (
-	autometrics "github.com/autometrics-dev/autometrics-go/pkg/autometrics/prometheus"
+	"github.com/autometrics-dev/autometrics-go/prometheus/autometrics"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
@@ -251,8 +251,8 @@ Prometheus to publish the metrics. The changes you need to make are:
 - change where the `autometrics` import points to
 ```patch
 import (
--	autometrics "github.com/autometrics-dev/autometrics-go/pkg/autometrics/prometheus"
-+	autometrics "github.com/autometrics-dev/autometrics-go/pkg/autometrics/otel"
+-	"github.com/autometrics-dev/autometrics-go/prometheus/autometrics"
++	"github.com/autometrics-dev/autometrics-go/otel/autometrics"
 )
 ```
 - change the call to `autometrics.Init` to the new signature: instead of a registry,
@@ -264,11 +264,7 @@ metric. You can use the name of the application or its version for example
 -		nil,
 +		"myApp/v2/prod",
 		autometrics.DefBuckets,
-		autometrics.BuildInfo{
-			Version: "2.1.37",
-			Commit: "anySHA",
-			Branch: "",
-		},
+		autometrics.BuildInfo{ Version: "2.1.37", Commit: "anySHA", Branch: "" },
 	)
 ```
 

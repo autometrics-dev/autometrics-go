@@ -8,8 +8,8 @@ import (
 	"net/http"
 	"time"
 
-	autometrics "github.com/autometrics-dev/autometrics-go/pkg/autometrics/prometheus"
-	middleware "github.com/autometrics-dev/autometrics-go/pkg/autometrics/prometheus/middleware/http"
+	"github.com/autometrics-dev/autometrics-go/prometheus/autometrics"
+	"github.com/autometrics-dev/autometrics-go/prometheus/midhttp"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
@@ -42,7 +42,7 @@ func main() {
 
 	http.HandleFunc("/", errorable(indexHandler))
 	// Wrapping a route in Autometrics middleware
-	http.Handle("/random-error", middleware.Autometrics(
+	http.Handle("/random-error", midhttp.Autometrics(
 		http.HandlerFunc(randomErrorHandler),
 		autometrics.WithValidHttpCodes([]autometrics.ValidHttpRange{{Min: 200, Max: 299}}),
 		autometrics.WithSloName("API"),

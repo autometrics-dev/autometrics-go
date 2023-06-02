@@ -1,9 +1,8 @@
-package middleware // import "github.com/autometrics-dev/autometrics-go/pkg/middleware/http/middleware"
+// Package midhttp contains common types used in the downstream implementations of the middleware for net/http handlers.
+package midhttp // import "github.com/autometrics-dev/autometrics-go/pkg/middleware/midhttp"
 
 import (
 	"net/http"
-
-	am "github.com/autometrics-dev/autometrics-go/pkg/autometrics"
 )
 
 const RequestIdHeader = "X-Request-Id"
@@ -26,17 +25,4 @@ func (amrw *autometricsResponseWriter) CurrentStatusCode() int {
 func (amrw *autometricsResponseWriter) WriteHeader(code int) {
 	amrw.statusCode = code
 	amrw.ResponseWriter.WriteHeader(code)
-}
-
-func Autometrics(next http.Handler) http.Handler {
-	fn := func(rw http.ResponseWriter, r *http.Request) {
-		arw := NewResponseWriter(rw)
-		ctx := am.NewContext(r.Context())
-		r = r.WithContext(ctx)
-		next.ServeHTTP(arw, r)
-		// TODO: This is where we would check the range of responses that are considered
-		// ok or not, on arw.statusCode
-	}
-
-	return http.HandlerFunc(fn)
 }

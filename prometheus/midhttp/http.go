@@ -1,25 +1,25 @@
-package http // import "github.com/autometrics-dev/autometrics-go/pkg/autometrics/otel/middleware/http"
+package midhttp // import "github.com/autometrics-dev/autometrics-go/prometheus/midhttp"
 
 import (
 	"errors"
 	"net/http"
 
 	am "github.com/autometrics-dev/autometrics-go/pkg/autometrics"
-	otel "github.com/autometrics-dev/autometrics-go/pkg/autometrics/otel"
-	mid "github.com/autometrics-dev/autometrics-go/pkg/middleware/http"
+	mid "github.com/autometrics-dev/autometrics-go/pkg/midhttp"
+	prom "github.com/autometrics-dev/autometrics-go/prometheus/autometrics"
 )
 
 func Autometrics(next http.HandlerFunc, opts ...am.Option) http.HandlerFunc {
 	fn := func(rw http.ResponseWriter, r *http.Request) {
 		arw := mid.NewResponseWriter(rw)
-		ctx := otel.PreInstrument(otel.NewContext(r.Context(), opts...))
+		ctx := prom.PreInstrument(prom.NewContext(r.Context(), opts...))
 
 		// Compute then set the function name and module name labels
 		ctx = am.SetCallInfo(ctx, am.ReflectFunctionModuleName(next))
 
 		err := errors.New("Unfinished handler")
 
-		defer otel.Instrument(ctx, &err)
+		defer prom.Instrument(ctx, &err)
 
 		r = r.WithContext(ctx)
 		next.ServeHTTP(arw, r)

@@ -23,8 +23,8 @@ const (
 	LatencyObjArgument = "--latency-target"
 	NoDocArgument      = "--no-doc"
 
-	AmPromPackage = "\"github.com/autometrics-dev/autometrics-go/pkg/autometrics/prometheus\""
-	AmOtelPackage = "\"github.com/autometrics-dev/autometrics-go/pkg/autometrics/otel\""
+	AmPromPackage = "\"github.com/autometrics-dev/autometrics-go/prometheus/autometrics\""
+	AmOtelPackage = "\"github.com/autometrics-dev/autometrics-go/otel/autometrics\""
 )
 
 // TransformFile takes a file path and generates the documentation
@@ -82,7 +82,7 @@ func GenerateDocumentationAndInstrumentation(ctx internal.GeneratorContext, sour
 					if importSpec.Name != nil {
 						ctx.FuncCtx.ImplImportName = importSpec.Name.Name
 					} else {
-						ctx.FuncCtx.ImplImportName = "prometheus"
+						ctx.FuncCtx.ImplImportName = "autometrics"
 					}
 				}
 			}
@@ -92,7 +92,7 @@ func GenerateDocumentationAndInstrumentation(ctx internal.GeneratorContext, sour
 					if importSpec.Name != nil {
 						ctx.FuncCtx.ImplImportName = importSpec.Name.Name
 					} else {
-						ctx.FuncCtx.ImplImportName = "otel"
+						ctx.FuncCtx.ImplImportName = "autometrics"
 					}
 				}
 			}

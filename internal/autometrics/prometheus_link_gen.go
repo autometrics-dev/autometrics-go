@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"net/url"
 
-	"github.com/autometrics-dev/autometrics-go/pkg/autometrics/prometheus"
+	prometheus "github.com/autometrics-dev/autometrics-go/prometheus/autometrics"
 )
 
 type AutometricsLinkCommentGenerator interface {
