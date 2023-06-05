@@ -8,7 +8,8 @@ import (
 	"net/http"
 	"time"
 
-	autometrics "github.com/autometrics-dev/autometrics-go/pkg/autometrics/prometheus"
+	"github.com/autometrics-dev/autometrics-go/prometheus/autometrics"
+	"github.com/autometrics-dev/autometrics-go/prometheus/midhttp"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
@@ -40,7 +41,13 @@ func main() {
 	)
 
 	http.HandleFunc("/", errorable(indexHandler))
-	http.HandleFunc("/random-error", errorable(randomErrorHandler))
+	// Wrapping a route in Autometrics middleware
+	http.Handle("/random-error", midhttp.Autometrics(
+		http.HandlerFunc(randomErrorHandler),
+		autometrics.WithValidHttpCodes([]autometrics.ValidHttpRange{{Min: 200, Max: 299}}),
+		autometrics.WithSloName("API"),
+		autometrics.WithAlertSuccess(90),
+	))
 	http.Handle("/metrics", promhttp.HandlerFor(
 		prometheus.DefaultGatherer,
 		promhttp.HandlerOpts{
@@ -96,9 +103,7 @@ func indexHandler(w http.ResponseWriter, r *http.Request) error {
 
 	fmt.Fprintf(w, "Hello, World!\n")
 
-	err := randomErrorHandler(w, r)
-
-	return err
+	return nil
 }
 
 var handlerError = errors.New("failed to handle request")
@@ -106,21 +111,11 @@ var handlerError = errors.New("failed to handle request")
 // randomErrorHandler handles the /random-error route.
 //
 // It returns an error around 90% of the time.
-//
-//autometrics:inst --no-doc --slo "API" --success-target 90
-func randomErrorHandler(w http.ResponseWriter, r *http.Request) (err error) {
-	defer autometrics.Instrument(autometrics.PreInstrument(autometrics.NewContext(
-		r.Context(),
-		autometrics.WithConcurrentCalls(true),
-		autometrics.WithCallerName(true),
-		autometrics.WithSloName("API"),
-		autometrics.WithAlertSuccess(90),
-	)), &err) //autometrics:defer
-
+func randomErrorHandler(w http.ResponseWriter, r *http.Request) {
 	isOk := rand.Intn(10) == 0
 
 	if !isOk {
-		err = handlerError
+		http.Error(w, handlerError.Error(), http.StatusInternalServerError)
 	} else {
 		w.WriteHeader(http.StatusOK)
 	}

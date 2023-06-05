@@ -18,6 +18,7 @@ versioning](https://go.dev/doc/modules/version-numbers).
   to read the exemplars.
 - Added new options to context constructors to manipulate the tracing
   information.
+- Add a middleware for `net/http` handlers
 
 ### Changed
 
@@ -26,6 +27,15 @@ versioning](https://go.dev/doc/modules/version-numbers).
   present in the annotated function arguments, when relevant.
 - The Context constructor changed signature to allow inclusion of a parent
   context.
+- Refactor imports to become more idiomatic. The imports changed as follows
+```patch
+import (
+-	autometrics "github.com/autometrics-dev/autometrics-go/pkg/autometrics/prometheus"
++	"github.com/autometrics-dev/autometrics-go/prometheus/autometrics"
+-	middleware "github.com/autometrics-dev/autometrics-go/pkg/autometrics/prometheus/middleware/http"
++	"github.com/autometrics-dev/autometrics-go/prometheus/midhttp"
+)
+```
 
 ### Deprecated
 

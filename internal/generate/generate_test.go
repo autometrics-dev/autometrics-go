@@ -22,7 +22,7 @@ func TestCommentDirective(t *testing.T) {
 package main
 
 import (
-	prom "github.com/autometrics-dev/autometrics-go/pkg/autometrics/prometheus"
+	prom "github.com/autometrics-dev/autometrics-go/prometheus/autometrics"
 )
 
 // This comment is associated with the main function.
@@ -37,7 +37,7 @@ func main() {
 		"package main\n" +
 		"\n" +
 		"import (\n" +
-		"\tprom \"github.com/autometrics-dev/autometrics-go/pkg/autometrics/prometheus\"\n" +
+		"\tprom \"github.com/autometrics-dev/autometrics-go/prometheus/autometrics\"\n" +
 		")\n" +
 		"\n" +
 		"// This comment is associated with the main function.\n" +
@@ -101,7 +101,7 @@ func TestCommentRefresh(t *testing.T) {
 package main
 
 import (
-	prom "github.com/autometrics-dev/autometrics-go/pkg/autometrics/prometheus"
+	prom "github.com/autometrics-dev/autometrics-go/prometheus/autometrics"
 )
 
 // This comment is associated with the main function.
@@ -122,7 +122,7 @@ func main() {
 		"package main\n" +
 		"\n" +
 		"import (\n" +
-		"\tprom \"github.com/autometrics-dev/autometrics-go/pkg/autometrics/prometheus\"\n" +
+		"\tprom \"github.com/autometrics-dev/autometrics-go/prometheus/autometrics\"\n" +
 		")\n" +
 		"\n" +
 		"// This comment is associated with the main function.\n" +
@@ -186,7 +186,7 @@ func TestCommentDelete(t *testing.T) {
 	sourceCode := `// This is the package comment.
 package main
 
-import "github.com/autometrics-dev/autometrics-go/pkg/autometrics/prometheus" 
+import "github.com/autometrics-dev/autometrics-go/prometheus/autometrics" 
 
 // This comment is associated with the main function.
 //
@@ -206,17 +206,17 @@ func main() {
 		"package main\n" +
 		"\n" +
 		"import " +
-		"\"github.com/autometrics-dev/autometrics-go/pkg/autometrics/prometheus\"\n" +
+		"\"github.com/autometrics-dev/autometrics-go/prometheus/autometrics\"\n" +
 		"\n" +
 		"// This comment is associated with the main function.\n" +
 		"//autometrics:inst --no-doc --slo \"API\" --latency-target 99.9 --latency-ms 500\n" +
 		"func main() {\n" +
-		"\tdefer prometheus.Instrument(prometheus.PreInstrument(prometheus.NewContext(\n" +
+		"\tdefer autometrics.Instrument(autometrics.PreInstrument(autometrics.NewContext(\n" +
 		"\t\tnil,\n" +
-		"\t\tprometheus.WithConcurrentCalls(true),\n" +
-		"\t\tprometheus.WithCallerName(true),\n" +
-		"\t\tprometheus.WithSloName(\"API\"),\n" +
-		"\t\tprometheus.WithAlertLatency(500000000*time.Nanosecond, 99.9),\n" +
+		"\t\tautometrics.WithConcurrentCalls(true),\n" +
+		"\t\tautometrics.WithCallerName(true),\n" +
+		"\t\tautometrics.WithSloName(\"API\"),\n" +
+		"\t\tautometrics.WithAlertLatency(500000000*time.Nanosecond, 99.9),\n" +
 		"\t)), nil) //autometrics:defer\n" +
 		"\n" +
 		"	fmt.Println(hello) // line comment 3\n" +
@@ -245,7 +245,7 @@ package main
 
 import (
 	"github.com/autometrics-dev/autometrics-go/pkg/autometrics"
-	prom "github.com/autometrics-dev/autometrics-go/pkg/autometrics/prometheus"
+	prom "github.com/autometrics-dev/autometrics-go/prometheus/autometrics"
 )
 
 // This comment is associated with the main function.
@@ -267,7 +267,7 @@ func main() {
 		"\n" +
 		"import (\n" +
 		"\t\"github.com/autometrics-dev/autometrics-go/pkg/autometrics\"\n" +
-		"\tprom \"github.com/autometrics-dev/autometrics-go/pkg/autometrics/prometheus\"\n" +
+		"\tprom \"github.com/autometrics-dev/autometrics-go/prometheus/autometrics\"\n" +
 		")\n" +
 		"\n" +
 		"// This comment is associated with the main function.\n" +
@@ -304,7 +304,7 @@ package main
 
 import (
 	"github.com/autometrics-dev/autometrics-go/pkg/autometrics"
-	prom "github.com/autometrics-dev/autometrics-go/pkg/autometrics/prometheus"
+	prom "github.com/autometrics-dev/autometrics-go/prometheus/autometrics"
 )
 
 // This comment is associated with the main function.
@@ -327,7 +327,7 @@ package main
 
 import (
 	"github.com/autometrics-dev/autometrics-go/pkg/autometrics"
-	prom "github.com/autometrics-dev/autometrics-go/pkg/autometrics/prometheus"
+	prom "github.com/autometrics-dev/autometrics-go/prometheus/autometrics"
 )
 
 // This comment is associated with the main function.
@@ -349,7 +349,7 @@ package main
 
 import (
 	"github.com/autometrics-dev/autometrics-go/pkg/autometrics"
-	prom "github.com/autometrics-dev/autometrics-go/pkg/autometrics/prometheus"
+	prom "github.com/autometrics-dev/autometrics-go/prometheus/autometrics"
 )
 
 // This comment is associated with the main function.
@@ -375,7 +375,7 @@ package main
 
 import (
 	"github.com/autometrics-dev/autometrics-go/pkg/autometrics"
-	prom "github.com/autometrics-dev/autometrics-go/pkg/autometrics/prometheus"
+	prom "github.com/autometrics-dev/autometrics-go/prometheus/autometrics"
 )
 
 // This comment is associated with the main function.
@@ -398,7 +398,7 @@ package main
 
 import (
 	"github.com/autometrics-dev/autometrics-go/pkg/autometrics"
-	prom "github.com/autometrics-dev/autometrics-go/pkg/autometrics/prometheus"
+	prom "github.com/autometrics-dev/autometrics-go/prometheus/autometrics"
 )
 
 // This comment is associated with the main function.
@@ -421,7 +421,7 @@ package main
 
 import (
 	"github.com/autometrics-dev/autometrics-go/pkg/autometrics"
-	prom "github.com/autometrics-dev/autometrics-go/pkg/autometrics/prometheus"
+	prom "github.com/autometrics-dev/autometrics-go/prometheus/autometrics"
 )
 
 // This comment is associated with the main function.
@@ -444,7 +444,7 @@ package main
 
 import (
 	"github.com/autometrics-dev/autometrics-go/pkg/autometrics"
-	prom "github.com/autometrics-dev/autometrics-go/pkg/autometrics/prometheus"
+	prom "github.com/autometrics-dev/autometrics-go/prometheus/autometrics"
 )
 
 // This comment is associated with the main function.
@@ -467,7 +467,7 @@ package main
 
 import (
 	"github.com/autometrics-dev/autometrics-go/pkg/autometrics"
-	prom "github.com/autometrics-dev/autometrics-go/pkg/autometrics/prometheus"
+	prom "github.com/autometrics-dev/autometrics-go/prometheus/autometrics"
 )
 
 // This comment is associated with the main function.
@@ -490,7 +490,7 @@ package main
 
 import (
 	"github.com/autometrics-dev/autometrics-go/pkg/autometrics"
-	prom "github.com/autometrics-dev/autometrics-go/pkg/autometrics/prometheus"
+	prom "github.com/autometrics-dev/autometrics-go/prometheus/autometrics"
 )
 
 // This comment is associated with the main function.
@@ -513,7 +513,7 @@ package main
 
 import (
 	"github.com/autometrics-dev/autometrics-go/pkg/autometrics"
-	prom "github.com/autometrics-dev/autometrics-go/pkg/autometrics/prometheus"
+	prom "github.com/autometrics-dev/autometrics-go/prometheus/autometrics"
 )
 
 // This comment is associated with the main function.
@@ -548,7 +548,7 @@ package main
 
 import (
 	"github.com/autometrics-dev/autometrics-go/pkg/autometrics"
-	prom "github.com/autometrics-dev/autometrics-go/pkg/autometrics/prometheus"
+	prom "github.com/autometrics-dev/autometrics-go/prometheus/autometrics"
 )
 
 // This comment is associated with the main function.
@@ -572,7 +572,7 @@ package main
 
 import (
 	"github.com/autometrics-dev/autometrics-go/pkg/autometrics"
-	prom "github.com/autometrics-dev/autometrics-go/pkg/autometrics/prometheus"
+	prom "github.com/autometrics-dev/autometrics-go/prometheus/autometrics"
 )
 
 // This comment is associated with the main function.
@@ -596,7 +596,7 @@ package main
 
 import (
 	"github.com/autometrics-dev/autometrics-go/pkg/autometrics"
-	prom "github.com/autometrics-dev/autometrics-go/pkg/autometrics/prometheus"
+	prom "github.com/autometrics-dev/autometrics-go/prometheus/autometrics"
 )
 
 // This comment is associated with the main function.
@@ -622,7 +622,7 @@ package main
 
 import (
 	"github.com/autometrics-dev/autometrics-go/pkg/autometrics"
-	prom "github.com/autometrics-dev/autometrics-go/pkg/autometrics/prometheus"
+	prom "github.com/autometrics-dev/autometrics-go/prometheus/autometrics"
 )
 
 // This comment is associated with the main function.
@@ -648,7 +648,7 @@ package main
 
 import (
 	"github.com/autometrics-dev/autometrics-go/pkg/autometrics"
-	prom "github.com/autometrics-dev/autometrics-go/pkg/autometrics/prometheus"
+	prom "github.com/autometrics-dev/autometrics-go/prometheus/autometrics"
 )
 
 // This comment is associated with the main function.

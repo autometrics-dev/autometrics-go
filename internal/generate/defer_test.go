@@ -18,7 +18,7 @@ package main
 import (
 	"context"
 
-	prom "github.com/autometrics-dev/autometrics-go/pkg/autometrics/prometheus"
+	prom "github.com/autometrics-dev/autometrics-go/prometheus/autometrics"
 )
 
 // This comment is associated with the main function.
@@ -35,7 +35,7 @@ func main(thisIsAContext context.Context) {
 		"import (\n" +
 		"\t\"context\"\n" +
 		"\n" +
-		"\tprom \"github.com/autometrics-dev/autometrics-go/pkg/autometrics/prometheus\"\n" +
+		"\tprom \"github.com/autometrics-dev/autometrics-go/prometheus/autometrics\"\n" +
 		")\n" +
 		"\n" +
 		"// This comment is associated with the main function.\n" +
@@ -75,7 +75,7 @@ package main
 import (
 	vanilla "context"
 
-	prom "github.com/autometrics-dev/autometrics-go/pkg/autometrics/prometheus"
+	prom "github.com/autometrics-dev/autometrics-go/prometheus/autometrics"
 )
 
 // This comment is associated with the main function.
@@ -92,7 +92,7 @@ func main(thisIsAContext vanilla.Context) {
 		"import (\n" +
 		"\tvanilla \"context\"\n" +
 		"\n" +
-		"\tprom \"github.com/autometrics-dev/autometrics-go/pkg/autometrics/prometheus\"\n" +
+		"\tprom \"github.com/autometrics-dev/autometrics-go/prometheus/autometrics\"\n" +
 		")\n" +
 		"\n" +
 		"// This comment is associated with the main function.\n" +
@@ -132,7 +132,7 @@ package main
 import (
 	. "context"
 
-	prom "github.com/autometrics-dev/autometrics-go/pkg/autometrics/prometheus"
+	prom "github.com/autometrics-dev/autometrics-go/prometheus/autometrics"
 )
 
 // This comment is associated with the main function.
@@ -149,7 +149,7 @@ func main(thisIsAContext Context) {
 		"import (\n" +
 		"\t. \"context\"\n" +
 		"\n" +
-		"\tprom \"github.com/autometrics-dev/autometrics-go/pkg/autometrics/prometheus\"\n" +
+		"\tprom \"github.com/autometrics-dev/autometrics-go/prometheus/autometrics\"\n" +
 		")\n" +
 		"\n" +
 		"// This comment is associated with the main function.\n" +
@@ -189,7 +189,7 @@ package main
 import (
 	"net/http"
 
-	prom "github.com/autometrics-dev/autometrics-go/pkg/autometrics/prometheus"
+	prom "github.com/autometrics-dev/autometrics-go/prometheus/autometrics"
 )
 
 // This comment is associated with the main function.
@@ -206,7 +206,7 @@ func main(w http.ResponseWriter, req *http.Request) {
 		"import (\n" +
 		"\t\"net/http\"\n" +
 		"\n" +
-		"\tprom \"github.com/autometrics-dev/autometrics-go/pkg/autometrics/prometheus\"\n" +
+		"\tprom \"github.com/autometrics-dev/autometrics-go/prometheus/autometrics\"\n" +
 		")\n" +
 		"\n" +
 		"// This comment is associated with the main function.\n" +
@@ -246,7 +246,7 @@ package main
 import (
 	vanilla "net/http"
 
-	prom "github.com/autometrics-dev/autometrics-go/pkg/autometrics/prometheus"
+	prom "github.com/autometrics-dev/autometrics-go/prometheus/autometrics"
 )
 
 // This comment is associated with the main function.
@@ -263,7 +263,7 @@ func main(w vanilla.ResponseWriter, req *vanilla.Request) {
 		"import (\n" +
 		"\tvanilla \"net/http\"\n" +
 		"\n" +
-		"\tprom \"github.com/autometrics-dev/autometrics-go/pkg/autometrics/prometheus\"\n" +
+		"\tprom \"github.com/autometrics-dev/autometrics-go/prometheus/autometrics\"\n" +
 		")\n" +
 		"\n" +
 		"// This comment is associated with the main function.\n" +
@@ -303,7 +303,7 @@ package main
 import (
 	. "net/http"
 
-	prom "github.com/autometrics-dev/autometrics-go/pkg/autometrics/prometheus"
+	prom "github.com/autometrics-dev/autometrics-go/prometheus/autometrics"
 )
 
 // This comment is associated with the main function.
@@ -320,7 +320,7 @@ func main(w ResponseWriter, req *Request) {
 		"import (\n" +
 		"\t. \"net/http\"\n" +
 		"\n" +
-		"\tprom \"github.com/autometrics-dev/autometrics-go/pkg/autometrics/prometheus\"\n" +
+		"\tprom \"github.com/autometrics-dev/autometrics-go/prometheus/autometrics\"\n" +
 		")\n" +
 		"\n" +
 		"// This comment is associated with the main function.\n" +
@@ -360,7 +360,7 @@ package main
 import (
 	"github.com/gobuffalo/buffalo"
 
-	prom "github.com/autometrics-dev/autometrics-go/pkg/autometrics/prometheus"
+	prom "github.com/autometrics-dev/autometrics-go/prometheus/autometrics"
 )
 
 // This comment is associated with the main function.
@@ -377,7 +377,7 @@ func main(thisIsAContext buffalo.Context) {
 		"import (\n" +
 		"\t\"github.com/gobuffalo/buffalo\"\n" +
 		"\n" +
-		"\tprom \"github.com/autometrics-dev/autometrics-go/pkg/autometrics/prometheus\"\n" +
+		"\tprom \"github.com/autometrics-dev/autometrics-go/prometheus/autometrics\"\n" +
 		")\n" +
 		"\n" +
 		"// This comment is associated with the main function.\n" +
@@ -417,7 +417,7 @@ package main
 import (
 	vanilla "github.com/gobuffalo/buffalo"
 
-	prom "github.com/autometrics-dev/autometrics-go/pkg/autometrics/prometheus"
+	prom "github.com/autometrics-dev/autometrics-go/prometheus/autometrics"
 )
 
 // This comment is associated with the main function.
@@ -434,7 +434,7 @@ func main(thisIsAContext vanilla.Context) {
 		"import (\n" +
 		"\tvanilla \"github.com/gobuffalo/buffalo\"\n" +
 		"\n" +
-		"\tprom \"github.com/autometrics-dev/autometrics-go/pkg/autometrics/prometheus\"\n" +
+		"\tprom \"github.com/autometrics-dev/autometrics-go/prometheus/autometrics\"\n" +
 		")\n" +
 		"\n" +
 		"// This comment is associated with the main function.\n" +
@@ -474,7 +474,7 @@ package main
 import (
 	. "github.com/gobuffalo/buffalo"
 
-	prom "github.com/autometrics-dev/autometrics-go/pkg/autometrics/prometheus"
+	prom "github.com/autometrics-dev/autometrics-go/prometheus/autometrics"
 )
 
 // This comment is associated with the main function.
@@ -491,7 +491,7 @@ func main(thisIsAContext Context) {
 		"import (\n" +
 		"\t. \"github.com/gobuffalo/buffalo\"\n" +
 		"\n" +
-		"\tprom \"github.com/autometrics-dev/autometrics-go/pkg/autometrics/prometheus\"\n" +
+		"\tprom \"github.com/autometrics-dev/autometrics-go/prometheus/autometrics\"\n" +
 		")\n" +
 		"\n" +
 		"// This comment is associated with the main function.\n" +
@@ -531,7 +531,7 @@ package main
 import (
 	"github.com/labstack/echo/v4"
 
-	prom "github.com/autometrics-dev/autometrics-go/pkg/autometrics/prometheus"
+	prom "github.com/autometrics-dev/autometrics-go/prometheus/autometrics"
 )
 
 // This comment is associated with the main function.
@@ -548,7 +548,7 @@ func main(thisIsAContext echo.Context) {
 		"import (\n" +
 		"\t\"github.com/labstack/echo/v4\"\n" +
 		"\n" +
-		"\tprom \"github.com/autometrics-dev/autometrics-go/pkg/autometrics/prometheus\"\n" +
+		"\tprom \"github.com/autometrics-dev/autometrics-go/prometheus/autometrics\"\n" +
 		")\n" +
 		"\n" +
 		"// This comment is associated with the main function.\n" +
@@ -590,7 +590,7 @@ package main
 import (
 	vanilla "github.com/labstack/echo/v4"
 
-	prom "github.com/autometrics-dev/autometrics-go/pkg/autometrics/prometheus"
+	prom "github.com/autometrics-dev/autometrics-go/prometheus/autometrics"
 )
 
 // This comment is associated with the main function.
@@ -607,7 +607,7 @@ func main(thisIsAContext vanilla.Context) {
 		"import (\n" +
 		"\tvanilla \"github.com/labstack/echo/v4\"\n" +
 		"\n" +
-		"\tprom \"github.com/autometrics-dev/autometrics-go/pkg/autometrics/prometheus\"\n" +
+		"\tprom \"github.com/autometrics-dev/autometrics-go/prometheus/autometrics\"\n" +
 		")\n" +
 		"\n" +
 		"// This comment is associated with the main function.\n" +
@@ -649,7 +649,7 @@ package main
 import (
 	. "github.com/labstack/echo/v4"
 
-	prom "github.com/autometrics-dev/autometrics-go/pkg/autometrics/prometheus"
+	prom "github.com/autometrics-dev/autometrics-go/prometheus/autometrics"
 )
 
 // This comment is associated with the main function.
@@ -666,7 +666,7 @@ func main(thisIsAContext Context) {
 		"import (\n" +
 		"\t. \"github.com/labstack/echo/v4\"\n" +
 		"\n" +
-		"\tprom \"github.com/autometrics-dev/autometrics-go/pkg/autometrics/prometheus\"\n" +
+		"\tprom \"github.com/autometrics-dev/autometrics-go/prometheus/autometrics\"\n" +
 		")\n" +
 		"\n" +
 		"// This comment is associated with the main function.\n" +
@@ -708,7 +708,7 @@ package main
 import (
 	"github.com/gin-gonic/gin"
 
-	prom "github.com/autometrics-dev/autometrics-go/pkg/autometrics/prometheus"
+	prom "github.com/autometrics-dev/autometrics-go/prometheus/autometrics"
 )
 
 // This comment is associated with the main function.
@@ -725,7 +725,7 @@ func main(thisIsAContext *gin.Context) {
 		"import (\n" +
 		"\t\"github.com/gin-gonic/gin\"\n" +
 		"\n" +
-		"\tprom \"github.com/autometrics-dev/autometrics-go/pkg/autometrics/prometheus\"\n" +
+		"\tprom \"github.com/autometrics-dev/autometrics-go/prometheus/autometrics\"\n" +
 		")\n" +
 		"\n" +
 		"// This comment is associated with the main function.\n" +
@@ -767,7 +767,7 @@ package main
 import (
 	vanilla "github.com/gin-gonic/gin"
 
-	prom "github.com/autometrics-dev/autometrics-go/pkg/autometrics/prometheus"
+	prom "github.com/autometrics-dev/autometrics-go/prometheus/autometrics"
 )
 
 // This comment is associated with the main function.
@@ -784,7 +784,7 @@ func main(thisIsAContext *vanilla.Context) {
 		"import (\n" +
 		"\tvanilla \"github.com/gin-gonic/gin\"\n" +
 		"\n" +
-		"\tprom \"github.com/autometrics-dev/autometrics-go/pkg/autometrics/prometheus\"\n" +
+		"\tprom \"github.com/autometrics-dev/autometrics-go/prometheus/autometrics\"\n" +
 		")\n" +
 		"\n" +
 		"// This comment is associated with the main function.\n" +
@@ -826,7 +826,7 @@ package main
 import (
 	. "github.com/gin-gonic/gin"
 
-	prom "github.com/autometrics-dev/autometrics-go/pkg/autometrics/prometheus"
+	prom "github.com/autometrics-dev/autometrics-go/prometheus/autometrics"
 )
 
 // This comment is associated with the main function.
@@ -843,7 +843,7 @@ func main(thisIsAContext *Context) {
 		"import (\n" +
 		"\t. \"github.com/gin-gonic/gin\"\n" +
 		"\n" +
-		"\tprom \"github.com/autometrics-dev/autometrics-go/pkg/autometrics/prometheus\"\n" +
+		"\tprom \"github.com/autometrics-dev/autometrics-go/prometheus/autometrics\"\n" +
 		")\n" +
 		"\n" +
 		"// This comment is associated with the main function.\n" +

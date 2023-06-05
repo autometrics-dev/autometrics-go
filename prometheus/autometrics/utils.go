@@ -1,4 +1,4 @@
-package prometheus // import "github.com/autometrics-dev/autometrics-go/pkg/autometrics/prometheus"
+package autometrics // import "github.com/autometrics-dev/autometrics-go/prometheus/autometrics"
 
 import (
 	"context"

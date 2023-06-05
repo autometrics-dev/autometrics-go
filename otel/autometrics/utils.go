@@ -1,4 +1,4 @@
-package otel // import "github.com/autometrics-dev/autometrics-go/pkg/autometrics/otel"
+package autometrics // import "github.com/autometrics-dev/autometrics-go/otel/autometrics"
 
 import (
 	"context"

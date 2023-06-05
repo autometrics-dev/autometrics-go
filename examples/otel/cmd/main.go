@@ -8,7 +8,7 @@ import (
 	"net/http"
 	"time"
 
-	autometrics "github.com/autometrics-dev/autometrics-go/pkg/autometrics/otel"
+	"github.com/autometrics-dev/autometrics-go/otel/autometrics"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
