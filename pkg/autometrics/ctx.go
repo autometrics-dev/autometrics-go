@@ -62,7 +62,6 @@ func GetTrackConcurrentCalls(c context.Context) bool {
 
 	track, ok := c.Value(trackConcurrentCalls).(bool)
 	if !ok {
-		// TODO: log a warning here
 		return true
 	}
 
@@ -88,7 +87,6 @@ func GetTrackCallerName(c context.Context) bool {
 
 	track, ok := c.Value(trackCallerName).(bool)
 	if !ok {
-		// TODO: log a warning here
 		return true
 	}
 
@@ -112,7 +110,6 @@ func GetAlertConfiguration(c context.Context) AlertConfiguration {
 
 	slo, ok := c.Value(alertConfiguration).(AlertConfiguration)
 	if !ok {
-		// TODO: log a warning here
 		return AlertConfiguration{}
 	}
 
@@ -136,7 +133,6 @@ func GetCallInfo(c context.Context) CallInfo {
 
 	build, ok := c.Value(callInfo).(CallInfo)
 	if !ok {
-		// TODO: log a warning here
 		return CallInfo{}
 	}
 
@@ -160,7 +156,6 @@ func GetStartTime(c context.Context) time.Time {
 
 	startTime, ok := c.Value(startTime).(time.Time)
 	if !ok {
-		// TODO: log a warning here
 		return time.Now()
 	}
 
@@ -184,7 +179,6 @@ func GetBuildInfo(c context.Context) BuildInfo {
 
 	build, ok := c.Value(buildInfo).(BuildInfo)
 	if !ok {
-		// TODO: log a warning here
 		return BuildInfo{}
 	}
 
@@ -334,7 +328,6 @@ func GetValidHttpCodeRanges(c context.Context) []InclusiveIntRange {
 
 	ranges, ok := c.Value(parentSpanId).([]InclusiveIntRange)
 	if !ok {
-		// TODO: log a warning
 		return []InclusiveIntRange{}
 	}
 
