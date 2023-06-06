@@ -18,3 +18,8 @@ indicate they don't apply.
   + the docker compose file is valid
   + the application compiles and run
   + alerts are getting triggered in Prometheus
+- [ ] The prometheus example in repository works fine:
+  + the docker compose file is valid
+  + the application compiles and run
+  + alerts are getting triggered in Prometheus
+  + exemplars are accessible on the graph
