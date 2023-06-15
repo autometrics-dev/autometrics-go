@@ -178,6 +178,110 @@ func main() {
 	assert.Equal(t, want, actual, "The generated source code is not as expected.")
 }
 
+// TestCommentAddImport calls GenerateDocumentationAndInstrumentation on a
+// decorated function, making sure that the autometrics import is automatically added.
+func TestCommentAddImport(t *testing.T) {
+	sourceCode := `// This is the package comment.
+package main
+
+// This comment is associated with the main function.
+//
+//autometrics:inst --no-doc --slo "API" --latency-target 99.9 --latency-ms 500
+func main() {
+	fmt.Println(hello) // line comment 3
+}
+`
+
+	want := "// This is the package comment.\n" +
+		"package main\n" +
+		"\n" +
+		"import " +
+		"\"github.com/autometrics-dev/autometrics-go/prometheus/autometrics\"\n" +
+		"\n" +
+		"// This comment is associated with the main function.\n" +
+		"//\n" +
+		"//autometrics:inst --no-doc --slo \"API\" --latency-target 99.9 --latency-ms 500\n" +
+		"func main() {\n" +
+		"\tdefer autometrics.Instrument(autometrics.PreInstrument(autometrics.NewContext(\n" +
+		"\t\tnil,\n" +
+		"\t\tautometrics.WithConcurrentCalls(true),\n" +
+		"\t\tautometrics.WithCallerName(true),\n" +
+		"\t\tautometrics.WithSloName(\"API\"),\n" +
+		"\t\tautometrics.WithAlertLatency(500000000*time.Nanosecond, 99.9),\n" +
+		"\t)), nil) //autometrics:defer\n" +
+		"\n" +
+		"	fmt.Println(hello) // line comment 3\n" +
+		"}\n"
+
+	ctx, err := internal.NewGeneratorContext(autometrics.PROMETHEUS, defaultPrometheusInstanceUrl, false, false)
+	if err != nil {
+		t.Fatalf("error creating the generation context: %s", err)
+	}
+
+	actual, err := GenerateDocumentationAndInstrumentation(ctx, sourceCode, "main")
+	if err != nil {
+		t.Fatalf("error generating the documentation: %s", err)
+	}
+
+	assert.Equal(t, want, actual, "The generated source code is not as expected.")
+}
+
+// TestCommentAddImportToBlock calls GenerateDocumentationAndInstrumentation on a
+// decorated function, making sure that the autometrics import is automatically added.
+func TestCommentAddImportToBlock(t *testing.T) {
+	sourceCode := `// This is the package comment.
+package main
+
+import (
+        "fmt"
+        "strings"
+)
+
+// This comment is associated with the main function.
+//
+//autometrics:inst --no-doc --slo "API" --latency-target 99.9 --latency-ms 500
+func main() {
+	fmt.Println(hello) // line comment 3
+}
+`
+
+	want := "// This is the package comment.\n" +
+		"package main\n" +
+		"\n" +
+		"import (\n" +
+		"\t\"fmt\"\n" +
+		"\t\"github.com/autometrics-dev/autometrics-go/prometheus/autometrics\"\n" +
+		"\t\"strings\"\n" +
+		")\n" +
+		"\n" +
+		"// This comment is associated with the main function.\n" +
+		"//\n" +
+		"//autometrics:inst --no-doc --slo \"API\" --latency-target 99.9 --latency-ms 500\n" +
+		"func main() {\n" +
+		"\tdefer autometrics.Instrument(autometrics.PreInstrument(autometrics.NewContext(\n" +
+		"\t\tnil,\n" +
+		"\t\tautometrics.WithConcurrentCalls(true),\n" +
+		"\t\tautometrics.WithCallerName(true),\n" +
+		"\t\tautometrics.WithSloName(\"API\"),\n" +
+		"\t\tautometrics.WithAlertLatency(500000000*time.Nanosecond, 99.9),\n" +
+		"\t)), nil) //autometrics:defer\n" +
+		"\n" +
+		"	fmt.Println(hello) // line comment 3\n" +
+		"}\n"
+
+	ctx, err := internal.NewGeneratorContext(autometrics.PROMETHEUS, defaultPrometheusInstanceUrl, false, false)
+	if err != nil {
+		t.Fatalf("error creating the generation context: %s", err)
+	}
+
+	actual, err := GenerateDocumentationAndInstrumentation(ctx, sourceCode, "main")
+	if err != nil {
+		t.Fatalf("error generating the documentation: %s", err)
+	}
+
+	assert.Equal(t, want, actual, "The generated source code is not as expected.")
+}
+
 // TestCommentDelete calls GenerateDocumentationAndInstrumentation on a
 // decorated function that already has a comment, making sure that the autometrics
 // directive deletes the comment section about autometrics, from the `--no-doc` argument

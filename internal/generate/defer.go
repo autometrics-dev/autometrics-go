@@ -204,6 +204,7 @@ func buildAutometricsDeferStatement(ctx *internal.GeneratorContext, secondVar st
 	statement.Decs.Before = dst.NewLine
 	statement.Decs.End = []string{"//autometrics:defer"}
 	statement.Decs.After = dst.EmptyLine
+
 	return statement, nil
 }
 

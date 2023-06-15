@@ -1,6 +1,7 @@
 package generate // import "github.com/autometrics-dev/autometrics-go/internal/generate"
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"strconv"
@@ -74,94 +75,29 @@ func GenerateDocumentationAndInstrumentation(ctx internal.GeneratorContext, sour
 	}
 
 	var inspectErr error
+	var foundAmImport bool
 
-	fileWalk := func(n dst.Node) bool {
-		if importSpec, ok := n.(*dst.ImportSpec); ok {
-			if ctx.Implementation == autometrics.PROMETHEUS {
-				if importSpec.Path.Value == AmPromPackage {
-					if importSpec.Name != nil {
-						ctx.FuncCtx.ImplImportName = importSpec.Name.Name
-					} else {
-						ctx.FuncCtx.ImplImportName = "autometrics"
-					}
-				}
-			}
-
-			if ctx.Implementation == autometrics.OTEL {
-				if importSpec.Path.Value == AmOtelPackage {
-					if importSpec.Name != nil {
-						ctx.FuncCtx.ImplImportName = importSpec.Name.Name
-					} else {
-						ctx.FuncCtx.ImplImportName = "autometrics"
-					}
-				}
-			}
-
-			if importSpec.Name == nil {
-				names := strings.Split(importSpec.Path.Value, "/")
-				name := strings.Trim(names[len(names)-1], "\"")
-				ctx.ImportsMap[name] = strings.Trim(importSpec.Path.Value, "\"")
-			} else {
-				ctx.ImportsMap[importSpec.Name.Name] = strings.Trim(importSpec.Path.Value, "\"")
-			}
-
-			return true
+	for _, importSpec := range fileTree.Imports {
+		foundAmImport = inspectImportSpec(&ctx, importSpec)
+		if foundAmImport {
+			break
 		}
+	}
 
-		if funcDeclaration, ok := n.(*dst.FuncDecl); ok {
-			if ctx.FuncCtx.ImplImportName == "" {
-				if ctx.Implementation == autometrics.PROMETHEUS {
-					inspectErr = fmt.Errorf("the source file is missing a %v import", AmPromPackage)
-				} else if ctx.Implementation == autometrics.OTEL {
-					inspectErr = fmt.Errorf("the source file is missing a %v import", AmOtelPackage)
-				} else {
-					inspectErr = fmt.Errorf("unknown implementation of metrics has been queried.")
-				}
-				return false
-			}
+	if !foundAmImport {
+		err = addAutometricsImport(&ctx, fileTree)
+		if err != nil {
+			return "", fmt.Errorf("error adding the autometrics import: %w", err)
+		}
+	}
 
-			ctx.FuncCtx.FunctionName = funcDeclaration.Name.Name
-			ctx.FuncCtx.ModuleName = moduleName
-			defer ctx.ResetFuncCtx()
+	if ctx.FuncCtx.ImplImportName == "" {
+		return "", errors.New("assertion error: ctx.FuncCtx.ImplImportName is empty just before filewalking")
+	}
 
-			// this block gets run for every function in the file
-			// Clean up old autometrics comments
-			docComments, err := cleanUpAutometricsComments(ctx, funcDeclaration)
-			if err != nil {
-				inspectErr = fmt.Errorf("error trying to remove autometrics comment from former pass: %w", err)
-				return false
-			}
-
-			// TODO: clean up the defer statement inconditionally here as well, if detected
-
-			// Detect autometrics directive
-			err = parseAutometricsFnContext(&ctx, docComments)
-			if err != nil {
-				inspectErr = fmt.Errorf(
-					"failed to parse //autometrics directive for %v: %w",
-					funcDeclaration.Name.Name,
-					err)
-				return false
-			}
-
-			// This block only runs on functions that still have the autometrics directive
-			listIndex := ctx.FuncCtx.CommentIndex
-			if listIndex >= 0 {
-				// Insert comments
-				if !ctx.DisableDocGeneration && !ctx.FuncCtx.DisableDocGeneration {
-					autometricsComment := generateAutometricsComment(ctx)
-					funcDeclaration.Decorations().Start.Replace(insertComments(docComments, listIndex, autometricsComment)...)
-				} else {
-					funcDeclaration.Decorations().Start.Replace(docComments...)
-				}
-
-				// defer statement
-				err := injectDeferStatement(&ctx, funcDeclaration)
-				if err != nil {
-					inspectErr = fmt.Errorf("failed to inject defer statement: %w", err)
-					return false
-				}
-			}
+	fileWalk := func(node dst.Node) bool {
+		if funcDeclaration, ok := node.(*dst.FuncDecl); ok {
+			inspectErr = walkFuncDeclaration(&ctx, funcDeclaration, moduleName)
 		}
 
 		if inspectErr != nil {
@@ -185,6 +121,60 @@ func GenerateDocumentationAndInstrumentation(ctx internal.GeneratorContext, sour
 	}
 
 	return buf.String(), nil
+}
+
+func walkFuncDeclaration(ctx *internal.GeneratorContext, funcDeclaration *dst.FuncDecl, moduleName string) error {
+	if ctx.FuncCtx.ImplImportName == "" {
+		if ctx.Implementation == autometrics.PROMETHEUS {
+			return fmt.Errorf("the source file is missing a %v import", AmPromPackage)
+		} else if ctx.Implementation == autometrics.OTEL {
+			return fmt.Errorf("the source file is missing a %v import", AmOtelPackage)
+		} else {
+			return fmt.Errorf("unknown implementation of metrics has been queried")
+		}
+	}
+
+	ctx.FuncCtx.FunctionName = funcDeclaration.Name.Name
+	ctx.FuncCtx.ModuleName = moduleName
+
+	defer ctx.ResetFuncCtx()
+
+	// this block gets run for every function in the file
+	// Clean up old autometrics comments
+	docComments, err := cleanUpAutometricsComments(*ctx, funcDeclaration)
+	if err != nil {
+		return fmt.Errorf("error trying to remove autometrics comment from former pass: %w", err)
+	}
+
+	// TODO: clean up the defer statement inconditionally here as well, if detected
+
+	// Detect autometrics directive
+	err = parseAutometricsFnContext(ctx, docComments)
+	if err != nil {
+		return fmt.Errorf(
+			"failed to parse //autometrics directive for %v: %w",
+			funcDeclaration.Name.Name,
+			err)
+	}
+
+	// This block only runs on functions that still have the autometrics directive
+	listIndex := ctx.FuncCtx.CommentIndex
+	if listIndex >= 0 {
+		// Insert comments
+		if !ctx.DisableDocGeneration && !ctx.FuncCtx.DisableDocGeneration {
+			autometricsComment := generateAutometricsComment(*ctx)
+			funcDeclaration.Decorations().Start.Replace(insertComments(docComments, listIndex, autometricsComment)...)
+		} else {
+			funcDeclaration.Decorations().Start.Replace(docComments...)
+		}
+
+		// defer statement
+		err := injectDeferStatement(ctx, funcDeclaration)
+		if err != nil {
+			return fmt.Errorf("failed to inject defer statement: %w", err)
+		}
+	}
+	return nil
 }
 
 func parseAutometricsFnContext(ctx *internal.GeneratorContext, commentGroup []string) error {
