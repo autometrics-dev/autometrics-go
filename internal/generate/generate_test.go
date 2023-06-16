@@ -48,13 +48,13 @@ import (
 //
 // # Prometheus
 //
-// View the live metrics for the `+"`main`"+` function:
+// View the live metrics for the ` + "`main`" + ` function:
 //   - [Request Rate]
 //   - [Error Ratio]
 //   - [Latency (95th and 99th percentiles)]
 //   - [Concurrent Calls]
 //
-// Or, dig into the metrics of *functions called by* `+"`main`"+`
+// Or, dig into the metrics of *functions called by* ` + "`main`" + `
 //   - [Request Rate Callee]
 //   - [Error Ratio Callee]
 //
@@ -134,13 +134,13 @@ import (
 //
 // # Prometheus
 //
-// View the live metrics for the `+"`main`"+` function:
+// View the live metrics for the ` + "`main`" + ` function:
 //   - [Request Rate]
 //   - [Error Ratio]
 //   - [Latency (95th and 99th percentiles)]
 //   - [Concurrent Calls]
 //
-// Or, dig into the metrics of *functions called by* `+"`main`"+`
+// Or, dig into the metrics of *functions called by* ` + "`main`" + `
 //   - [Request Rate Callee]
 //   - [Error Ratio Callee]
 //
