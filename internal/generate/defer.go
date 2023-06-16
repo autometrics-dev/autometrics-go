@@ -60,6 +60,20 @@ func injectDeferStatement(ctx *internal.GeneratorContext, funcDeclaration *dst.F
 	return nil
 }
 
+// removeDeferStatement removes, if detected, a previously injected defer statement.
+func removeDeferStatement(ctx *internal.GeneratorContext, funcDeclaration *dst.FuncDecl) error {
+	firstStatement := funcDeclaration.Body.List[0]
+
+	if deferStatement, ok := firstStatement.(*dst.DeferStmt); ok {
+		decorations := deferStatement.Decorations().End
+		if slices.Contains(decorations.All(), "//autometrics:defer") {
+			funcDeclaration.Body.List = funcDeclaration.Body.List[1:]
+		}
+	}
+
+	return nil
+}
+
 // errorReturnValueName returns the name of the error return value if it exists.
 func errorReturnValueName(funcNode *dst.FuncDecl) (string, error) {
 	returnValues := funcNode.Type.Results

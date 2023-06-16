@@ -146,7 +146,13 @@ func walkFuncDeclaration(ctx *internal.GeneratorContext, funcDeclaration *dst.Fu
 		return fmt.Errorf("error trying to remove autometrics comment from former pass: %w", err)
 	}
 
-	// TODO: clean up the defer statement inconditionally here as well, if detected
+	err = removeDeferStatement(ctx, funcDeclaration)
+	if err != nil {
+		return fmt.Errorf(
+			"error removing an older autometrics defer statement in %v: %w",
+			funcDeclaration.Name.Name,
+			err)
+	}
 
 	// Detect autometrics directive
 	err = parseAutometricsFnContext(ctx, docComments)
