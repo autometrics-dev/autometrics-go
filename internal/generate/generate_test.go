@@ -33,52 +33,53 @@ func main() {
 }
 `
 
-	want := "// This is the package comment.\n" +
-		"package main\n" +
-		"\n" +
-		"import (\n" +
-		"\tprom \"github.com/autometrics-dev/autometrics-go/prometheus/autometrics\"\n" +
-		")\n" +
-		"\n" +
-		"// This comment is associated with the main function.\n" +
-		"//\n" +
-		"//\tautometrics:doc-start Generated documentation by Autometrics.\n" +
-		"//\n" +
-		"// # Autometrics\n" +
-		"//\n" +
-		"// # Prometheus\n" +
-		"//\n" +
-		"// View the live metrics for the `main` function:\n" +
-		"//   - [Request Rate]\n" +
-		"//   - [Error Ratio]\n" +
-		"//   - [Latency (95th and 99th percentiles)]\n" +
-		"//   - [Concurrent Calls]\n" +
-		"//\n" +
-		"// Or, dig into the metrics of *functions called by* `main`\n" +
-		"//   - [Request Rate Callee]\n" +
-		"//   - [Error Ratio Callee]\n" +
-		"//\n" +
-		"//\tautometrics:doc-end Generated documentation by Autometrics.\n" +
-		"//\n" +
-		"// [Request Rate]: http://localhost:9090/graph?g0.expr=%23+Rate+of+calls+to+the+%60main%60+function+per+second%2C+averaged+over+5+minute+windows%0A%0Asum+by+%28function%2C+module%2C+version%2C+commit%29+%28rate%28function_calls_count_total%7Bfunction%3D%22main%22%7D%5B5m%5D%29+%2A+on+%28instance%2C+job%29+group_left%28version%2C+commit%29+last_over_time%28build_info%5B1s%5D%29%29&g0.tab=0\n" +
-		"// [Error Ratio]: http://localhost:9090/graph?g0.expr=%23+Percentage+of+calls+to+the+%60main%60+function+that+return+errors%2C+averaged+over+5+minute+windows%0A%0A%28sum+by+%28function%2C+module%2C+version%2C+commit%29+%28rate%28function_calls_count_total%7Bfunction%3D%22main%22%2Cresult%3D%22error%22%7D%5B5m%5D%29+%2A+on+%28instance%2C+job%29+group_left%28version%2C+commit%29+last_over_time%28build_info%5B1s%5D%29%29%29+%2F+%28sum+by+%28function%2C+module%2C+version%2C+commit%29+%28rate%28function_calls_count_total%7Bfunction%3D%22main%22%7D%5B5m%5D%29+%2A+on+%28instance%2C+job%29+group_left%28version%2C+commit%29+last_over_time%28build_info%5B1s%5D%29%29%29&g0.tab=0\n" +
-		"// [Latency (95th and 99th percentiles)]: http://localhost:9090/graph?g0.expr=%23+95th+and+99th+percentile+latencies+%28in+seconds%29+for+the+%60main%60+function%0A%0Alabel_replace%28histogram_quantile%280.99%2C+sum+by+%28le%2C+function%2C+module%2C+version%2C+commit%29+%28rate%28function_calls_duration_bucket%7Bfunction%3D%22main%22%7D%5B5m%5D%29+%2A+on+%28instance%2C+job%29+group_left%28version%2C+commit%29+last_over_time%28build_info%5B1s%5D%29%29%29%2C+%22percentile_latency%22%2C+%2299%22%2C+%22%22%2C+%22%22%29+or+label_replace%28histogram_quantile%280.95%2C+sum+by+%28le%2C+function%2C+module%2C+version%2C+commit%29+%28rate%28function_calls_duration_bucket%7Bfunction%3D%22main%22%7D%5B5m%5D%29+%2A+on+%28instance%2C+job%29+group_left%28version%2C+commit%29+last_over_time%28build_info%5B1s%5D%29%29%29%2C%22percentile_latency%22%2C+%2295%22%2C+%22%22%2C+%22%22%29&g0.tab=0\n" +
-		"// [Concurrent Calls]: http://localhost:9090/graph?g0.expr=%23+Concurrent+calls+to+the+%60main%60+function%0A%0Asum+by+%28function%2C+module%2C+version%2C+commit%29+%28function_calls_concurrent%7Bfunction%3D%22main%22%7D+%2A+on+%28instance%2C+job%29+group_left%28version%2C+commit%29+last_over_time%28build_info%5B1s%5D%29%29&g0.tab=0\n" +
-		"// [Request Rate Callee]: http://localhost:9090/graph?g0.expr=%23+Rate+of+function+calls+emanating+from+%60main%60+function+per+second%2C+averaged+over+5+minute+windows%0A%0Asum+by+%28function%2C+module%2C+version%2C+commit%29+%28rate%28function_calls_count_total%7Bcaller%3D%22main.main%22%7D%5B5m%5D%29+%2A+on+%28instance%2C+job%29+group_left%28version%2C+commit%29+last_over_time%28build_info%5B1s%5D%29%29&g0.tab=0\n" +
-		"// [Error Ratio Callee]: http://localhost:9090/graph?g0.expr=%23+Percentage+of+function+emanating+from+%60main%60+function+that+return+errors%2C+averaged+over+5+minute+windows%0A%0A%28sum+by+%28function%2C+module%2C+version%2C+commit%29+%28rate%28function_calls_count_total%7Bcaller%3D%22main.main%22%2Cresult%3D%22error%22%7D%5B5m%5D%29+%2A+on+%28instance%2C+job%29+group_left%28version%2C+commit%29+last_over_time%28build_info%5B1s%5D%29%29%29+%2F+%28sum+by+%28function%2C+module%2C+version%2C+commit%29+%28rate%28function_calls_count_total%7Bcaller%3D%22main.main%22%7D%5B5m%5D%29+%2A+on+%28instance%2C+job%29+group_left%28version%2C+commit%29+last_over_time%28build_info%5B1s%5D%29%29%29&g0.tab=0\n" +
-		"//\n" +
-		"//autometrics:inst --slo \"Service Test\" --success-target 99\n" +
-		"func main() {\n" +
-		"\tdefer prom.Instrument(prom.PreInstrument(prom.NewContext(\n" +
-		"\t\tnil,\n" +
-		"\t\tprom.WithConcurrentCalls(true),\n" +
-		"\t\tprom.WithCallerName(true),\n" +
-		"\t\tprom.WithSloName(\"Service Test\"),\n" +
-		"\t\tprom.WithAlertSuccess(99),\n" +
-		"\t)), nil) //autometrics:defer\n" +
-		"\n" +
-		"	fmt.Println(hello) // line comment 3\n" +
-		"}\n"
+	want := `// This is the package comment.
+package main
+
+import (
+	prom "github.com/autometrics-dev/autometrics-go/prometheus/autometrics"
+)
+
+// This comment is associated with the main function.
+//
+//	autometrics:doc-start Generated documentation by Autometrics.
+//
+// # Autometrics
+//
+// # Prometheus
+//
+// View the live metrics for the `+"`main`"+` function:
+//   - [Request Rate]
+//   - [Error Ratio]
+//   - [Latency (95th and 99th percentiles)]
+//   - [Concurrent Calls]
+//
+// Or, dig into the metrics of *functions called by* `+"`main`"+`
+//   - [Request Rate Callee]
+//   - [Error Ratio Callee]
+//
+//	autometrics:doc-end Generated documentation by Autometrics.
+//
+// [Request Rate]: http://localhost:9090/graph?g0.expr=%23+Rate+of+calls+to+the+%60main%60+function+per+second%2C+averaged+over+5+minute+windows%0A%0Asum+by+%28function%2C+module%2C+version%2C+commit%29+%28rate%28function_calls_count_total%7Bfunction%3D%22main%22%7D%5B5m%5D%29+%2A+on+%28instance%2C+job%29+group_left%28version%2C+commit%29+last_over_time%28build_info%5B1s%5D%29%29&g0.tab=0
+// [Error Ratio]: http://localhost:9090/graph?g0.expr=%23+Percentage+of+calls+to+the+%60main%60+function+that+return+errors%2C+averaged+over+5+minute+windows%0A%0A%28sum+by+%28function%2C+module%2C+version%2C+commit%29+%28rate%28function_calls_count_total%7Bfunction%3D%22main%22%2Cresult%3D%22error%22%7D%5B5m%5D%29+%2A+on+%28instance%2C+job%29+group_left%28version%2C+commit%29+last_over_time%28build_info%5B1s%5D%29%29%29+%2F+%28sum+by+%28function%2C+module%2C+version%2C+commit%29+%28rate%28function_calls_count_total%7Bfunction%3D%22main%22%7D%5B5m%5D%29+%2A+on+%28instance%2C+job%29+group_left%28version%2C+commit%29+last_over_time%28build_info%5B1s%5D%29%29%29&g0.tab=0
+// [Latency (95th and 99th percentiles)]: http://localhost:9090/graph?g0.expr=%23+95th+and+99th+percentile+latencies+%28in+seconds%29+for+the+%60main%60+function%0A%0Alabel_replace%28histogram_quantile%280.99%2C+sum+by+%28le%2C+function%2C+module%2C+version%2C+commit%29+%28rate%28function_calls_duration_bucket%7Bfunction%3D%22main%22%7D%5B5m%5D%29+%2A+on+%28instance%2C+job%29+group_left%28version%2C+commit%29+last_over_time%28build_info%5B1s%5D%29%29%29%2C+%22percentile_latency%22%2C+%2299%22%2C+%22%22%2C+%22%22%29+or+label_replace%28histogram_quantile%280.95%2C+sum+by+%28le%2C+function%2C+module%2C+version%2C+commit%29+%28rate%28function_calls_duration_bucket%7Bfunction%3D%22main%22%7D%5B5m%5D%29+%2A+on+%28instance%2C+job%29+group_left%28version%2C+commit%29+last_over_time%28build_info%5B1s%5D%29%29%29%2C%22percentile_latency%22%2C+%2295%22%2C+%22%22%2C+%22%22%29&g0.tab=0
+// [Concurrent Calls]: http://localhost:9090/graph?g0.expr=%23+Concurrent+calls+to+the+%60main%60+function%0A%0Asum+by+%28function%2C+module%2C+version%2C+commit%29+%28function_calls_concurrent%7Bfunction%3D%22main%22%7D+%2A+on+%28instance%2C+job%29+group_left%28version%2C+commit%29+last_over_time%28build_info%5B1s%5D%29%29&g0.tab=0
+// [Request Rate Callee]: http://localhost:9090/graph?g0.expr=%23+Rate+of+function+calls+emanating+from+%60main%60+function+per+second%2C+averaged+over+5+minute+windows%0A%0Asum+by+%28function%2C+module%2C+version%2C+commit%29+%28rate%28function_calls_count_total%7Bcaller%3D%22main.main%22%7D%5B5m%5D%29+%2A+on+%28instance%2C+job%29+group_left%28version%2C+commit%29+last_over_time%28build_info%5B1s%5D%29%29&g0.tab=0
+// [Error Ratio Callee]: http://localhost:9090/graph?g0.expr=%23+Percentage+of+function+emanating+from+%60main%60+function+that+return+errors%2C+averaged+over+5+minute+windows%0A%0A%28sum+by+%28function%2C+module%2C+version%2C+commit%29+%28rate%28function_calls_count_total%7Bcaller%3D%22main.main%22%2Cresult%3D%22error%22%7D%5B5m%5D%29+%2A+on+%28instance%2C+job%29+group_left%28version%2C+commit%29+last_over_time%28build_info%5B1s%5D%29%29%29+%2F+%28sum+by+%28function%2C+module%2C+version%2C+commit%29+%28rate%28function_calls_count_total%7Bcaller%3D%22main.main%22%7D%5B5m%5D%29+%2A+on+%28instance%2C+job%29+group_left%28version%2C+commit%29+last_over_time%28build_info%5B1s%5D%29%29%29&g0.tab=0
+//
+//autometrics:inst --slo "Service Test" --success-target 99
+func main() {
+	defer prom.Instrument(prom.PreInstrument(prom.NewContext(
+		nil,
+		prom.WithConcurrentCalls(true),
+		prom.WithCallerName(true),
+		prom.WithSloName("Service Test"),
+		prom.WithAlertSuccess(99),
+	)), nil) //autometrics:defer
+
+	fmt.Println(hello) // line comment 3
+}
+`
 
 	ctx, err := internal.NewGeneratorContext(autometrics.PROMETHEUS, defaultPrometheusInstanceUrl, false, false)
 	if err != nil {
@@ -118,52 +119,53 @@ func main() {
 }
 `
 
-	want := "// This is the package comment.\n" +
-		"package main\n" +
-		"\n" +
-		"import (\n" +
-		"\tprom \"github.com/autometrics-dev/autometrics-go/prometheus/autometrics\"\n" +
-		")\n" +
-		"\n" +
-		"// This comment is associated with the main function.\n" +
-		"//\n" +
-		"//\tautometrics:doc-start Generated documentation by Autometrics.\n" +
-		"//\n" +
-		"// # Autometrics\n" +
-		"//\n" +
-		"// # Prometheus\n" +
-		"//\n" +
-		"// View the live metrics for the `main` function:\n" +
-		"//   - [Request Rate]\n" +
-		"//   - [Error Ratio]\n" +
-		"//   - [Latency (95th and 99th percentiles)]\n" +
-		"//   - [Concurrent Calls]\n" +
-		"//\n" +
-		"// Or, dig into the metrics of *functions called by* `main`\n" +
-		"//   - [Request Rate Callee]\n" +
-		"//   - [Error Ratio Callee]\n" +
-		"//\n" +
-		"//\tautometrics:doc-end Generated documentation by Autometrics.\n" +
-		"//\n" +
-		"// [Request Rate]: http://localhost:9090/graph?g0.expr=%23+Rate+of+calls+to+the+%60main%60+function+per+second%2C+averaged+over+5+minute+windows%0A%0Asum+by+%28function%2C+module%2C+version%2C+commit%29+%28rate%28function_calls_count_total%7Bfunction%3D%22main%22%7D%5B5m%5D%29+%2A+on+%28instance%2C+job%29+group_left%28version%2C+commit%29+last_over_time%28build_info%5B1s%5D%29%29&g0.tab=0\n" +
-		"// [Error Ratio]: http://localhost:9090/graph?g0.expr=%23+Percentage+of+calls+to+the+%60main%60+function+that+return+errors%2C+averaged+over+5+minute+windows%0A%0A%28sum+by+%28function%2C+module%2C+version%2C+commit%29+%28rate%28function_calls_count_total%7Bfunction%3D%22main%22%2Cresult%3D%22error%22%7D%5B5m%5D%29+%2A+on+%28instance%2C+job%29+group_left%28version%2C+commit%29+last_over_time%28build_info%5B1s%5D%29%29%29+%2F+%28sum+by+%28function%2C+module%2C+version%2C+commit%29+%28rate%28function_calls_count_total%7Bfunction%3D%22main%22%7D%5B5m%5D%29+%2A+on+%28instance%2C+job%29+group_left%28version%2C+commit%29+last_over_time%28build_info%5B1s%5D%29%29%29&g0.tab=0\n" +
-		"// [Latency (95th and 99th percentiles)]: http://localhost:9090/graph?g0.expr=%23+95th+and+99th+percentile+latencies+%28in+seconds%29+for+the+%60main%60+function%0A%0Alabel_replace%28histogram_quantile%280.99%2C+sum+by+%28le%2C+function%2C+module%2C+version%2C+commit%29+%28rate%28function_calls_duration_bucket%7Bfunction%3D%22main%22%7D%5B5m%5D%29+%2A+on+%28instance%2C+job%29+group_left%28version%2C+commit%29+last_over_time%28build_info%5B1s%5D%29%29%29%2C+%22percentile_latency%22%2C+%2299%22%2C+%22%22%2C+%22%22%29+or+label_replace%28histogram_quantile%280.95%2C+sum+by+%28le%2C+function%2C+module%2C+version%2C+commit%29+%28rate%28function_calls_duration_bucket%7Bfunction%3D%22main%22%7D%5B5m%5D%29+%2A+on+%28instance%2C+job%29+group_left%28version%2C+commit%29+last_over_time%28build_info%5B1s%5D%29%29%29%2C%22percentile_latency%22%2C+%2295%22%2C+%22%22%2C+%22%22%29&g0.tab=0\n" +
-		"// [Concurrent Calls]: http://localhost:9090/graph?g0.expr=%23+Concurrent+calls+to+the+%60main%60+function%0A%0Asum+by+%28function%2C+module%2C+version%2C+commit%29+%28function_calls_concurrent%7Bfunction%3D%22main%22%7D+%2A+on+%28instance%2C+job%29+group_left%28version%2C+commit%29+last_over_time%28build_info%5B1s%5D%29%29&g0.tab=0\n" +
-		"// [Request Rate Callee]: http://localhost:9090/graph?g0.expr=%23+Rate+of+function+calls+emanating+from+%60main%60+function+per+second%2C+averaged+over+5+minute+windows%0A%0Asum+by+%28function%2C+module%2C+version%2C+commit%29+%28rate%28function_calls_count_total%7Bcaller%3D%22main.main%22%7D%5B5m%5D%29+%2A+on+%28instance%2C+job%29+group_left%28version%2C+commit%29+last_over_time%28build_info%5B1s%5D%29%29&g0.tab=0\n" +
-		"// [Error Ratio Callee]: http://localhost:9090/graph?g0.expr=%23+Percentage+of+function+emanating+from+%60main%60+function+that+return+errors%2C+averaged+over+5+minute+windows%0A%0A%28sum+by+%28function%2C+module%2C+version%2C+commit%29+%28rate%28function_calls_count_total%7Bcaller%3D%22main.main%22%2Cresult%3D%22error%22%7D%5B5m%5D%29+%2A+on+%28instance%2C+job%29+group_left%28version%2C+commit%29+last_over_time%28build_info%5B1s%5D%29%29%29+%2F+%28sum+by+%28function%2C+module%2C+version%2C+commit%29+%28rate%28function_calls_count_total%7Bcaller%3D%22main.main%22%7D%5B5m%5D%29+%2A+on+%28instance%2C+job%29+group_left%28version%2C+commit%29+last_over_time%28build_info%5B1s%5D%29%29%29&g0.tab=0\n" +
-		"//\n" +
-		"//autometrics:inst --slo \"API\" --latency-target 99.9 --latency-ms 500\n" +
-		"func main() {\n" +
-		"\tdefer prom.Instrument(prom.PreInstrument(prom.NewContext(\n" +
-		"\t\tnil,\n" +
-		"\t\tprom.WithConcurrentCalls(true),\n" +
-		"\t\tprom.WithCallerName(true),\n" +
-		"\t\tprom.WithSloName(\"API\"),\n" +
-		"\t\tprom.WithAlertLatency(500000000*time.Nanosecond, 99.9),\n" +
-		"\t)), nil) //autometrics:defer\n" +
-		"\n" +
-		"	fmt.Println(hello) // line comment 3\n" +
-		"}\n"
+	want := `// This is the package comment.
+package main
+
+import (
+	prom "github.com/autometrics-dev/autometrics-go/prometheus/autometrics"
+)
+
+// This comment is associated with the main function.
+//
+//	autometrics:doc-start Generated documentation by Autometrics.
+//
+// # Autometrics
+//
+// # Prometheus
+//
+// View the live metrics for the `+"`main`"+` function:
+//   - [Request Rate]
+//   - [Error Ratio]
+//   - [Latency (95th and 99th percentiles)]
+//   - [Concurrent Calls]
+//
+// Or, dig into the metrics of *functions called by* `+"`main`"+`
+//   - [Request Rate Callee]
+//   - [Error Ratio Callee]
+//
+//	autometrics:doc-end Generated documentation by Autometrics.
+//
+// [Request Rate]: http://localhost:9090/graph?g0.expr=%23+Rate+of+calls+to+the+%60main%60+function+per+second%2C+averaged+over+5+minute+windows%0A%0Asum+by+%28function%2C+module%2C+version%2C+commit%29+%28rate%28function_calls_count_total%7Bfunction%3D%22main%22%7D%5B5m%5D%29+%2A+on+%28instance%2C+job%29+group_left%28version%2C+commit%29+last_over_time%28build_info%5B1s%5D%29%29&g0.tab=0
+// [Error Ratio]: http://localhost:9090/graph?g0.expr=%23+Percentage+of+calls+to+the+%60main%60+function+that+return+errors%2C+averaged+over+5+minute+windows%0A%0A%28sum+by+%28function%2C+module%2C+version%2C+commit%29+%28rate%28function_calls_count_total%7Bfunction%3D%22main%22%2Cresult%3D%22error%22%7D%5B5m%5D%29+%2A+on+%28instance%2C+job%29+group_left%28version%2C+commit%29+last_over_time%28build_info%5B1s%5D%29%29%29+%2F+%28sum+by+%28function%2C+module%2C+version%2C+commit%29+%28rate%28function_calls_count_total%7Bfunction%3D%22main%22%7D%5B5m%5D%29+%2A+on+%28instance%2C+job%29+group_left%28version%2C+commit%29+last_over_time%28build_info%5B1s%5D%29%29%29&g0.tab=0
+// [Latency (95th and 99th percentiles)]: http://localhost:9090/graph?g0.expr=%23+95th+and+99th+percentile+latencies+%28in+seconds%29+for+the+%60main%60+function%0A%0Alabel_replace%28histogram_quantile%280.99%2C+sum+by+%28le%2C+function%2C+module%2C+version%2C+commit%29+%28rate%28function_calls_duration_bucket%7Bfunction%3D%22main%22%7D%5B5m%5D%29+%2A+on+%28instance%2C+job%29+group_left%28version%2C+commit%29+last_over_time%28build_info%5B1s%5D%29%29%29%2C+%22percentile_latency%22%2C+%2299%22%2C+%22%22%2C+%22%22%29+or+label_replace%28histogram_quantile%280.95%2C+sum+by+%28le%2C+function%2C+module%2C+version%2C+commit%29+%28rate%28function_calls_duration_bucket%7Bfunction%3D%22main%22%7D%5B5m%5D%29+%2A+on+%28instance%2C+job%29+group_left%28version%2C+commit%29+last_over_time%28build_info%5B1s%5D%29%29%29%2C%22percentile_latency%22%2C+%2295%22%2C+%22%22%2C+%22%22%29&g0.tab=0
+// [Concurrent Calls]: http://localhost:9090/graph?g0.expr=%23+Concurrent+calls+to+the+%60main%60+function%0A%0Asum+by+%28function%2C+module%2C+version%2C+commit%29+%28function_calls_concurrent%7Bfunction%3D%22main%22%7D+%2A+on+%28instance%2C+job%29+group_left%28version%2C+commit%29+last_over_time%28build_info%5B1s%5D%29%29&g0.tab=0
+// [Request Rate Callee]: http://localhost:9090/graph?g0.expr=%23+Rate+of+function+calls+emanating+from+%60main%60+function+per+second%2C+averaged+over+5+minute+windows%0A%0Asum+by+%28function%2C+module%2C+version%2C+commit%29+%28rate%28function_calls_count_total%7Bcaller%3D%22main.main%22%7D%5B5m%5D%29+%2A+on+%28instance%2C+job%29+group_left%28version%2C+commit%29+last_over_time%28build_info%5B1s%5D%29%29&g0.tab=0
+// [Error Ratio Callee]: http://localhost:9090/graph?g0.expr=%23+Percentage+of+function+emanating+from+%60main%60+function+that+return+errors%2C+averaged+over+5+minute+windows%0A%0A%28sum+by+%28function%2C+module%2C+version%2C+commit%29+%28rate%28function_calls_count_total%7Bcaller%3D%22main.main%22%2Cresult%3D%22error%22%7D%5B5m%5D%29+%2A+on+%28instance%2C+job%29+group_left%28version%2C+commit%29+last_over_time%28build_info%5B1s%5D%29%29%29+%2F+%28sum+by+%28function%2C+module%2C+version%2C+commit%29+%28rate%28function_calls_count_total%7Bcaller%3D%22main.main%22%7D%5B5m%5D%29+%2A+on+%28instance%2C+job%29+group_left%28version%2C+commit%29+last_over_time%28build_info%5B1s%5D%29%29%29&g0.tab=0
+//
+//autometrics:inst --slo "API" --latency-target 99.9 --latency-ms 500
+func main() {
+	defer prom.Instrument(prom.PreInstrument(prom.NewContext(
+		nil,
+		prom.WithConcurrentCalls(true),
+		prom.WithCallerName(true),
+		prom.WithSloName("API"),
+		prom.WithAlertLatency(500000000*time.Nanosecond, 99.9),
+	)), nil) //autometrics:defer
+
+	fmt.Println(hello) // line comment 3
+}
+`
 
 	ctx, err := internal.NewGeneratorContext(autometrics.PROMETHEUS, defaultPrometheusInstanceUrl, false, false)
 	if err != nil {
@@ -192,26 +194,26 @@ func main() {
 }
 `
 
-	want := "// This is the package comment.\n" +
-		"package main\n" +
-		"\n" +
-		"import " +
-		"\"github.com/autometrics-dev/autometrics-go/prometheus/autometrics\"\n" +
-		"\n" +
-		"// This comment is associated with the main function.\n" +
-		"//\n" +
-		"//autometrics:inst --no-doc --slo \"API\" --latency-target 99.9 --latency-ms 500\n" +
-		"func main() {\n" +
-		"\tdefer autometrics.Instrument(autometrics.PreInstrument(autometrics.NewContext(\n" +
-		"\t\tnil,\n" +
-		"\t\tautometrics.WithConcurrentCalls(true),\n" +
-		"\t\tautometrics.WithCallerName(true),\n" +
-		"\t\tautometrics.WithSloName(\"API\"),\n" +
-		"\t\tautometrics.WithAlertLatency(500000000*time.Nanosecond, 99.9),\n" +
-		"\t)), nil) //autometrics:defer\n" +
-		"\n" +
-		"	fmt.Println(hello) // line comment 3\n" +
-		"}\n"
+	want := `// This is the package comment.
+package main
+
+import "github.com/autometrics-dev/autometrics-go/prometheus/autometrics"
+
+// This comment is associated with the main function.
+//
+//autometrics:inst --no-doc --slo "API" --latency-target 99.9 --latency-ms 500
+func main() {
+	defer autometrics.Instrument(autometrics.PreInstrument(autometrics.NewContext(
+		nil,
+		autometrics.WithConcurrentCalls(true),
+		autometrics.WithCallerName(true),
+		autometrics.WithSloName("API"),
+		autometrics.WithAlertLatency(500000000*time.Nanosecond, 99.9),
+	)), nil) //autometrics:defer
+
+	fmt.Println(hello) // line comment 3
+}
+`
 
 	ctx, err := internal.NewGeneratorContext(autometrics.PROMETHEUS, defaultPrometheusInstanceUrl, false, false)
 	if err != nil {
@@ -245,29 +247,30 @@ func main() {
 }
 `
 
-	want := "// This is the package comment.\n" +
-		"package main\n" +
-		"\n" +
-		"import (\n" +
-		"\t\"fmt\"\n" +
-		"\t\"github.com/autometrics-dev/autometrics-go/prometheus/autometrics\"\n" +
-		"\t\"strings\"\n" +
-		")\n" +
-		"\n" +
-		"// This comment is associated with the main function.\n" +
-		"//\n" +
-		"//autometrics:inst --no-doc --slo \"API\" --latency-target 99.9 --latency-ms 500\n" +
-		"func main() {\n" +
-		"\tdefer autometrics.Instrument(autometrics.PreInstrument(autometrics.NewContext(\n" +
-		"\t\tnil,\n" +
-		"\t\tautometrics.WithConcurrentCalls(true),\n" +
-		"\t\tautometrics.WithCallerName(true),\n" +
-		"\t\tautometrics.WithSloName(\"API\"),\n" +
-		"\t\tautometrics.WithAlertLatency(500000000*time.Nanosecond, 99.9),\n" +
-		"\t)), nil) //autometrics:defer\n" +
-		"\n" +
-		"	fmt.Println(hello) // line comment 3\n" +
-		"}\n"
+	want := `// This is the package comment.
+package main
+
+import (
+	"fmt"
+	"github.com/autometrics-dev/autometrics-go/prometheus/autometrics"
+	"strings"
+)
+
+// This comment is associated with the main function.
+//
+//autometrics:inst --no-doc --slo "API" --latency-target 99.9 --latency-ms 500
+func main() {
+	defer autometrics.Instrument(autometrics.PreInstrument(autometrics.NewContext(
+		nil,
+		autometrics.WithConcurrentCalls(true),
+		autometrics.WithCallerName(true),
+		autometrics.WithSloName("API"),
+		autometrics.WithAlertLatency(500000000*time.Nanosecond, 99.9),
+	)), nil) //autometrics:defer
+
+	fmt.Println(hello) // line comment 3
+}
+`
 
 	ctx, err := internal.NewGeneratorContext(autometrics.PROMETHEUS, defaultPrometheusInstanceUrl, false, false)
 	if err != nil {
@@ -306,25 +309,25 @@ func main() {
 }
 `
 
-	want := "// This is the package comment.\n" +
-		"package main\n" +
-		"\n" +
-		"import " +
-		"\"github.com/autometrics-dev/autometrics-go/prometheus/autometrics\"\n" +
-		"\n" +
-		"// This comment is associated with the main function.\n" +
-		"//autometrics:inst --no-doc --slo \"API\" --latency-target 99.9 --latency-ms 500\n" +
-		"func main() {\n" +
-		"\tdefer autometrics.Instrument(autometrics.PreInstrument(autometrics.NewContext(\n" +
-		"\t\tnil,\n" +
-		"\t\tautometrics.WithConcurrentCalls(true),\n" +
-		"\t\tautometrics.WithCallerName(true),\n" +
-		"\t\tautometrics.WithSloName(\"API\"),\n" +
-		"\t\tautometrics.WithAlertLatency(500000000*time.Nanosecond, 99.9),\n" +
-		"\t)), nil) //autometrics:defer\n" +
-		"\n" +
-		"	fmt.Println(hello) // line comment 3\n" +
-		"}\n"
+	want := `// This is the package comment.
+package main
+
+import "github.com/autometrics-dev/autometrics-go/prometheus/autometrics"
+
+// This comment is associated with the main function.
+//autometrics:inst --no-doc --slo "API" --latency-target 99.9 --latency-ms 500
+func main() {
+	defer autometrics.Instrument(autometrics.PreInstrument(autometrics.NewContext(
+		nil,
+		autometrics.WithConcurrentCalls(true),
+		autometrics.WithCallerName(true),
+		autometrics.WithSloName("API"),
+		autometrics.WithAlertLatency(500000000*time.Nanosecond, 99.9),
+	)), nil) //autometrics:defer
+
+	fmt.Println(hello) // line comment 3
+}
+`
 
 	ctx, err := internal.NewGeneratorContext(autometrics.PROMETHEUS, defaultPrometheusInstanceUrl, false, false)
 	if err != nil {
@@ -366,28 +369,29 @@ func main() {
 }
 `
 
-	want := "// This is the package comment.\n" +
-		"package main\n" +
-		"\n" +
-		"import (\n" +
-		"\t\"github.com/autometrics-dev/autometrics-go/pkg/autometrics\"\n" +
-		"\tprom \"github.com/autometrics-dev/autometrics-go/prometheus/autometrics\"\n" +
-		")\n" +
-		"\n" +
-		"// This comment is associated with the main function.\n" +
-		"//\n" +
-		"//autometrics:inst --slo \"API\" --latency-target 99.9 --latency-ms 500\n" +
-		"func main() {\n" +
-		"\tdefer prom.Instrument(prom.PreInstrument(prom.NewContext(\n" +
-		"\t\tnil,\n" +
-		"\t\tprom.WithConcurrentCalls(true),\n" +
-		"\t\tprom.WithCallerName(true),\n" +
-		"\t\tprom.WithSloName(\"API\"),\n" +
-		"\t\tprom.WithAlertLatency(500000000*time.Nanosecond, 99.9),\n" +
-		"\t)), nil) //autometrics:defer\n" +
-		"\n" +
-		"	fmt.Println(hello) // line comment 3\n" +
-		"}\n"
+	want := `// This is the package comment.
+package main
+
+import (
+	"github.com/autometrics-dev/autometrics-go/pkg/autometrics"
+	prom "github.com/autometrics-dev/autometrics-go/prometheus/autometrics"
+)
+
+// This comment is associated with the main function.
+//
+//autometrics:inst --slo "API" --latency-target 99.9 --latency-ms 500
+func main() {
+	defer prom.Instrument(prom.PreInstrument(prom.NewContext(
+		nil,
+		prom.WithConcurrentCalls(true),
+		prom.WithCallerName(true),
+		prom.WithSloName("API"),
+		prom.WithAlertLatency(500000000*time.Nanosecond, 99.9),
+	)), nil) //autometrics:defer
+
+	fmt.Println(hello) // line comment 3
+}
+`
 
 	ctx, err := internal.NewGeneratorContext(autometrics.PROMETHEUS, defaultPrometheusInstanceUrl, false, true)
 	if err != nil {
