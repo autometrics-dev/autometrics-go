@@ -60,6 +60,20 @@ func injectDeferStatement(ctx *internal.GeneratorContext, funcDeclaration *dst.F
 	return nil
 }
 
+// removeDeferStatement removes, if detected, a previously injected defer statement.
+func removeDeferStatement(ctx *internal.GeneratorContext, funcDeclaration *dst.FuncDecl) error {
+	firstStatement := funcDeclaration.Body.List[0]
+
+	if deferStatement, ok := firstStatement.(*dst.DeferStmt); ok {
+		decorations := deferStatement.Decorations().End
+		if slices.Contains(decorations.All(), "//autometrics:defer") {
+			funcDeclaration.Body.List = funcDeclaration.Body.List[1:]
+		}
+	}
+
+	return nil
+}
+
 // errorReturnValueName returns the name of the error return value if it exists.
 func errorReturnValueName(funcNode *dst.FuncDecl) (string, error) {
 	returnValues := funcNode.Type.Results
@@ -94,32 +108,32 @@ func buildAutometricsContextNode(agc *internal.GeneratorContext) (*dst.CallExpr,
 	var options []string
 
 	if agc.RuntimeCtx.TraceIDGetter != "" {
-		options = append(options, fmt.Sprintf("%v.WithTraceID(%v)", agc.FuncCtx.ImplImportName, agc.RuntimeCtx.TraceIDGetter))
+		options = append(options, fmt.Sprintf("%vWithTraceID(%v)", autometricsNamespacePrefix(agc), agc.RuntimeCtx.TraceIDGetter))
 	}
 	if agc.RuntimeCtx.SpanIDGetter != "" {
-		options = append(options, fmt.Sprintf("%v.WithSpanID(%v)", agc.FuncCtx.ImplImportName, agc.RuntimeCtx.SpanIDGetter))
+		options = append(options, fmt.Sprintf("%vWithSpanID(%v)", autometricsNamespacePrefix(agc), agc.RuntimeCtx.SpanIDGetter))
 	}
 
 	options = append(options,
-		fmt.Sprintf("%v.WithConcurrentCalls(%#v)", agc.FuncCtx.ImplImportName, agc.RuntimeCtx.TrackConcurrentCalls),
-		fmt.Sprintf("%v.WithCallerName(%#v)", agc.FuncCtx.ImplImportName, agc.RuntimeCtx.TrackCallerName),
+		fmt.Sprintf("%vWithConcurrentCalls(%#v)", autometricsNamespacePrefix(agc), agc.RuntimeCtx.TrackConcurrentCalls),
+		fmt.Sprintf("%vWithCallerName(%#v)", autometricsNamespacePrefix(agc), agc.RuntimeCtx.TrackCallerName),
 	)
 
 	if agc.RuntimeCtx.AlertConf != nil {
-		options = append(options, fmt.Sprintf("%v.WithSloName(%#v)",
-			agc.FuncCtx.ImplImportName,
+		options = append(options, fmt.Sprintf("%vWithSloName(%#v)",
+			autometricsNamespacePrefix(agc),
 			agc.RuntimeCtx.AlertConf.ServiceName,
 		))
 		if agc.RuntimeCtx.AlertConf.Latency != nil {
-			options = append(options, fmt.Sprintf("%v.WithAlertLatency(%#v * time.Nanosecond, %#v)",
-				agc.FuncCtx.ImplImportName,
+			options = append(options, fmt.Sprintf("%vWithAlertLatency(%#v * time.Nanosecond, %#v)",
+				autometricsNamespacePrefix(agc),
 				agc.RuntimeCtx.AlertConf.Latency.Target,
 				agc.RuntimeCtx.AlertConf.Latency.Objective,
 			))
 		}
 		if agc.RuntimeCtx.AlertConf.Success != nil {
-			options = append(options, fmt.Sprintf("%v.WithAlertSuccess(%#v)",
-				agc.FuncCtx.ImplImportName,
+			options = append(options, fmt.Sprintf("%vWithAlertSuccess(%#v)",
+				autometricsNamespacePrefix(agc),
 				agc.RuntimeCtx.AlertConf.Success.Objective))
 		}
 	}
@@ -130,10 +144,10 @@ func buildAutometricsContextNode(agc *internal.GeneratorContext) (*dst.CallExpr,
 		`
 package main
 
-var dummy = %v.NewContext(
+var dummy = %vNewContext(
 	%s,
 `,
-		agc.FuncCtx.ImplImportName,
+		autometricsNamespacePrefix(agc),
 		agc.RuntimeCtx.ContextVariableName,
 	)
 	if err != nil {
@@ -188,10 +202,10 @@ func buildAutometricsDeferStatement(ctx *internal.GeneratorContext, secondVar st
 	}
 	statement := dst.DeferStmt{
 		Call: &dst.CallExpr{
-			Fun: dst.NewIdent(fmt.Sprintf("%v.Instrument", ctx.FuncCtx.ImplImportName)),
+			Fun: dst.NewIdent(fmt.Sprintf("%vInstrument", autometricsNamespacePrefix(ctx))),
 			Args: []dst.Expr{
 				&dst.CallExpr{
-					Fun: dst.NewIdent(fmt.Sprintf("%v.PreInstrument", ctx.FuncCtx.ImplImportName)),
+					Fun: dst.NewIdent(fmt.Sprintf("%vPreInstrument", autometricsNamespacePrefix(ctx))),
 					Args: []dst.Expr{
 						preInstrumentArg,
 					},
@@ -204,7 +218,16 @@ func buildAutometricsDeferStatement(ctx *internal.GeneratorContext, secondVar st
 	statement.Decs.Before = dst.NewLine
 	statement.Decs.End = []string{"//autometrics:defer"}
 	statement.Decs.After = dst.EmptyLine
+
 	return statement, nil
+}
+
+func autometricsNamespacePrefix(ctx *internal.GeneratorContext) string {
+	if ctx.FuncCtx.ImplImportName == "_" {
+		return ""
+	} else {
+		return fmt.Sprintf("%v.", ctx.FuncCtx.ImplImportName)
+	}
 }
 
 // detectContextIdentImpl is a Context detection logic helper for arguments whose type is an identifier
