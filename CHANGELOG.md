@@ -10,13 +10,22 @@ versioning](https://go.dev/doc/modules/version-numbers).
 
 ### Added
 
+- The Go generator now removes all the old defer statements in function bodies before re-adding
+  only the necessary ones. This means calling `go generate` on a file that has no annotation
+  at all effectively cleans up the whole file from autometrics.
+
 ### Changed
+
+- Instead of returning an error when the go generator does not find the autometrics import
+  in a file, it will add the needed import itself in the file.
 
 ### Deprecated
 
 ### Removed
 
 ### Fixed
+
+- Code generation now works when `autometrics` is imported with the `_` alias
 
 ### Security
 
