@@ -13,6 +13,7 @@ import (
 	"github.com/dave/dst"
 )
 
+// inspectImportSpec builds the context's ImportMap with the new import, and returns whether an autometrics import exists.
 func inspectImportSpec(ctx *internal.GeneratorContext, importSpec *dst.ImportSpec) bool {
 	var foundAm bool
 
@@ -49,6 +50,7 @@ func inspectImportSpec(ctx *internal.GeneratorContext, importSpec *dst.ImportSpe
 	return foundAm
 }
 
+// addAutometricsImport adds the correct autometrics import to the passed fileTree.
 func addAutometricsImport(ctx *internal.GeneratorContext, fileTree *dst.File) error {
 	// var importSpec dst.ImportSpec
 	if ctx.Implementation == autometrics.PROMETHEUS {
@@ -74,6 +76,8 @@ func addAutometricsImport(ctx *internal.GeneratorContext, fileTree *dst.File) er
 	return errors.New("unrecognized implementation of Autometrics has been queried")
 }
 
+// addImport walks a file declarations to add in the correct location an additional import for 'imp' without alias.
+//
 // Ref: https://github.com/dave/dst/issues/61#issuecomment-928529830
 func addImport(file *dst.File, imp string) {
 	// Where to insert our import block within the file's Decl slice

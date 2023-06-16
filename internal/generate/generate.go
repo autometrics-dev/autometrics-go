@@ -123,6 +123,7 @@ func GenerateDocumentationAndInstrumentation(ctx internal.GeneratorContext, sour
 	return buf.String(), nil
 }
 
+// walkFuncDeclaration uses the context to generate documentation and code if necessary for a function declaration in a file.
 func walkFuncDeclaration(ctx *internal.GeneratorContext, funcDeclaration *dst.FuncDecl, moduleName string) error {
 	if ctx.FuncCtx.ImplImportName == "" {
 		if ctx.Implementation == autometrics.PROMETHEUS {
@@ -183,6 +184,7 @@ func walkFuncDeclaration(ctx *internal.GeneratorContext, funcDeclaration *dst.Fu
 	return nil
 }
 
+// parseAutometricsFnContext modifies the GeneratorContext according to the arguments put in the directive.
 func parseAutometricsFnContext(ctx *internal.GeneratorContext, commentGroup []string) error {
 	for i, comment := range commentGroup {
 		if args, found := cutPrefix(comment, "//autometrics:"); found {
@@ -201,118 +203,25 @@ func parseAutometricsFnContext(ctx *internal.GeneratorContext, commentGroup []st
 				token := tokens[tokenIndex]
 				switch {
 				case token == SloNameArgument:
-					if tokenIndex >= len(tokens)-1 {
-						return fmt.Errorf("%v argument needs a value", SloNameArgument)
+					tokenIndex, err = parseSloName(tokenIndex, tokens, ctx)
+					if err != nil {
+						return fmt.Errorf("error parsing %v argument: %w", SloNameArgument, err)
 					}
-					// Read the "value"
-					tokenIndex = tokenIndex + 1
-					value := tokens[tokenIndex]
-					if strings.HasPrefix(value, "--") {
-						return fmt.Errorf("%v argument isn't allowed to start with '--'", SloNameArgument)
-					}
-
-					if ctx.RuntimeCtx.AlertConf != nil {
-						ctx.RuntimeCtx.AlertConf.ServiceName = value
-					} else {
-						ctx.RuntimeCtx.AlertConf = &autometrics.AlertConfiguration{
-							ServiceName: value,
-							Latency:     nil,
-							Success:     nil,
-						}
-					}
-					// Advance past the "value"
-					tokenIndex = tokenIndex + 1
 				case token == SuccessObjArgument:
-					if tokenIndex >= len(tokens)-1 {
-						return fmt.Errorf("%v argument needs a value", SuccessObjArgument)
-					}
-					// Read the "value"
-					tokenIndex = tokenIndex + 1
-					value, err := strconv.ParseFloat(tokens[tokenIndex], 64)
+					tokenIndex, err = parseSuccessObjective(tokenIndex, tokens, ctx)
 					if err != nil {
-						return fmt.Errorf("%v argument must be a float between 0 and 100: %w", SuccessObjArgument, err)
+						return fmt.Errorf("error parsing %v argument: %w", SuccessObjArgument, err)
 					}
-
-					if ctx.RuntimeCtx.AlertConf != nil {
-						if ctx.RuntimeCtx.AlertConf.Success != nil {
-							ctx.RuntimeCtx.AlertConf.Success.Objective = value
-						} else {
-							ctx.RuntimeCtx.AlertConf.Success = &autometrics.SuccessSlo{Objective: value}
-						}
-					} else {
-						ctx.RuntimeCtx.AlertConf = &autometrics.AlertConfiguration{
-							ServiceName: "",
-							Latency:     nil,
-							Success:     &autometrics.SuccessSlo{Objective: value},
-						}
-					}
-					// Advance past the "value"
-					tokenIndex = tokenIndex + 1
 				case token == LatencyMsArgument:
-					if tokenIndex >= len(tokens)-1 {
-						return fmt.Errorf("%v argument needs a value", LatencyMsArgument)
-					}
-					// Read the "value"
-					tokenIndex = tokenIndex + 1
-					value, err := strconv.ParseFloat(tokens[tokenIndex], 64)
+					tokenIndex, err = parseLatencyMs(tokenIndex, tokens, ctx)
 					if err != nil {
-						return fmt.Errorf("%v argument must be a positive float", LatencyMsArgument)
+						return fmt.Errorf("error parsing %v argument: %w", LatencyMsArgument, err)
 					}
-					timeValue := time.Duration(value * float64(time.Millisecond))
-
-					if ctx.RuntimeCtx.AlertConf != nil {
-						if ctx.RuntimeCtx.AlertConf.Latency != nil {
-							ctx.RuntimeCtx.AlertConf.Latency.Target = timeValue
-						} else {
-							ctx.RuntimeCtx.AlertConf.Latency = &autometrics.LatencySlo{
-								Target:    timeValue,
-								Objective: 0,
-							}
-						}
-					} else {
-						ctx.RuntimeCtx.AlertConf = &autometrics.AlertConfiguration{
-							ServiceName: "",
-							Latency: &autometrics.LatencySlo{
-								Target:    timeValue,
-								Objective: 0,
-							},
-							Success: nil,
-						}
-					}
-					// Advance past the "value"
-					tokenIndex = tokenIndex + 1
 				case token == LatencyObjArgument:
-					if tokenIndex >= len(tokens)-1 {
-						return fmt.Errorf("%v argument needs a value", LatencyObjArgument)
-					}
-					// Read the "value"
-					tokenIndex = tokenIndex + 1
-					value, err := strconv.ParseFloat(tokens[tokenIndex], 64)
+					tokenIndex, err = parseLatencyObjective(tokenIndex, tokens, ctx)
 					if err != nil {
-						return fmt.Errorf("%v argument must be a float between 0 and 1", LatencyObjArgument)
+						return fmt.Errorf("error parsing %v argument: %w", LatencyObjArgument, err)
 					}
-
-					if ctx.RuntimeCtx.AlertConf != nil {
-						if ctx.RuntimeCtx.AlertConf.Latency != nil {
-							ctx.RuntimeCtx.AlertConf.Latency.Objective = value
-						} else {
-							ctx.RuntimeCtx.AlertConf.Latency = &autometrics.LatencySlo{
-								Target:    0,
-								Objective: value,
-							}
-						}
-					} else {
-						ctx.RuntimeCtx.AlertConf = &autometrics.AlertConfiguration{
-							ServiceName: "",
-							Latency: &autometrics.LatencySlo{
-								Target:    0,
-								Objective: value,
-							},
-							Success: nil,
-						}
-					}
-					// Advance past the "value"
-					tokenIndex = tokenIndex + 1
 				case token == NoDocArgument:
 					ctx.FuncCtx.DisableDocGeneration = true
 					tokenIndex = tokenIndex + 1
@@ -333,4 +242,137 @@ func parseAutometricsFnContext(ctx *internal.GeneratorContext, commentGroup []st
 	ctx.FuncCtx.CommentIndex = -1
 	ctx.RuntimeCtx = internal.DefaultRuntimeCtxInfo()
 	return nil
+}
+
+func parseLatencyObjective(tokenIndex int, tokens []string, ctx *internal.GeneratorContext) (int, error) {
+	if tokenIndex >= len(tokens)-1 {
+		return 0, fmt.Errorf("%v argument needs a value", LatencyObjArgument)
+	}
+
+	// Read the "value"
+	tokenIndex = tokenIndex + 1
+	value, err := strconv.ParseFloat(tokens[tokenIndex], 64)
+	if err != nil {
+		return 0, fmt.Errorf("%v argument must be a float between 0 and 1", LatencyObjArgument)
+	}
+
+	if ctx.RuntimeCtx.AlertConf != nil {
+		if ctx.RuntimeCtx.AlertConf.Latency != nil {
+			ctx.RuntimeCtx.AlertConf.Latency.Objective = value
+		} else {
+			ctx.RuntimeCtx.AlertConf.Latency = &autometrics.LatencySlo{
+				Target:    0,
+				Objective: value,
+			}
+		}
+	} else {
+		ctx.RuntimeCtx.AlertConf = &autometrics.AlertConfiguration{
+			ServiceName: "",
+			Latency: &autometrics.LatencySlo{
+				Target:    0,
+				Objective: value,
+			},
+			Success: nil,
+		}
+	}
+
+	// Advance past the "value"
+	tokenIndex = tokenIndex + 1
+	return tokenIndex, nil
+}
+
+func parseLatencyMs(tokenIndex int, tokens []string, ctx *internal.GeneratorContext) (int, error) {
+	if tokenIndex >= len(tokens)-1 {
+		return 0, fmt.Errorf("%v argument needs a value", LatencyMsArgument)
+	}
+
+	// Read the "value"
+	tokenIndex = tokenIndex + 1
+	value, err := strconv.ParseFloat(tokens[tokenIndex], 64)
+	if err != nil {
+		return 0, fmt.Errorf("%v argument must be a positive float", LatencyMsArgument)
+	}
+	timeValue := time.Duration(value * float64(time.Millisecond))
+
+	if ctx.RuntimeCtx.AlertConf != nil {
+		if ctx.RuntimeCtx.AlertConf.Latency != nil {
+			ctx.RuntimeCtx.AlertConf.Latency.Target = timeValue
+		} else {
+			ctx.RuntimeCtx.AlertConf.Latency = &autometrics.LatencySlo{
+				Target:    timeValue,
+				Objective: 0,
+			}
+		}
+	} else {
+		ctx.RuntimeCtx.AlertConf = &autometrics.AlertConfiguration{
+			ServiceName: "",
+			Latency: &autometrics.LatencySlo{
+				Target:    timeValue,
+				Objective: 0,
+			},
+			Success: nil,
+		}
+	}
+
+	// Advance past the "value"
+	tokenIndex = tokenIndex + 1
+	return tokenIndex, nil
+}
+
+func parseSloName(tokenIndex int, tokens []string, ctx *internal.GeneratorContext) (int, error) {
+	if tokenIndex >= len(tokens)-1 {
+		return 0, fmt.Errorf("%v argument needs a value", SloNameArgument)
+	}
+
+	// Read the "value"
+	tokenIndex = tokenIndex + 1
+	value := tokens[tokenIndex]
+	if strings.HasPrefix(value, "--") {
+		return 0, fmt.Errorf("%v argument isn't allowed to start with '--'", SloNameArgument)
+	}
+
+	if ctx.RuntimeCtx.AlertConf != nil {
+		ctx.RuntimeCtx.AlertConf.ServiceName = value
+	} else {
+		ctx.RuntimeCtx.AlertConf = &autometrics.AlertConfiguration{
+			ServiceName: value,
+			Latency:     nil,
+			Success:     nil,
+		}
+	}
+
+	// Advance past the "value"
+	tokenIndex = tokenIndex + 1
+	return tokenIndex, nil
+}
+
+func parseSuccessObjective(tokenIndex int, tokens []string, ctx *internal.GeneratorContext) (int, error) {
+	if tokenIndex >= len(tokens)-1 {
+		return 0, fmt.Errorf("%v argument needs a value", SuccessObjArgument)
+	}
+
+	// Read the "value"
+	tokenIndex = tokenIndex + 1
+	value, err := strconv.ParseFloat(tokens[tokenIndex], 64)
+	if err != nil {
+		return 0, fmt.Errorf("%v argument must be a float between 0 and 100: %w", SuccessObjArgument, err)
+	}
+
+	if ctx.RuntimeCtx.AlertConf != nil {
+		if ctx.RuntimeCtx.AlertConf.Success != nil {
+			ctx.RuntimeCtx.AlertConf.Success.Objective = value
+		} else {
+			ctx.RuntimeCtx.AlertConf.Success = &autometrics.SuccessSlo{Objective: value}
+		}
+	} else {
+		ctx.RuntimeCtx.AlertConf = &autometrics.AlertConfiguration{
+			ServiceName: "",
+			Latency:     nil,
+			Success:     &autometrics.SuccessSlo{Objective: value},
+		}
+	}
+
+	// Advance past the "value"
+	tokenIndex = tokenIndex + 1
+	return tokenIndex, nil
 }
