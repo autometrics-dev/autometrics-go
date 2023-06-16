@@ -1131,3 +1131,53 @@ func TestSuccessContextCodeGen(t *testing.T) {
 )`,
 	)
 }
+
+// TestAnonymousImport calls GenerateDocumentationAndInstrumentation on a
+// decorated function where the autometrics import is anonymous, making sure that the generated code doesn't try to use '_' as identifier.
+func TestAnonymousImport(t *testing.T) {
+	sourceCode := `// This is the package comment.
+package main
+
+import _ "github.com/autometrics-dev/autometrics-go/prometheus/autometrics"
+
+// This comment is associated with the main function.
+//
+//autometrics:inst --no-doc --slo "API" --latency-target 99.9 --latency-ms 500
+func main() {
+	fmt.Println(hello) // line comment 3
+}
+`
+
+	want := `// This is the package comment.
+package main
+
+import _ "github.com/autometrics-dev/autometrics-go/prometheus/autometrics"
+
+// This comment is associated with the main function.
+//
+//autometrics:inst --no-doc --slo "API" --latency-target 99.9 --latency-ms 500
+func main() {
+	defer Instrument(PreInstrument(NewContext(
+		nil,
+		WithConcurrentCalls(true),
+		WithCallerName(true),
+		WithSloName("API"),
+		WithAlertLatency(500000000*time.Nanosecond, 99.9),
+	)), nil) //autometrics:defer
+
+	fmt.Println(hello) // line comment 3
+}
+`
+
+	ctx, err := internal.NewGeneratorContext(autometrics.PROMETHEUS, defaultPrometheusInstanceUrl, false, false)
+	if err != nil {
+		t.Fatalf("error creating the generation context: %s", err)
+	}
+
+	actual, err := GenerateDocumentationAndInstrumentation(ctx, sourceCode, "main")
+	if err != nil {
+		t.Fatalf("error generating the documentation: %s", err)
+	}
+
+	assert.Equal(t, want, actual, "The generated source code is not as expected.")
+}
