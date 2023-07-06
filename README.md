@@ -197,8 +197,25 @@ This is the shortest way to initialize and expose the metrics that autometrics w
 in the generated code.
 </details>
 
-A Prometheus server can be configured to poll the application, and the autometrics will be
-available! (See the [Web App example](./examples/web) for a simple, complete setup)
+A Prometheus server can be configured to poll the application, and the autometrics will be available! (See the [Web App example](./examples/web) for a simple, complete setup)
+
+### Run Prometheus locally to validate and preview the data
+
+You can use the open source Autometrics CLI to run automatically configured Prometheus locally to see the metrics that will be registered by the change. See the [Autometrics CLI docs](https://docs.autometrics.dev/local-development#getting-started-with-am) for more information.
+
+or you can configure Prometheus manually:
+
+```yaml
+scrape_configs:
+  - job_name: my-app
+    metrics_path: /metrics # the endpoint you configured your metrics exporter on (usually /metrics)
+    static_configs:
+      - targets: ['localhost:<PORT>'] # The port your service is on
+    scrape_interval: 200ms
+    # For a real deployment, you would want the scrape interval to be
+    # longer but for testing, you want the data to show up quickly
+```
+
 
 ## (OPTIONAL) Generate alerts automatically
 
