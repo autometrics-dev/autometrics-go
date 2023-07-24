@@ -119,11 +119,11 @@ func (p Prometheus) GenerateAutometricsComment(ctx GeneratorContext, funcName, m
 	requestRateUrl := p.makePrometheusUrl(
 		requestRateQuery(prometheus.FunctionCallsCountName, prometheus.FunctionLabel, funcName), fmt.Sprintf("Rate of calls to the `%s` function per second, averaged over 5 minute windows", funcName))
 	calleeRequestRateUrl := p.makePrometheusUrl(
-		requestRateQuery(prometheus.FunctionCallsCountName, prometheus.CallerLabel, fmt.Sprintf("%s.%s", moduleName, funcName)), fmt.Sprintf("Rate of function calls emanating from `%s` function per second, averaged over 5 minute windows", funcName))
+		requestRateQuery(prometheus.FunctionCallsCountName, prometheus.CallerFunctionLabel, funcName), fmt.Sprintf("Rate of function calls emanating from `%s` function per second, averaged over 5 minute windows", funcName))
 	errorRatioUrl := p.makePrometheusUrl(
 		errorRatioQuery(prometheus.FunctionCallsCountName, prometheus.FunctionLabel, funcName), fmt.Sprintf("Percentage of calls to the `%s` function that return errors, averaged over 5 minute windows", funcName))
 	calleeErrorRatioUrl := p.makePrometheusUrl(
-		errorRatioQuery(prometheus.FunctionCallsCountName, prometheus.CallerLabel, fmt.Sprintf("%s.%s", moduleName, funcName)), fmt.Sprintf("Percentage of function emanating from `%s` function that return errors, averaged over 5 minute windows", funcName))
+		errorRatioQuery(prometheus.FunctionCallsCountName, prometheus.CallerFunctionLabel, funcName), fmt.Sprintf("Percentage of function emanating from `%s` function that return errors, averaged over 5 minute windows", funcName))
 	latencyUrl := p.makePrometheusUrl(
 		latencyQuery(prometheus.FunctionCallsDurationName, prometheus.FunctionLabel, funcName), fmt.Sprintf("95th and 99th percentile latencies (in seconds) for the `%s` function", funcName))
 	concurrentCallsUrl := p.makePrometheusUrl(

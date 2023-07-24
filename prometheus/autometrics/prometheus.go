@@ -33,9 +33,12 @@ const (
 	// It is guaranteed that a (FunctionLabel, ModuleLabel) value pair is unique
 	// and matches at most one function in the source code
 	ModuleLabel = "module"
-	// CallerLabel is the prometheus label that describes the name of the function that called
+	// CallerFunctionLabel is the prometheus label that describes the name of the function that called
 	// the current function.
-	CallerLabel = "caller"
+	CallerFunctionLabel = "caller_function"
+	// CallerModuleLabel is the prometheus label that describes the module of the function that called
+	// the current function.
+	CallerModuleLabel = "caller_module"
 	// ResultLabel is the prometheus label that describes whether a function call is successful.
 	ResultLabel = "result"
 	// TargetLatencyLabel is the prometheus label that describes the latency to respect to match
@@ -87,16 +90,16 @@ func Init(reg *prometheus.Registry, histogramBuckets []float64, buildInformation
 
 	functionCallsCount = prometheus.NewCounterVec(prometheus.CounterOpts{
 		Name: FunctionCallsCountName,
-	}, []string{FunctionLabel, ModuleLabel, CallerLabel, ResultLabel, TargetSuccessRateLabel, SloNameLabel, CommitLabel, VersionLabel, BranchLabel})
+	}, []string{FunctionLabel, ModuleLabel, CallerFunctionLabel, CallerModuleLabel, ResultLabel, TargetSuccessRateLabel, SloNameLabel, CommitLabel, VersionLabel, BranchLabel})
 
 	functionCallsDuration = prometheus.NewHistogramVec(prometheus.HistogramOpts{
 		Name:    FunctionCallsDurationName,
 		Buckets: histogramBuckets,
-	}, []string{FunctionLabel, ModuleLabel, CallerLabel, TargetLatencyLabel, TargetSuccessRateLabel, SloNameLabel, CommitLabel, VersionLabel, BranchLabel})
+	}, []string{FunctionLabel, ModuleLabel, CallerFunctionLabel, CallerModuleLabel, TargetLatencyLabel, TargetSuccessRateLabel, SloNameLabel, CommitLabel, VersionLabel, BranchLabel})
 
 	functionCallsConcurrent = prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Name: FunctionCallsConcurrentName,
-	}, []string{FunctionLabel, ModuleLabel, CallerLabel, CommitLabel, VersionLabel, BranchLabel})
+	}, []string{FunctionLabel, ModuleLabel, CallerFunctionLabel, CallerModuleLabel, CommitLabel, VersionLabel, BranchLabel})
 
 	buildInfo = prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Name: BuildInfoName,

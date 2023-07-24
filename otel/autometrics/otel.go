@@ -42,9 +42,12 @@ const (
 	// It is guaranteed that a (FunctionLabel, ModuleLabel) value pair is unique
 	// and matches at most one function in the source code
 	ModuleLabel = "module"
-	// CallerLabel is the openTelemetry attribute that describes the name of the function that called
+	// CallerFunctionLabel is the openTelemetry attribute that describes the name of the function that called
 	// the current function.
-	CallerLabel = "caller"
+	CallerFunctionLabel = "caller.function"
+	// CallerModuleLabel is the openTelemetry attribute that describes the module of the function that called
+	// the current function.
+	CallerModuleLabel = "caller.module"
 	// ResultLabel is the openTelemetry attribute that describes whether a function call is successful.
 	ResultLabel = "result"
 	// TargetLatencyLabel is the openTelemetry attribute that describes the latency to respect to match

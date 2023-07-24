@@ -23,15 +23,11 @@ func Instrument(ctx context.Context, err *error) {
 		result = "error"
 	}
 
-	var callerLabel, sloName, latencyTarget, latencyObjective, successObjective string
+	var sloName, latencyTarget, latencyObjective, successObjective string
 
 	callInfo := am.GetCallInfo(ctx)
 	buildInfo := am.GetBuildInfo(ctx)
 	slo := am.GetAlertConfiguration(ctx)
-
-	if am.GetTrackCallerName(ctx) {
-		callerLabel = fmt.Sprintf("%s.%s", callInfo.ParentModuleName, callInfo.ParentFuncName)
-	}
 
 	if slo.ServiceName != "" {
 		sloName = slo.ServiceName
@@ -51,7 +47,8 @@ func Instrument(ctx context.Context, err *error) {
 	functionCallsCount.With(prometheus.Labels{
 		FunctionLabel:          callInfo.FuncName,
 		ModuleLabel:            callInfo.ModuleName,
-		CallerLabel:            callerLabel,
+		CallerFunctionLabel:    callInfo.ParentFuncName,
+		CallerModuleLabel:      callInfo.ParentModuleName,
 		ResultLabel:            result,
 		TargetSuccessRateLabel: successObjective,
 		SloNameLabel:           sloName,
@@ -63,7 +60,8 @@ func Instrument(ctx context.Context, err *error) {
 	functionCallsDuration.With(prometheus.Labels{
 		FunctionLabel:          callInfo.FuncName,
 		ModuleLabel:            callInfo.ModuleName,
-		CallerLabel:            callerLabel,
+		CallerFunctionLabel:    callInfo.ParentFuncName,
+		CallerModuleLabel:      callInfo.ParentModuleName,
 		TargetLatencyLabel:     latencyTarget,
 		TargetSuccessRateLabel: latencyObjective,
 		SloNameLabel:           sloName,
@@ -74,12 +72,13 @@ func Instrument(ctx context.Context, err *error) {
 
 	if am.GetTrackConcurrentCalls(ctx) {
 		functionCallsConcurrent.With(prometheus.Labels{
-			FunctionLabel: callInfo.FuncName,
-			ModuleLabel:   callInfo.ModuleName,
-			CallerLabel:   callerLabel,
-			BranchLabel:   buildInfo.Branch,
-			CommitLabel:   buildInfo.Commit,
-			VersionLabel:  buildInfo.Version,
+			FunctionLabel:       callInfo.FuncName,
+			ModuleLabel:         callInfo.ModuleName,
+			CallerFunctionLabel: callInfo.ParentFuncName,
+			CallerModuleLabel:   callInfo.ParentModuleName,
+			BranchLabel:         buildInfo.Branch,
+			CommitLabel:         buildInfo.Commit,
+			VersionLabel:        buildInfo.Version,
 		}).Add(-1)
 	}
 }
@@ -95,19 +94,15 @@ func PreInstrument(ctx context.Context) context.Context {
 	ctx = am.FillTracingInfo(ctx)
 	buildInfo := am.GetBuildInfo(ctx)
 
-	var callerLabel string
-	if am.GetTrackCallerName(ctx) {
-		callerLabel = fmt.Sprintf("%s.%s", callInfo.ParentModuleName, callInfo.ParentFuncName)
-	}
-
 	if am.GetTrackConcurrentCalls(ctx) {
 		functionCallsConcurrent.With(prometheus.Labels{
-			FunctionLabel: callInfo.FuncName,
-			ModuleLabel:   callInfo.ModuleName,
-			CallerLabel:   callerLabel,
-			BranchLabel:   buildInfo.Branch,
-			CommitLabel:   buildInfo.Commit,
-			VersionLabel:  buildInfo.Version,
+			FunctionLabel:       callInfo.FuncName,
+			ModuleLabel:         callInfo.ModuleName,
+			CallerFunctionLabel: callInfo.ParentFuncName,
+			CallerModuleLabel:   callInfo.ParentModuleName,
+			BranchLabel:         buildInfo.Branch,
+			CommitLabel:         buildInfo.Commit,
+			VersionLabel:        buildInfo.Version,
 		}).Add(1)
 	}
 
