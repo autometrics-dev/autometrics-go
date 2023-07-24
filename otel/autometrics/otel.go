@@ -91,12 +91,7 @@ func Init(meterName string, histogramBuckets []float64, buildInformation BuildIn
 	autometrics.SetVersion(buildInformation.Version)
 	autometrics.SetBranch(buildInformation.Branch)
 
-	exporter, err := prometheus.New(
-		// The units are removed from the exporter so that the names of the
-		// exported metrics after the View rename are consistent with the
-		// autometrics.rules.yml file
-		prometheus.WithoutUnits(),
-	)
+	exporter, err := prometheus.New()
 	if err != nil {
 		return fmt.Errorf("error initializing prometheus exporter: %w", err)
 	}
