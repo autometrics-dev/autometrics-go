@@ -61,14 +61,15 @@ func main() {
 //
 // It always succeeds and says hello.
 //
-//autometrics:inst --slo "API" --latency-target 99 --latency-ms 100
+//autometrics:inst --slo "API" --latency-target 99 --latency-ms 5
 func indexHandler(w http.ResponseWriter, r *http.Request) error {
 
-	time.Sleep(time.Duration(rand.Intn(200)) * time.Millisecond)
+	msSleep :=  rand.Intn(200)
+	time.Sleep(time.Duration(msSleep) * time.Millisecond)
 
-	fmt.Fprintf(w, "Hello, World!\n")
+	_, err := fmt.Fprintf(w, "Slept %v ms\n", msSleep)
 
-	return nil
+	return err
 }
 
 var handlerError = errors.New("failed to handle request")
