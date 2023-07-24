@@ -2,6 +2,7 @@ package autometrics // import "github.com/autometrics-dev/autometrics-go/pkg/aut
 
 import (
 	"context"
+	"log"
 	"math/rand"
 	"time"
 )
@@ -9,16 +10,16 @@ import (
 type contextKey int
 
 const (
-	currentTraceId contextKey = iota
-	currentSpanId
-	parentSpanId
-	trackConcurrentCalls
-	trackCallerName
-	alertConfiguration
-	startTime
-	callInfo
-	buildInfo
-	validHttpCodeRanges
+	currentTraceIdKey contextKey = iota
+	currentSpanIdKey
+	currentParentSpanIdKey
+	currentTrackConcurrentCallsKey
+	currentTrackCallerNameKey
+	currentAlertConfigurationKey
+	currentStartTimeKey
+	currentCallInfoKey
+	currentBuildInfoKey
+	currentValidHttpCodeRangesKey
 )
 
 var randSource *rand.Rand
@@ -48,7 +49,7 @@ func NewContext(parentCtx context.Context) context.Context {
 // TrackConcurrentCalls triggers the collection of the gauge for concurrent calls of the function.
 // The flag defaults to true.
 func SetTrackConcurrentCalls(ctx context.Context, track bool) context.Context {
-	return context.WithValue(ctx, trackConcurrentCalls, track)
+	return context.WithValue(ctx, currentTrackConcurrentCallsKey, track)
 }
 
 // GetTrackConcurrentCalls returns whether autometrics should track how many concurrent calls the instrumented function observe.
@@ -60,7 +61,7 @@ func GetTrackConcurrentCalls(c context.Context) bool {
 		return true
 	}
 
-	track, ok := c.Value(trackConcurrentCalls).(bool)
+	track, ok := c.Value(currentTrackConcurrentCallsKey).(bool)
 	if !ok {
 		return true
 	}
@@ -73,7 +74,7 @@ func GetTrackConcurrentCalls(c context.Context) bool {
 // TrackCallerName adds a label with the caller name in all the collected metrics.
 // The flag defaults to true.
 func SetTrackCallerName(ctx context.Context, track bool) context.Context {
-	return context.WithValue(ctx, trackCallerName, track)
+	return context.WithValue(ctx, currentTrackCallerNameKey, track)
 }
 
 // GetTrackCallerName returns default information if the context did not contain any build information.
@@ -85,7 +86,7 @@ func GetTrackCallerName(c context.Context) bool {
 		return true
 	}
 
-	track, ok := c.Value(trackCallerName).(bool)
+	track, ok := c.Value(currentTrackCallerNameKey).(bool)
 	if !ok {
 		return true
 	}
@@ -97,7 +98,7 @@ func GetTrackCallerName(c context.Context) bool {
 //
 // AlertConfiguration is an optional configuration to add alerting capabilities to the metrics.
 func SetAlertConfiguration(ctx context.Context, slo AlertConfiguration) context.Context {
-	return context.WithValue(ctx, alertConfiguration, slo)
+	return context.WithValue(ctx, currentAlertConfigurationKey, slo)
 }
 
 // GetAlertConfiguration returns default information if the context did not contain any alerting configuration.
@@ -108,7 +109,7 @@ func GetAlertConfiguration(c context.Context) AlertConfiguration {
 		return AlertConfiguration{}
 	}
 
-	slo, ok := c.Value(alertConfiguration).(AlertConfiguration)
+	slo, ok := c.Value(currentAlertConfigurationKey).(AlertConfiguration)
 	if !ok {
 		return AlertConfiguration{}
 	}
@@ -120,7 +121,7 @@ func GetAlertConfiguration(c context.Context) AlertConfiguration {
 //
 // CallInfo contains all the relevant data for caller information.
 func SetCallInfo(ctx context.Context, build CallInfo) context.Context {
-	return context.WithValue(ctx, callInfo, build)
+	return context.WithValue(ctx, currentCallInfoKey, build)
 }
 
 // GetCallInfo returns default information if the context did not contain any build information.
@@ -131,7 +132,7 @@ func GetCallInfo(c context.Context) CallInfo {
 		return CallInfo{}
 	}
 
-	build, ok := c.Value(callInfo).(CallInfo)
+	build, ok := c.Value(currentCallInfoKey).(CallInfo)
 	if !ok {
 		return CallInfo{}
 	}
@@ -142,8 +143,8 @@ func GetCallInfo(c context.Context) CallInfo {
 // SetStartTime sets the context's [StartTime]
 //
 // StartTime is the start time of a single function execution.
-func SetStartTime(ctx context.Context, startTime time.Time) context.Context {
-	return context.WithValue(ctx, startTime, startTime)
+func SetStartTime(ctx context.Context, newStartTime time.Time) context.Context {
+	return context.WithValue(ctx, currentStartTimeKey, newStartTime)
 }
 
 // GetStartTime returns default current time if the context did not contain any start time.
@@ -154,19 +155,20 @@ func GetStartTime(c context.Context) time.Time {
 		return time.Now()
 	}
 
-	startTime, ok := c.Value(startTime).(time.Time)
+	readStartTime, ok := c.Value(currentStartTimeKey).(time.Time)
 	if !ok {
+		log.Printf("Warning: startTime is not a time.")
 		return time.Now()
 	}
 
-	return startTime
+	return readStartTime
 }
 
 // SetBuildInfo sets the context's [BuildInfo]
 //
 // BuildInfo contains all the relevant data for caller information.
 func SetBuildInfo(ctx context.Context, build BuildInfo) context.Context {
-	return context.WithValue(ctx, buildInfo, build)
+	return context.WithValue(ctx, currentBuildInfoKey, build)
 }
 
 // GetBuildInfo returns default information if the context did not contain any build information.
@@ -177,7 +179,7 @@ func GetBuildInfo(c context.Context) BuildInfo {
 		return BuildInfo{}
 	}
 
-	build, ok := c.Value(buildInfo).(BuildInfo)
+	build, ok := c.Value(currentBuildInfoKey).(BuildInfo)
 	if !ok {
 		return BuildInfo{}
 	}
@@ -187,7 +189,7 @@ func GetBuildInfo(c context.Context) BuildInfo {
 
 // SetTraceID sets the context's [TraceID]
 func SetTraceID(ctx context.Context, tid TraceID) context.Context {
-	return context.WithValue(ctx, currentTraceId, tid)
+	return context.WithValue(ctx, currentTraceIdKey, tid)
 }
 
 // GetTraceID returns (_, false) if the context did not contain any trace id.
@@ -195,13 +197,13 @@ func GetTraceID(c context.Context) (TraceID, bool) {
 	if c == nil {
 		return TraceID{}, false
 	}
-	tid, ok := c.Value(currentTraceId).(TraceID)
+	tid, ok := c.Value(currentTraceIdKey).(TraceID)
 	return tid, ok
 }
 
 // SetSpanID sets the context's [SpanID]
 func SetSpanID(ctx context.Context, sid SpanID) context.Context {
-	return context.WithValue(ctx, currentSpanId, sid)
+	return context.WithValue(ctx, currentSpanIdKey, sid)
 }
 
 // GetSpanID returns (_, false) if the context did not contain the current span id.
@@ -209,13 +211,13 @@ func GetSpanID(c context.Context) (SpanID, bool) {
 	if c == nil {
 		return SpanID{}, false
 	}
-	sid, ok := c.Value(currentSpanId).(SpanID)
+	sid, ok := c.Value(currentSpanIdKey).(SpanID)
 	return sid, ok
 }
 
 // SetParentSpanID sets the context's span's parent [SpanID]
 func SetParentSpanID(ctx context.Context, sid SpanID) context.Context {
-	return context.WithValue(ctx, parentSpanId, sid)
+	return context.WithValue(ctx, currentParentSpanIdKey, sid)
 }
 
 // GetParentSpanID returns (_, false) if the context did not contain the parent's span id (including when we are in the root span).
@@ -223,7 +225,7 @@ func GetParentSpanID(c context.Context) (SpanID, bool) {
 	if c == nil {
 		return SpanID{}, false
 	}
-	sid, ok := c.Value(parentSpanId).(SpanID)
+	sid, ok := c.Value(currentParentSpanIdKey).(SpanID)
 	return sid, ok
 }
 
@@ -278,7 +280,7 @@ func WithNewTraceId(ctx context.Context) context.Context {
 	if ctx == nil {
 		ctx = context.Background()
 	}
-	return context.WithValue(ctx, currentTraceId, GenerateTraceId())
+	return context.WithValue(ctx, currentTraceIdKey, GenerateTraceId())
 }
 
 // FillBuildInfo adds the relevant build information to the current context.
@@ -312,7 +314,7 @@ func (r InclusiveIntRange) Contains(value int) bool {
 //
 // This setting is only useful when used in conjunction with the [github.com/autometrics-dev/autometrics-go/pkg/middleware/http/middleware.Autometrics] wrapper.
 func SetValidHttpCodeRanges(ctx context.Context, ranges []InclusiveIntRange) context.Context {
-	return context.WithValue(ctx, parentSpanId, ranges)
+	return context.WithValue(ctx, currentParentSpanIdKey, ranges)
 }
 
 // GetValidHttpCodeRanges returns the list of values that should be considered as "ok" by Autometrics when computing the success rate of a handler.
@@ -326,7 +328,7 @@ func GetValidHttpCodeRanges(c context.Context) []InclusiveIntRange {
 		}}
 	}
 
-	ranges, ok := c.Value(parentSpanId).([]InclusiveIntRange)
+	ranges, ok := c.Value(currentParentSpanIdKey).([]InclusiveIntRange)
 	if !ok {
 		return []InclusiveIntRange{}
 	}

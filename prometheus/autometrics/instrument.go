@@ -59,6 +59,7 @@ func Instrument(ctx context.Context, err *error) {
 		CommitLabel:            buildInfo.Commit,
 		VersionLabel:           buildInfo.Version,
 	}).(prometheus.ExemplarAdder).AddWithExemplar(1, info)
+
 	functionCallsDuration.With(prometheus.Labels{
 		FunctionLabel:          callInfo.FuncName,
 		ModuleLabel:            callInfo.ModuleName,
