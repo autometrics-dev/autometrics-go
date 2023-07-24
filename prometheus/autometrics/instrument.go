@@ -3,7 +3,6 @@ package autometrics // import "github.com/autometrics-dev/autometrics-go/prometh
 import (
 	"context"
 	"encoding/hex"
-	"fmt"
 	"strconv"
 	"time"
 

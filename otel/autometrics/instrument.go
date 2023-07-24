@@ -2,7 +2,6 @@ package autometrics // import "github.com/autometrics-dev/autometrics-go/otel/au
 
 import (
 	"context"
-	"fmt"
 	"strconv"
 	"time"
 
