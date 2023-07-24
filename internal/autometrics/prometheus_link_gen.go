@@ -55,9 +55,10 @@ func addBuildInfoLabels() string {
 }
 
 func requestRateQuery(counterName, labelKey, labelValue string) string {
-	return fmt.Sprintf("sum by (%s, %s, %s, %s) (rate(%s{%s=\"%s\"}[5m]) %s)",
+	return fmt.Sprintf("sum by (%s, %s, %s, %s, %s) (rate(%s{%s=\"%s\"}[5m]) %s)",
 		prometheus.FunctionLabel,
 		prometheus.ModuleLabel,
+		prometheus.ServiceNameLabel,
 		prometheus.VersionLabel,
 		prometheus.CommitLabel,
 		counterName,
@@ -68,9 +69,10 @@ func requestRateQuery(counterName, labelKey, labelValue string) string {
 }
 
 func errorRatioQuery(counterName, labelKey, labelValue string) string {
-	return fmt.Sprintf("(sum by (%s, %s, %s, %s) (rate(%s{%s=\"%s\",%s=\"error\"}[5m]) %s)) / (%s)",
+	return fmt.Sprintf("(sum by (%s, %s, %s, %s, %s) (rate(%s{%s=\"%s\",%s=\"error\"}[5m]) %s)) / (%s)",
 		prometheus.FunctionLabel,
 		prometheus.ModuleLabel,
+		prometheus.ServiceNameLabel,
 		prometheus.VersionLabel,
 		prometheus.CommitLabel,
 		counterName,
@@ -83,9 +85,10 @@ func errorRatioQuery(counterName, labelKey, labelValue string) string {
 }
 
 func latencyQuery(bucketName, labelKey, labelValue string) string {
-	latency := fmt.Sprintf("sum by (le, %s, %s, %s, %s) (rate(%s_bucket{%s=\"%s\"}[5m]) %s)",
+	latency := fmt.Sprintf("sum by (le, %s, %s, %s, %s, %s) (rate(%s_bucket{%s=\"%s\"}[5m]) %s)",
 		prometheus.FunctionLabel,
 		prometheus.ModuleLabel,
+		prometheus.ServiceNameLabel,
 		prometheus.VersionLabel,
 		prometheus.CommitLabel,
 		bucketName,
@@ -103,9 +106,10 @@ func latencyQuery(bucketName, labelKey, labelValue string) string {
 }
 
 func concurrentCallsQuery(gaugeName, labelKey, labelValue string) string {
-	return fmt.Sprintf("sum by (%s, %s, %s, %s) (%s{%s=\"%s\"} %s)",
+	return fmt.Sprintf("sum by (%s, %s, %s, %s, %s) (%s{%s=\"%s\"} %s)",
 		prometheus.FunctionLabel,
 		prometheus.ModuleLabel,
+		prometheus.ServiceNameLabel,
 		prometheus.VersionLabel,
 		prometheus.CommitLabel,
 		gaugeName,

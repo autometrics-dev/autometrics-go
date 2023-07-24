@@ -51,6 +51,8 @@ services:
     build:
       context: .
       dockerfile: examples/otel/Dockerfile
+    environment:
+      AUTOMETRICS_SERVICE_NAME: open-telemetry-autometrics-demo
     container_name: web-server-otel
     restart: unless-stopped
     expose:

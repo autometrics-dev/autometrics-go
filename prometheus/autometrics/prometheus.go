@@ -1,6 +1,8 @@
 package autometrics // import "github.com/autometrics-dev/autometrics-go/prometheus/autometrics"
 
 import (
+	"os"
+
 	"github.com/autometrics-dev/autometrics-go/pkg/autometrics"
 	"github.com/prometheus/client_golang/prometheus"
 )
@@ -53,7 +55,7 @@ const (
 	// In the case of success objectives, it describes the percentage of calls
 	// that must be successful (i.e. have their [ResultLabel] be 'ok').
 	TargetSuccessRateLabel = "objective_percentile"
-	// SloLabel is the prometheus label that describes the name of the Service Level Objective.
+	// SloNameLabel is the prometheus label that describes the name of the Service Level Objective.
 	SloNameLabel = "objective_name"
 
 	// CommitLabel is the prometheus label that describes the commit of the monitored codebase.
@@ -62,6 +64,9 @@ const (
 	VersionLabel = "version"
 	// BranchLabel is the prometheus label that describes the branch of the build of the monitored codebase.
 	BranchLabel = "branch"
+
+	// ServiceNameLabel is the prometheus label that describes the name of the service being monitored
+	ServiceNameLabel = "service_name"
 
 	traceIdExemplar      = "trace_id"
 	spanIdExemplar       = "span_id"
@@ -87,6 +92,14 @@ func Init(reg *prometheus.Registry, histogramBuckets []float64, buildInformation
 	autometrics.SetCommit(buildInformation.Commit)
 	autometrics.SetVersion(buildInformation.Version)
 	autometrics.SetBranch(buildInformation.Branch)
+
+	if serviceName, ok := os.LookupEnv(autometrics.AutometricsServiceNameEnv); ok {
+		autometrics.SetService(serviceName)
+	} else if serviceName, ok := os.LookupEnv(autometrics.OTelServiceNameEnv); ok {
+		autometrics.SetService(serviceName)
+	} else if buildInformation.Service != "" {
+		autometrics.SetService(buildInformation.Service)
+	}
 
 	functionCallsCount = prometheus.NewCounterVec(prometheus.CounterOpts{
 		Name: FunctionCallsCountName,

@@ -52,6 +52,8 @@ services:
     build:
       context: .
       dockerfile: examples/web/Dockerfile
+    environment:
+      AUTOMETRICS_SERVICE_NAME: prometheus-autometrics-demo
     container_name: web-server-prom
     restart: unless-stopped
     expose:
