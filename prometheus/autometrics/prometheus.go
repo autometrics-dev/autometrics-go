@@ -15,7 +15,7 @@ var (
 
 const (
 	// FunctionCallsCountName is the name of the prometheus metric for the counter of calls to specific functions.
-	FunctionCallsCountName = "function_calls_count_total"
+	FunctionCallsCountName = "function_calls_total"
 	// FunctionCallsDurationName is the name of the prometheus metric for the duration histogram of calls to specific functions.
 	FunctionCallsDurationName = "function_calls_duration"
 	// FunctionCallsConcurrentName is the name of the prometheus metric for the number of simulateneously active calls to specific functions.

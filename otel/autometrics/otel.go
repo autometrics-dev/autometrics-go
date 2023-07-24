@@ -24,7 +24,7 @@ var (
 
 const (
 	// FunctionCallsCountName is the name of the openTelemetry metric for the counter of calls to specific functions.
-	FunctionCallsCountName = "function.calls.count"
+	FunctionCallsCountName = "function.calls"
 	// FunctionCallsDurationName is the name of the openTelemetry metric for the duration histogram of calls to specific functions.
 	FunctionCallsDurationName = "function.calls.duration"
 	// FunctionCallsConcurrentName is the name of the openTelemetry metric for the number of simulateneously active calls to specific functions.
