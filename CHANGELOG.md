@@ -27,11 +27,19 @@ versioning](https://go.dev/doc/modules/version-numbers).
 - The Go generator now removes all the old defer statements in function bodies before re-adding
   only the necessary ones. This means calling `go generate` on a file that has no annotation
   at all effectively cleans up the whole file from autometrics.
-
+- All metrics now have a `service_name` label, which can either be compiled in `Init` call, or
+  filled at runtime from environment variables (in order of precedence):
+  + `AUTOMETRICS_SERVICE_NAME`
+  + `OTEL_SERVICE_NAME`
+  
 ### Changed
 
 - Instead of returning an error when the go generator does not find the autometrics import
   in a file, it will add the needed import itself in the file.
+- Function calls metric has been renamed from `function_calls_count_total` to `function_calls_total`
+- Function calls duration histogram has been renamed from `function_calls_duration` 
+  to `function_calls_duration_seconds`
+- Function caller label has been split from `caller` to `caller_function` and `caller_label`
 
 ### Fixed
 
