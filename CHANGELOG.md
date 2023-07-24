@@ -26,6 +26,7 @@ versioning](https://go.dev/doc/modules/version-numbers).
 ### Fixed
 
 - Code generation now works when `autometrics` is imported with the `_` alias
+- Fix regression for latency data collection that only registered 0 microsecond latencies
 
 ### Security
 
