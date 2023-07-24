@@ -4,7 +4,7 @@
 [![Discord Shield](https://discordapp.com/api/guilds/950489382626951178/widget.png?style=shield)](https://discord.gg/kHtwcH8As9)
 
 Metrics are a powerful and cost-efficient tool for understanding the health and
-performance of your code in production. But it's hard to decide what metrics to
+performance of your code in production, but it's hard to decide what metrics to
 track and even harder to write queries to understand the data.
 
 Autometrics is a [Go
@@ -34,28 +34,6 @@ help you quickly identify and debug issues in production.
 
 See [autometrics.dev](https://docs.autometrics.dev/) for more details on the ideas behind autometrics.
 
-**Table of Contents**
-
-- [Example](#example)
-- [Quickstart](#quickstart)
-  - [1. Install the go generator.](#1-install-the-go-generator)
-  - [2. Import the libraries and initialize the metrics](#2-import-the-libraries-and-initialize-the-metrics)
-  - [3. Add directives for each function you want to instrument](#3-add-directives-for-each-function-you-want-to-instrument)
-    - [For error-returning functions](#for-error-returning-functions)
-    - [For HTTP handler functions](#for-http-handler-functions)
-  - [4. Generate the documentation and instrumentation code](#4-generate-the-documentation-and-instrumentation-code)
-  - [5. Expose metrics outside](#5-expose-metrics-outside)
-- [Optional advanced features](#optional-advanced-features)
-  - [Generate alerts automatically](#generate-alerts-automatically)
-  - [Exemplar support](#exemplar-support)
-  - [OpenTelemetry Support](#opentelemetry-support)
-  - [Git hook](#git-hook)
-- [Tips and tricks](#tips-and-tricks)
-  - [Make generated links point to different Prometheus instances](#make-generated-links-point-to-different-prometheus-instances)
-  - [Remove the documentation](#remove-the-documentation)
-- [Contributing](#contributing)
-
-
 ## Example
 
 ![Documentation comments of instrumented function is augmented with links](./assets/codium-screenshot-example.png)
@@ -82,7 +60,7 @@ file](./examples/web/cmd/main.go) in your editor.
 There is a one-time setup phase to prime the code for autometrics. Once this
 phase is accomplished, only calling `go generate` is necessary.
 
-#### 1. Install the go generator.
+### 1. Install the go generator.
 
 The generator is the binary in cmd/autometrics, so the easiest way to get it is
 to install it through go:
@@ -102,7 +80,7 @@ GOBIN in PATH
 ```
 </details>
 
-#### 2. Import the libraries and initialize the metrics
+### 2. Import the libraries and initialize the metrics
 
 In the main entrypoint of your program, you need to both add package
 
@@ -126,7 +104,7 @@ Everything in `BuildInfo` is optional. It will add relevant information on the
 metrics for better intelligence. You can use any string variable whose value is
 injected at build time by `ldflags` for example, or use environment variables.
 
-#### 3. Add directives for each function you want to instrument
+### 3. Add directives for each function you want to instrument
 
 > **Warning**
 > You must both add the `//go:generate` directive, and one `//autometrics:inst`
@@ -145,14 +123,14 @@ subsection to see details:
 
 Once it is done, you can call the [generator](#4-generate-the-documentation-and-instrumentation-code)
 
-##### For error-returning functions
+#### For error-returning functions
 
 <details><summary><i>Expand to instrument error returning functions</i></summary>
 
 Given a starting function like:
 
 ```go
-func AddUser(args interface{}) error {
+func AddUser(args any) error {
         // Do stuff
         return nil
 }
@@ -162,8 +140,8 @@ The manual changes you need to do are:
 
 ```patch
 +//autometrics:inst
--func AddUser(args interface{}) error {
-+func AddUser(args interface{}) (err error) {
+-func AddUser(args any) error {
++func AddUser(args any) (err error) {
         // Do stuff
         return nil
 }
@@ -177,7 +155,7 @@ _must_ name the error return value. This is why we recommend to name the error
 value you return for the function you want to instrument.
 </details>
 
-##### For HTTP handler functions
+#### For HTTP handler functions
 
 <details><summary><i>Expand to instrument HTTP handlers functions</i></summary>
 
@@ -221,7 +199,7 @@ come as needed/requested! Don't hesitate to create issues in the repository.
 middleware in the stack.
 </details>
 
-#### 4. Generate the documentation and instrumentation code
+### 4. Generate the documentation and instrumentation code
 
 You can now call `go generate`:
 
@@ -240,7 +218,7 @@ target](#make-generated-links-point-to-different-prometheus-instances) of
 generated links, or [disabling doc generation](#remove-the-documentation) to
 keep only instrumentation
 
-#### 5. Expose metrics outside
+### 5. Expose metrics outside
 
 The last step now is to actually expose the generated metrics to the Prometheus instance.
 
@@ -300,7 +278,7 @@ Change the annotation of the function to automatically generate alerts for it:
 
 ``` go
 //autometrics:inst --slo "Api" --success-target 90
-func AddUser(args interface{}) (err error) {
+func AddUser(args any) (err error) {
         // Do stuff
         return nil
 }
