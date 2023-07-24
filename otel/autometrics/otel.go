@@ -151,6 +151,7 @@ func Init(meterName string, histogramBuckets []float64, buildInformation BuildIn
 			attribute.Key(CommitLabel).String(buildInformation.Commit),
 			attribute.Key(VersionLabel).String(buildInformation.Version),
 			attribute.Key(BranchLabel).String(buildInformation.Branch),
+			attribute.Key(ServiceNameLabel).String(autometrics.GetService()),
 		}...)
 
 	return nil

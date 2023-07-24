@@ -103,20 +103,20 @@ func Init(reg *prometheus.Registry, histogramBuckets []float64, buildInformation
 
 	functionCallsCount = prometheus.NewCounterVec(prometheus.CounterOpts{
 		Name: FunctionCallsCountName,
-	}, []string{FunctionLabel, ModuleLabel, CallerFunctionLabel, CallerModuleLabel, ResultLabel, TargetSuccessRateLabel, SloNameLabel, CommitLabel, VersionLabel, BranchLabel})
+	}, []string{FunctionLabel, ModuleLabel, CallerFunctionLabel, CallerModuleLabel, ResultLabel, TargetSuccessRateLabel, SloNameLabel, CommitLabel, VersionLabel, BranchLabel, ServiceNameLabel})
 
 	functionCallsDuration = prometheus.NewHistogramVec(prometheus.HistogramOpts{
 		Name:    FunctionCallsDurationName,
 		Buckets: histogramBuckets,
-	}, []string{FunctionLabel, ModuleLabel, CallerFunctionLabel, CallerModuleLabel, TargetLatencyLabel, TargetSuccessRateLabel, SloNameLabel, CommitLabel, VersionLabel, BranchLabel})
+	}, []string{FunctionLabel, ModuleLabel, CallerFunctionLabel, CallerModuleLabel, TargetLatencyLabel, TargetSuccessRateLabel, SloNameLabel, CommitLabel, VersionLabel, BranchLabel, ServiceNameLabel})
 
 	functionCallsConcurrent = prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Name: FunctionCallsConcurrentName,
-	}, []string{FunctionLabel, ModuleLabel, CallerFunctionLabel, CallerModuleLabel, CommitLabel, VersionLabel, BranchLabel})
+	}, []string{FunctionLabel, ModuleLabel, CallerFunctionLabel, CallerModuleLabel, CommitLabel, VersionLabel, BranchLabel, ServiceNameLabel})
 
 	buildInfo = prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Name: BuildInfoName,
-	}, []string{CommitLabel, VersionLabel, BranchLabel})
+	}, []string{CommitLabel, VersionLabel, BranchLabel, ServiceNameLabel})
 
 	if reg != nil {
 		reg.MustRegister(functionCallsCount)
@@ -131,9 +131,10 @@ func Init(reg *prometheus.Registry, histogramBuckets []float64, buildInformation
 	}
 
 	buildInfo.With(prometheus.Labels{
-		CommitLabel:  buildInformation.Commit,
-		VersionLabel: buildInformation.Version,
-		BranchLabel:  buildInformation.Branch,
+		CommitLabel:      buildInformation.Commit,
+		VersionLabel:     buildInformation.Version,
+		BranchLabel:      buildInformation.Branch,
+		ServiceNameLabel: autometrics.GetService(),
 	}).Set(1)
 
 	return nil

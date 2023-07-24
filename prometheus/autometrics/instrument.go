@@ -54,6 +54,7 @@ func Instrument(ctx context.Context, err *error) {
 		BranchLabel:            buildInfo.Branch,
 		CommitLabel:            buildInfo.Commit,
 		VersionLabel:           buildInfo.Version,
+		ServiceNameLabel:       buildInfo.Service,
 	}).(prometheus.ExemplarAdder).AddWithExemplar(1, info)
 
 	functionCallsDuration.With(prometheus.Labels{
@@ -67,6 +68,7 @@ func Instrument(ctx context.Context, err *error) {
 		BranchLabel:            buildInfo.Branch,
 		CommitLabel:            buildInfo.Commit,
 		VersionLabel:           buildInfo.Version,
+		ServiceNameLabel:       buildInfo.Service,
 	}).(prometheus.ExemplarObserver).ObserveWithExemplar(time.Since(am.GetStartTime(ctx)).Seconds(), info)
 
 	if am.GetTrackConcurrentCalls(ctx) {
@@ -78,6 +80,7 @@ func Instrument(ctx context.Context, err *error) {
 			BranchLabel:         buildInfo.Branch,
 			CommitLabel:         buildInfo.Commit,
 			VersionLabel:        buildInfo.Version,
+			ServiceNameLabel:    buildInfo.Service,
 		}).Add(-1)
 	}
 }
@@ -102,6 +105,7 @@ func PreInstrument(ctx context.Context) context.Context {
 			BranchLabel:         buildInfo.Branch,
 			CommitLabel:         buildInfo.Commit,
 			VersionLabel:        buildInfo.Version,
+			ServiceNameLabel:    buildInfo.Service,
 		}).Add(1)
 	}
 
