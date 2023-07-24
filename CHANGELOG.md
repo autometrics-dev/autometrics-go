@@ -6,7 +6,21 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Go module
 versioning](https://go.dev/doc/modules/version-numbers).
 
-## [Unreleased](https://github.com/autometrics-dev/autometrics-go/compare/v0.6.0...main)
+## [Unreleased](https://github.com/autometrics-dev/autometrics-go/compare/v0.6.1...main)
+
+### Added
+
+### Changed
+
+### Deprecated
+
+### Removed
+
+### Fixed
+
+### Security
+
+## [0.6.1](https://github.com/autometrics-dev/autometrics-go/releases/tag/v0.6.1) 2023-07-24
 
 ### Added
 
@@ -19,16 +33,10 @@ versioning](https://go.dev/doc/modules/version-numbers).
 - Instead of returning an error when the go generator does not find the autometrics import
   in a file, it will add the needed import itself in the file.
 
-### Deprecated
-
-### Removed
-
 ### Fixed
 
 - Code generation now works when `autometrics` is imported with the `_` alias
 - Fix regression for latency data collection that only registered 0 microsecond latencies
-
-### Security
 
 ## [0.6.0](https://github.com/autometrics-dev/autometrics-go/releases/tag/v0.6.0) 2023-06-06
 
