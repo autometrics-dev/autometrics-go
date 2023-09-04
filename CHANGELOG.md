@@ -6,7 +6,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Go module
 versioning](https://go.dev/doc/modules/version-numbers).
 
-## [Unreleased](https://github.com/autometrics-dev/autometrics-go/compare/v0.6.1...main)
+## [Unreleased](https://github.com/autometrics-dev/autometrics-go/compare/v0.7.0...main)
 
 ### Added
 
@@ -20,6 +20,22 @@ versioning](https://go.dev/doc/modules/version-numbers).
 
 ### Security
 
+## [0.7.0](https://github.com/autometrics-dev/autometrics-go/releases/tag/v0.7.0) 2023-09-04
+
+### Added
+
+- All metrics now have a `service_name` label, which can either be compiled in `Init` call, or
+  filled at runtime from environment variables (in order of precedence):
+  + `AUTOMETRICS_SERVICE_NAME`
+  + `OTEL_SERVICE_NAME`
+
+### Changed
+
+- Function calls metric has been renamed from `function_calls_count_total` to `function_calls_total`
+- Function calls duration histogram has been renamed from `function_calls_duration` 
+  to `function_calls_duration_seconds`
+- Function caller label has been split from `caller` to `caller_function` and `caller_label`
+
 ## [0.6.1](https://github.com/autometrics-dev/autometrics-go/releases/tag/v0.6.1) 2023-07-24
 
 ### Added
@@ -27,19 +43,11 @@ versioning](https://go.dev/doc/modules/version-numbers).
 - The Go generator now removes all the old defer statements in function bodies before re-adding
   only the necessary ones. This means calling `go generate` on a file that has no annotation
   at all effectively cleans up the whole file from autometrics.
-- All metrics now have a `service_name` label, which can either be compiled in `Init` call, or
-  filled at runtime from environment variables (in order of precedence):
-  + `AUTOMETRICS_SERVICE_NAME`
-  + `OTEL_SERVICE_NAME`
   
 ### Changed
 
 - Instead of returning an error when the go generator does not find the autometrics import
   in a file, it will add the needed import itself in the file.
-- Function calls metric has been renamed from `function_calls_count_total` to `function_calls_total`
-- Function calls duration histogram has been renamed from `function_calls_duration` 
-  to `function_calls_duration_seconds`
-- Function caller label has been split from `caller` to `caller_function` and `caller_label`
 
 ### Fixed
 
