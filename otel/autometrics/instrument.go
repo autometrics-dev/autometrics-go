@@ -7,6 +7,7 @@ import (
 
 	am "github.com/autometrics-dev/autometrics-go/pkg/autometrics"
 	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/metric"
 )
 
 // Instrument called in a defer statement wraps the body of a function
@@ -15,6 +16,10 @@ import (
 // The first argument SHOULD be a call to PreInstrument so that
 // the "concurrent calls" gauge is correctly setup.
 func Instrument(ctx context.Context, err *error) {
+	if amCtx.Err() != nil {
+		return
+	}
+
 	result := "ok"
 
 	if err != nil && *err != nil {
@@ -41,7 +46,7 @@ func Instrument(ctx context.Context, err *error) {
 	}
 
 	functionCallsCount.Add(ctx, 1,
-		[]attribute.KeyValue{
+		metric.WithAttributes([]attribute.KeyValue{
 			attribute.Key(FunctionLabel).String(callInfo.FuncName),
 			attribute.Key(ModuleLabel).String(callInfo.ModuleName),
 			attribute.Key(CallerFunctionLabel).String(callInfo.ParentFuncName),
@@ -53,9 +58,10 @@ func Instrument(ctx context.Context, err *error) {
 			attribute.Key(VersionLabel).String(buildInfo.Version),
 			attribute.Key(BranchLabel).String(buildInfo.Branch),
 			attribute.Key(ServiceNameLabel).String(buildInfo.Service),
-		}...)
+			attribute.Key(JobNameLabel).String(am.GetPushJobName()),
+		}...))
 	functionCallsDuration.Record(ctx, time.Since(am.GetStartTime(ctx)).Seconds(),
-		[]attribute.KeyValue{
+		metric.WithAttributes([]attribute.KeyValue{
 			attribute.Key(FunctionLabel).String(callInfo.FuncName),
 			attribute.Key(ModuleLabel).String(callInfo.ModuleName),
 			attribute.Key(CallerFunctionLabel).String(callInfo.ParentFuncName),
@@ -67,11 +73,12 @@ func Instrument(ctx context.Context, err *error) {
 			attribute.Key(VersionLabel).String(buildInfo.Version),
 			attribute.Key(BranchLabel).String(buildInfo.Branch),
 			attribute.Key(ServiceNameLabel).String(buildInfo.Service),
-		}...)
+			attribute.Key(JobNameLabel).String(am.GetPushJobName()),
+		}...))
 
 	if am.GetTrackConcurrentCalls(ctx) {
 		functionCallsConcurrent.Add(ctx, -1,
-			[]attribute.KeyValue{
+			metric.WithAttributes([]attribute.KeyValue{
 				attribute.Key(FunctionLabel).String(callInfo.FuncName),
 				attribute.Key(ModuleLabel).String(callInfo.ModuleName),
 				attribute.Key(CallerFunctionLabel).String(callInfo.ParentFuncName),
@@ -80,7 +87,8 @@ func Instrument(ctx context.Context, err *error) {
 				attribute.Key(VersionLabel).String(buildInfo.Version),
 				attribute.Key(BranchLabel).String(buildInfo.Branch),
 				attribute.Key(ServiceNameLabel).String(buildInfo.Service),
-			}...)
+				attribute.Key(JobNameLabel).String(am.GetPushJobName()),
+			}...))
 	}
 }
 
@@ -89,6 +97,10 @@ func Instrument(ctx context.Context, err *error) {
 // It is meant to be called as the first argument to Instrument in a
 // defer call.
 func PreInstrument(ctx context.Context) context.Context {
+	if amCtx.Err() != nil {
+		return nil
+	}
+
 	callInfo := am.CallerInfo()
 	ctx = am.SetCallInfo(ctx, callInfo)
 	ctx = am.FillBuildInfo(ctx)
@@ -97,7 +109,7 @@ func PreInstrument(ctx context.Context) context.Context {
 	if am.GetTrackConcurrentCalls(ctx) {
 		buildInfo := am.GetBuildInfo(ctx)
 		functionCallsConcurrent.Add(ctx, 1,
-			[]attribute.KeyValue{
+			metric.WithAttributes([]attribute.KeyValue{
 				attribute.Key(FunctionLabel).String(callInfo.FuncName),
 				attribute.Key(ModuleLabel).String(callInfo.ModuleName),
 				attribute.Key(CallerFunctionLabel).String(callInfo.ParentFuncName),
@@ -106,7 +118,8 @@ func PreInstrument(ctx context.Context) context.Context {
 				attribute.Key(VersionLabel).String(buildInfo.Version),
 				attribute.Key(BranchLabel).String(buildInfo.Branch),
 				attribute.Key(ServiceNameLabel).String(buildInfo.Service),
-			}...)
+				attribute.Key(JobNameLabel).String(am.GetPushJobName()),
+			}...))
 	}
 
 	ctx = am.SetStartTime(ctx, time.Now())

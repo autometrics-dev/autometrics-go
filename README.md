@@ -93,11 +93,16 @@ import (
 And then in your main function initialize the metrics
 
 ``` go
-	autometrics.Init(
+	shutdown, err := autometrics.Init(
 		nil,
 		autometrics.DefBuckets,
 		autometrics.BuildInfo{Version: "0.4.0", Commit: "anySHA", Branch: "", Service: "myApp"},
+		nil,
 	)
+	if err != nil {
+		log.Fatalf("could not initialize autometrics: %s", err)
+	}
+	defer shutdown(nil)
 ```
 
 Everything in `BuildInfo` is optional. It will add relevant information on the
@@ -237,10 +242,11 @@ import (
 
 
 func main() {
-	autometrics.Init(
+	shutdown, err := autometrics.Init(
 		nil,
 		autometrics.DefBuckets,
 		autometrics.BuildInfo{Version: "0.4.0", Commit: "anySHA", Branch: "", Service: "myApp"},
+		nil,
 	)
 	http.Handle("/metrics", promhttp.Handler())
 }
@@ -346,11 +352,12 @@ the `Init` function takes a meter name for the `otel_scope` label of the exporte
 metric. You can use the name of the application or its version for example
 
 ``` patch
-	autometrics.Init(
+	shutdown, err := autometrics.Init(
 -		nil,
 +		"myApp/v2/prod",
 		autometrics.DefBuckets,
 		autometrics.BuildInfo{ Version: "2.1.37", Commit: "anySHA", Branch: "", Service: "myApp" },
+		nil,
 	)
 ```
 
@@ -360,6 +367,68 @@ metric. You can use the name of the application or its version for example
 -//go:generate autometrics
 +//go:generate autometrics --otel
 ```
+
+#### Push-based workflows
+
+<details>
+<summary><i>Why would I use a push-based workflow?</i></summary>
+
+If you have an auto-scaled service (with instances spinning up and down),
+maintaining the configuration/discovery of instances on the Prometheus side of
+things can be hard. Using a push-based workflow inverts the burden of
+configuration: all your instances generate a specific ID, and they just need to
+push metrics to a given URL. So the main advantages of a push-based workflow
+appear when the the set of machines producing metrics is dynamic:
+
+- Your Prometheus configuration does not need to be dynamic anymore, it's "set
+  and forget" again
+- No need to configure service discovery separately (which can be error-prone)
+
+
+It can be summarized with one sentence. <b>The monitoring stack
+(Prometheus/OpenTelemetry collector) does not need to know the infrastructure of
+application deployment; nor does the application code need to know the
+infrastructure of the monitoring stack. Decoupling prevents
+configuration-rot.</b>
+
+</details>
+
+If you don't want to/cannot configure your Prometheus instance to scrape the
+instrumented code, Autometrics provides a way to push metrics instead of relying
+on a polling collection process.
+
+> **Note**
+> It is strongly advised to use the OpenTelemetry variant of Autometrics to support push-based metric
+collection. Prometheus push gateways make aggregation of data across multiple sources harder.
+
+_How can I use a push-based workflow with Autometrics?_
+
+If you have a Prometheus [push
+gateway](https://prometheus.io/docs/instrumenting/pushing/) or an OTLP
+[collector](https://opentelemetry.io/docs/collector/) setup with an accessible
+URL, then you can directly switch from metric polling to metric pushing by
+passing a non `nil` argument to `autometrics.Init` for the `pushConfiguration`:
+
+``` patch
+	shutdown, err := autometrics.Init(
+		"myApp/v2/prod",
+		autometrics.DefBuckets,
+		autometrics.BuildInfo{ Version: "2.1.37", Commit: "anySHA", Branch: "", Service: "myApp" },
+-		nil,
++		&autometrics.PushConfiguration{
++			CollectorURL: "https://collector.example.com",
++			JobName: "instance_2",                         // You can leave the JobName out to let autometrics generate one
++			Period: 1 * time.Second,                       // Period is only relevant when using OpenTelemetry implementation
++			Timeout: 500 * time.Millisecond,               // Timeout is only relevant when using OpenTelementry implementation
++		},
+	)
+```
+
+> **Note**
+> If you do not want to setup an OTLP collector or a Prometheus push-gateway yourself, you
+can contact us so we can setup a managed instance of Prometheus for you. We will effectively
+give you collector URLs, that will work with both OpenTelemetry and Prometheus; and can be 
+visualized easily with our explorer as well!
 
 #### Git hook
 

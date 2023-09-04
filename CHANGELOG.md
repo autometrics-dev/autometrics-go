@@ -10,7 +10,34 @@ versioning](https://go.dev/doc/modules/version-numbers).
 
 ### Added
 
+- [Prometheus collector] `Init` call now takes an optional `PushConfiguration`
+  argument that allows to push metrics to PushGateway, _on top_ of exposing the
+  metrics to an endpoint.
+  Using the push gateway is very useful to automatically send metrics when a
+  web service is autoscaled and has replicas being created or deleted during
+  normal operations.
+  + the `CollectorURL` in the `PushConfiguration` is mandatory and follows the
+    API of `prometheus/push.New`
+  + the `JobName` parameter is optional, and `autometrics` will do a best effort
+    to fill the value.
+
+- [OpenTelemetry collector] `Init` call now takes an optional `PushConfiguration`
+  argument that allows to push metrics in OTLP format, _instead_ of exposing the
+  metrics to a Promtheus-format endpoint.
+  Using an OTLP collector is very useful to automatically send metrics when a
+  web service is autoscaled and has replicas being created or deleted during
+  normal operations.
+  + the `CollectorURL` in the `PushConfiguration` is mandatory
+  + the `JobName` parameter is optional, and `autometrics` will do a best effort
+    to fill the value.
+
 ### Changed
+
+- [All] `autometrics.Init` function (for both `prometheus` and `otel` variants)
+  take an extra optional argument. See the `Added` section above for details.
+- [All] `autometrics.Init` function (for both `prometheus` and `otel` variants)
+  now return a [CancelCauseFunc](https://pkg.go.dev/context#CancelCauseFunc)
+  to cleanly shutdown (early or as a normal shutdown process) all metric collection.
 
 ### Deprecated
 

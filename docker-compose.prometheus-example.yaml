@@ -53,7 +53,8 @@ services:
       context: .
       dockerfile: examples/web/Dockerfile
     environment:
-      AUTOMETRICS_SERVICE_NAME: prometheus-autometrics-demo
+      AUTOMETRICS_SERVICE_NAME: autometrics_prometheus
+      AUTOMETRICS_PUSH_GATEWAY_URL: $AUTOMETRICS_PUSH_GATEWAY_URL
     container_name: web-server-prom
     restart: unless-stopped
     expose:

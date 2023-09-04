@@ -10,7 +10,7 @@ COPY . ./
 
 RUN go mod download
 
-WORKDIR /app/examples/web
+WORKDIR /app/examples/otel
 
 RUN go generate cmd/main.go
 

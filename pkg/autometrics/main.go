@@ -55,6 +55,27 @@ type BuildInfo struct {
 	Service string
 }
 
+// PushConfiguration holds the information necessary to push metrics to an OTEL Collector.
+type PushConfiguration struct {
+	// URL of the collector to push to. It must be non-empty if this struct is built.
+	// You can use just host:port or ip:port as url, in which case “http://” is added automatically.
+	// Alternatively, include the schema in the URL. However, do not include the “/metrics/jobs/…” part.
+	CollectorURL string
+
+	// JobName is the name of the job to use when pushing metrics.
+	//
+	// Good values for this (taking into account replicated services) are for example:
+	// - [GetOutboundIP] to automatically populate the jobname with the IP it's coming from,
+	// - a [Uuid v1](https://pkg.go.dev/github.com/google/uuid#NewUUID)
+	//   or a [Ulid](https://github.com/oklog/ulid) to get sortable IDs and keeping
+	//   relationship to the machine generating metrics.
+	// - a Uuid v4 if you don't want metrics leaking extra information about the IPs
+	//
+	// If JobName is empty here, autometrics will use the outbound IP if readable,
+	// or a ulid here, see [DefaultJobName].
+	JobName string
+}
+
 // AlertConfiguration is the configuration for autometric alerting.
 type AlertConfiguration struct {
 	// ServiceName is the name of the Service that will appear in the alerts.
