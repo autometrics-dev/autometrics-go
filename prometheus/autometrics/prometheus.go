@@ -1,6 +1,8 @@
 package autometrics // import "github.com/autometrics-dev/autometrics-go/prometheus/autometrics"
 
 import (
+	"os"
+
 	"github.com/autometrics-dev/autometrics-go/pkg/autometrics"
 	"github.com/prometheus/client_golang/prometheus"
 )
@@ -15,9 +17,9 @@ var (
 
 const (
 	// FunctionCallsCountName is the name of the prometheus metric for the counter of calls to specific functions.
-	FunctionCallsCountName = "function_calls_count_total"
+	FunctionCallsCountName = "function_calls_total"
 	// FunctionCallsDurationName is the name of the prometheus metric for the duration histogram of calls to specific functions.
-	FunctionCallsDurationName = "function_calls_duration"
+	FunctionCallsDurationName = "function_calls_duration_seconds"
 	// FunctionCallsConcurrentName is the name of the prometheus metric for the number of simulateneously active calls to specific functions.
 	FunctionCallsConcurrentName = "function_calls_concurrent"
 	// BuildInfo is the name of the prometheus metric for the version of the monitored codebase.
@@ -33,9 +35,12 @@ const (
 	// It is guaranteed that a (FunctionLabel, ModuleLabel) value pair is unique
 	// and matches at most one function in the source code
 	ModuleLabel = "module"
-	// CallerLabel is the prometheus label that describes the name of the function that called
+	// CallerFunctionLabel is the prometheus label that describes the name of the function that called
 	// the current function.
-	CallerLabel = "caller"
+	CallerFunctionLabel = "caller_function"
+	// CallerModuleLabel is the prometheus label that describes the module of the function that called
+	// the current function.
+	CallerModuleLabel = "caller_module"
 	// ResultLabel is the prometheus label that describes whether a function call is successful.
 	ResultLabel = "result"
 	// TargetLatencyLabel is the prometheus label that describes the latency to respect to match
@@ -50,7 +55,7 @@ const (
 	// In the case of success objectives, it describes the percentage of calls
 	// that must be successful (i.e. have their [ResultLabel] be 'ok').
 	TargetSuccessRateLabel = "objective_percentile"
-	// SloLabel is the prometheus label that describes the name of the Service Level Objective.
+	// SloNameLabel is the prometheus label that describes the name of the Service Level Objective.
 	SloNameLabel = "objective_name"
 
 	// CommitLabel is the prometheus label that describes the commit of the monitored codebase.
@@ -59,6 +64,9 @@ const (
 	VersionLabel = "version"
 	// BranchLabel is the prometheus label that describes the branch of the build of the monitored codebase.
 	BranchLabel = "branch"
+
+	// ServiceNameLabel is the prometheus label that describes the name of the service being monitored
+	ServiceNameLabel = "service_name"
 
 	traceIdExemplar      = "trace_id"
 	spanIdExemplar       = "span_id"
@@ -85,22 +93,30 @@ func Init(reg *prometheus.Registry, histogramBuckets []float64, buildInformation
 	autometrics.SetVersion(buildInformation.Version)
 	autometrics.SetBranch(buildInformation.Branch)
 
+	if serviceName, ok := os.LookupEnv(autometrics.AutometricsServiceNameEnv); ok {
+		autometrics.SetService(serviceName)
+	} else if serviceName, ok := os.LookupEnv(autometrics.OTelServiceNameEnv); ok {
+		autometrics.SetService(serviceName)
+	} else if buildInformation.Service != "" {
+		autometrics.SetService(buildInformation.Service)
+	}
+
 	functionCallsCount = prometheus.NewCounterVec(prometheus.CounterOpts{
 		Name: FunctionCallsCountName,
-	}, []string{FunctionLabel, ModuleLabel, CallerLabel, ResultLabel, TargetSuccessRateLabel, SloNameLabel, CommitLabel, VersionLabel, BranchLabel})
+	}, []string{FunctionLabel, ModuleLabel, CallerFunctionLabel, CallerModuleLabel, ResultLabel, TargetSuccessRateLabel, SloNameLabel, CommitLabel, VersionLabel, BranchLabel, ServiceNameLabel})
 
 	functionCallsDuration = prometheus.NewHistogramVec(prometheus.HistogramOpts{
 		Name:    FunctionCallsDurationName,
 		Buckets: histogramBuckets,
-	}, []string{FunctionLabel, ModuleLabel, CallerLabel, TargetLatencyLabel, TargetSuccessRateLabel, SloNameLabel, CommitLabel, VersionLabel, BranchLabel})
+	}, []string{FunctionLabel, ModuleLabel, CallerFunctionLabel, CallerModuleLabel, TargetLatencyLabel, TargetSuccessRateLabel, SloNameLabel, CommitLabel, VersionLabel, BranchLabel, ServiceNameLabel})
 
 	functionCallsConcurrent = prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Name: FunctionCallsConcurrentName,
-	}, []string{FunctionLabel, ModuleLabel, CallerLabel, CommitLabel, VersionLabel, BranchLabel})
+	}, []string{FunctionLabel, ModuleLabel, CallerFunctionLabel, CallerModuleLabel, CommitLabel, VersionLabel, BranchLabel, ServiceNameLabel})
 
 	buildInfo = prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Name: BuildInfoName,
-	}, []string{CommitLabel, VersionLabel, BranchLabel})
+	}, []string{CommitLabel, VersionLabel, BranchLabel, ServiceNameLabel})
 
 	if reg != nil {
 		reg.MustRegister(functionCallsCount)
@@ -115,9 +131,10 @@ func Init(reg *prometheus.Registry, histogramBuckets []float64, buildInformation
 	}
 
 	buildInfo.With(prometheus.Labels{
-		CommitLabel:  buildInformation.Commit,
-		VersionLabel: buildInformation.Version,
-		BranchLabel:  buildInformation.Branch,
+		CommitLabel:      buildInformation.Commit,
+		VersionLabel:     buildInformation.Version,
+		BranchLabel:      buildInformation.Branch,
+		ServiceNameLabel: autometrics.GetService(),
 	}).Set(1)
 
 	return nil

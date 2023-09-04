@@ -55,9 +55,10 @@ func addBuildInfoLabels() string {
 }
 
 func requestRateQuery(counterName, labelKey, labelValue string) string {
-	return fmt.Sprintf("sum by (%s, %s, %s, %s) (rate(%s{%s=\"%s\"}[5m]) %s)",
+	return fmt.Sprintf("sum by (%s, %s, %s, %s, %s) (rate(%s{%s=\"%s\"}[5m]) %s)",
 		prometheus.FunctionLabel,
 		prometheus.ModuleLabel,
+		prometheus.ServiceNameLabel,
 		prometheus.VersionLabel,
 		prometheus.CommitLabel,
 		counterName,
@@ -68,9 +69,10 @@ func requestRateQuery(counterName, labelKey, labelValue string) string {
 }
 
 func errorRatioQuery(counterName, labelKey, labelValue string) string {
-	return fmt.Sprintf("(sum by (%s, %s, %s, %s) (rate(%s{%s=\"%s\",%s=\"error\"}[5m]) %s)) / (%s)",
+	return fmt.Sprintf("(sum by (%s, %s, %s, %s, %s) (rate(%s{%s=\"%s\",%s=\"error\"}[5m]) %s)) / (%s)",
 		prometheus.FunctionLabel,
 		prometheus.ModuleLabel,
+		prometheus.ServiceNameLabel,
 		prometheus.VersionLabel,
 		prometheus.CommitLabel,
 		counterName,
@@ -83,9 +85,10 @@ func errorRatioQuery(counterName, labelKey, labelValue string) string {
 }
 
 func latencyQuery(bucketName, labelKey, labelValue string) string {
-	latency := fmt.Sprintf("sum by (le, %s, %s, %s, %s) (rate(%s_bucket{%s=\"%s\"}[5m]) %s)",
+	latency := fmt.Sprintf("sum by (le, %s, %s, %s, %s, %s) (rate(%s_bucket{%s=\"%s\"}[5m]) %s)",
 		prometheus.FunctionLabel,
 		prometheus.ModuleLabel,
+		prometheus.ServiceNameLabel,
 		prometheus.VersionLabel,
 		prometheus.CommitLabel,
 		bucketName,
@@ -103,9 +106,10 @@ func latencyQuery(bucketName, labelKey, labelValue string) string {
 }
 
 func concurrentCallsQuery(gaugeName, labelKey, labelValue string) string {
-	return fmt.Sprintf("sum by (%s, %s, %s, %s) (%s{%s=\"%s\"} %s)",
+	return fmt.Sprintf("sum by (%s, %s, %s, %s, %s) (%s{%s=\"%s\"} %s)",
 		prometheus.FunctionLabel,
 		prometheus.ModuleLabel,
+		prometheus.ServiceNameLabel,
 		prometheus.VersionLabel,
 		prometheus.CommitLabel,
 		gaugeName,
@@ -119,11 +123,11 @@ func (p Prometheus) GenerateAutometricsComment(ctx GeneratorContext, funcName, m
 	requestRateUrl := p.makePrometheusUrl(
 		requestRateQuery(prometheus.FunctionCallsCountName, prometheus.FunctionLabel, funcName), fmt.Sprintf("Rate of calls to the `%s` function per second, averaged over 5 minute windows", funcName))
 	calleeRequestRateUrl := p.makePrometheusUrl(
-		requestRateQuery(prometheus.FunctionCallsCountName, prometheus.CallerLabel, fmt.Sprintf("%s.%s", moduleName, funcName)), fmt.Sprintf("Rate of function calls emanating from `%s` function per second, averaged over 5 minute windows", funcName))
+		requestRateQuery(prometheus.FunctionCallsCountName, prometheus.CallerFunctionLabel, funcName), fmt.Sprintf("Rate of function calls emanating from `%s` function per second, averaged over 5 minute windows", funcName))
 	errorRatioUrl := p.makePrometheusUrl(
 		errorRatioQuery(prometheus.FunctionCallsCountName, prometheus.FunctionLabel, funcName), fmt.Sprintf("Percentage of calls to the `%s` function that return errors, averaged over 5 minute windows", funcName))
 	calleeErrorRatioUrl := p.makePrometheusUrl(
-		errorRatioQuery(prometheus.FunctionCallsCountName, prometheus.CallerLabel, fmt.Sprintf("%s.%s", moduleName, funcName)), fmt.Sprintf("Percentage of function emanating from `%s` function that return errors, averaged over 5 minute windows", funcName))
+		errorRatioQuery(prometheus.FunctionCallsCountName, prometheus.CallerFunctionLabel, funcName), fmt.Sprintf("Percentage of function emanating from `%s` function that return errors, averaged over 5 minute windows", funcName))
 	latencyUrl := p.makePrometheusUrl(
 		latencyQuery(prometheus.FunctionCallsDurationName, prometheus.FunctionLabel, funcName), fmt.Sprintf("95th and 99th percentile latencies (in seconds) for the `%s` function", funcName))
 	concurrentCallsUrl := p.makePrometheusUrl(

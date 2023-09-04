@@ -96,13 +96,18 @@ And then in your main function initialize the metrics
 	autometrics.Init(
 		nil,
 		autometrics.DefBuckets,
-		autometrics.BuildInfo{Version: "0.4.0", Commit: "anySHA", Branch: ""},
+		autometrics.BuildInfo{Version: "0.4.0", Commit: "anySHA", Branch: "", Service: "myApp"},
 	)
 ```
 
 Everything in `BuildInfo` is optional. It will add relevant information on the
 metrics for better intelligence. You can use any string variable whose value is
 injected at build time by `ldflags` for example, or use environment variables.
+
+> **Note**
+> Instead of hardcoding the service in the code, you can simply have environment variables set to fill the "Service" name.
+`AUTOMETRICS_SERVICE_NAME` will be used if set, otherwise `OTEL_SERVICE_NAME` will be attempted (so OpenTelemetry
+compatibility comes out of the box).
 
 ### 3. Add directives for each function you want to instrument
 
@@ -235,7 +240,7 @@ func main() {
 	autometrics.Init(
 		nil,
 		autometrics.DefBuckets,
-		autometrics.BuildInfo{Version: "0.4.0", Commit: "anySHA", Branch: ""},
+		autometrics.BuildInfo{Version: "0.4.0", Commit: "anySHA", Branch: "", Service: "myApp"},
 	)
 	http.Handle("/metrics", promhttp.Handler())
 }
@@ -345,7 +350,7 @@ metric. You can use the name of the application or its version for example
 -		nil,
 +		"myApp/v2/prod",
 		autometrics.DefBuckets,
-		autometrics.BuildInfo{ Version: "2.1.37", Commit: "anySHA", Branch: "" },
+		autometrics.BuildInfo{ Version: "2.1.37", Commit: "anySHA", Branch: "", Service: "myApp" },
 	)
 ```
 

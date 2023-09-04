@@ -2,7 +2,6 @@ package autometrics // import "github.com/autometrics-dev/autometrics-go/otel/au
 
 import (
 	"context"
-	"fmt"
 	"strconv"
 	"time"
 
@@ -22,15 +21,11 @@ func Instrument(ctx context.Context, err *error) {
 		result = "error"
 	}
 
-	var callerLabel, sloName, latencyTarget, latencyObjective, successObjective string
+	var sloName, latencyTarget, latencyObjective, successObjective string
 
 	callInfo := am.GetCallInfo(ctx)
 	buildInfo := am.GetBuildInfo(ctx)
 	slo := am.GetAlertConfiguration(ctx)
-
-	if am.GetTrackCallerName(ctx) {
-		callerLabel = fmt.Sprintf("%s.%s", callInfo.ParentModuleName, callInfo.ParentFuncName)
-	}
 
 	if slo.ServiceName != "" {
 		sloName = slo.ServiceName
@@ -49,25 +44,29 @@ func Instrument(ctx context.Context, err *error) {
 		[]attribute.KeyValue{
 			attribute.Key(FunctionLabel).String(callInfo.FuncName),
 			attribute.Key(ModuleLabel).String(callInfo.ModuleName),
-			attribute.Key(CallerLabel).String(callerLabel),
+			attribute.Key(CallerFunctionLabel).String(callInfo.ParentFuncName),
+			attribute.Key(CallerModuleLabel).String(callInfo.ParentModuleName),
 			attribute.Key(ResultLabel).String(result),
 			attribute.Key(TargetSuccessRateLabel).String(successObjective),
 			attribute.Key(SloNameLabel).String(sloName),
 			attribute.Key(CommitLabel).String(buildInfo.Commit),
 			attribute.Key(VersionLabel).String(buildInfo.Version),
 			attribute.Key(BranchLabel).String(buildInfo.Branch),
+			attribute.Key(ServiceNameLabel).String(buildInfo.Service),
 		}...)
 	functionCallsDuration.Record(ctx, time.Since(am.GetStartTime(ctx)).Seconds(),
 		[]attribute.KeyValue{
 			attribute.Key(FunctionLabel).String(callInfo.FuncName),
 			attribute.Key(ModuleLabel).String(callInfo.ModuleName),
-			attribute.Key(CallerLabel).String(callerLabel),
+			attribute.Key(CallerFunctionLabel).String(callInfo.ParentFuncName),
+			attribute.Key(CallerModuleLabel).String(callInfo.ParentModuleName),
 			attribute.Key(TargetLatencyLabel).String(latencyTarget),
 			attribute.Key(TargetSuccessRateLabel).String(latencyObjective),
 			attribute.Key(SloNameLabel).String(sloName),
 			attribute.Key(CommitLabel).String(buildInfo.Commit),
 			attribute.Key(VersionLabel).String(buildInfo.Version),
 			attribute.Key(BranchLabel).String(buildInfo.Branch),
+			attribute.Key(ServiceNameLabel).String(buildInfo.Service),
 		}...)
 
 	if am.GetTrackConcurrentCalls(ctx) {
@@ -75,10 +74,12 @@ func Instrument(ctx context.Context, err *error) {
 			[]attribute.KeyValue{
 				attribute.Key(FunctionLabel).String(callInfo.FuncName),
 				attribute.Key(ModuleLabel).String(callInfo.ModuleName),
-				attribute.Key(CallerLabel).String(callerLabel),
+				attribute.Key(CallerFunctionLabel).String(callInfo.ParentFuncName),
+				attribute.Key(CallerModuleLabel).String(callInfo.ParentModuleName),
 				attribute.Key(CommitLabel).String(buildInfo.Commit),
 				attribute.Key(VersionLabel).String(buildInfo.Version),
 				attribute.Key(BranchLabel).String(buildInfo.Branch),
+				attribute.Key(ServiceNameLabel).String(buildInfo.Service),
 			}...)
 	}
 }
@@ -93,21 +94,18 @@ func PreInstrument(ctx context.Context) context.Context {
 	ctx = am.FillBuildInfo(ctx)
 	ctx = am.FillTracingInfo(ctx)
 
-	var callerLabel string
-	if am.GetTrackCallerName(ctx) {
-		callerLabel = fmt.Sprintf("%s.%s", callInfo.ParentModuleName, callInfo.ParentFuncName)
-	}
-
 	if am.GetTrackConcurrentCalls(ctx) {
 		buildInfo := am.GetBuildInfo(ctx)
 		functionCallsConcurrent.Add(ctx, 1,
 			[]attribute.KeyValue{
 				attribute.Key(FunctionLabel).String(callInfo.FuncName),
 				attribute.Key(ModuleLabel).String(callInfo.ModuleName),
-				attribute.Key(CallerLabel).String(callerLabel),
+				attribute.Key(CallerFunctionLabel).String(callInfo.ParentFuncName),
+				attribute.Key(CallerModuleLabel).String(callInfo.ParentModuleName),
 				attribute.Key(CommitLabel).String(buildInfo.Commit),
 				attribute.Key(VersionLabel).String(buildInfo.Version),
 				attribute.Key(BranchLabel).String(buildInfo.Branch),
+				attribute.Key(ServiceNameLabel).String(buildInfo.Service),
 			}...)
 	}
 

@@ -51,6 +51,8 @@ type BuildInfo struct {
 	Version string
 	// Branch is the branch of the build of the codebase.
 	Branch string
+	// ServiceName is the name of the service
+	Service string
 }
 
 // AlertConfiguration is the configuration for autometric alerting.

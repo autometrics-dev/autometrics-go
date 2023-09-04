@@ -3,6 +3,7 @@ package autometrics // import "github.com/autometrics-dev/autometrics-go/otel/au
 import (
 	"context"
 	"fmt"
+	"os"
 
 	"github.com/autometrics-dev/autometrics-go/pkg/autometrics"
 
@@ -24,7 +25,7 @@ var (
 
 const (
 	// FunctionCallsCountName is the name of the openTelemetry metric for the counter of calls to specific functions.
-	FunctionCallsCountName = "function.calls.count"
+	FunctionCallsCountName = "function.calls"
 	// FunctionCallsDurationName is the name of the openTelemetry metric for the duration histogram of calls to specific functions.
 	FunctionCallsDurationName = "function.calls.duration"
 	// FunctionCallsConcurrentName is the name of the openTelemetry metric for the number of simulateneously active calls to specific functions.
@@ -42,9 +43,12 @@ const (
 	// It is guaranteed that a (FunctionLabel, ModuleLabel) value pair is unique
 	// and matches at most one function in the source code
 	ModuleLabel = "module"
-	// CallerLabel is the openTelemetry attribute that describes the name of the function that called
+	// CallerFunctionLabel is the openTelemetry attribute that describes the name of the function that called
 	// the current function.
-	CallerLabel = "caller"
+	CallerFunctionLabel = "caller.function"
+	// CallerModuleLabel is the openTelemetry attribute that describes the module of the function that called
+	// the current function.
+	CallerModuleLabel = "caller.module"
 	// ResultLabel is the openTelemetry attribute that describes whether a function call is successful.
 	ResultLabel = "result"
 	// TargetLatencyLabel is the openTelemetry attribute that describes the latency to respect to match
@@ -59,7 +63,7 @@ const (
 	// In the case of success objectives, it describes the percentage of calls
 	// that must be successful (i.e. have their [ResultLabel] be 'ok').
 	TargetSuccessRateLabel = "objective.percentile"
-	// SloLabelName is the openTelemetry attribute that describes the name of the Service Level Objective.
+	// SloNameLabel is the openTelemetry attribute that describes the name of the Service Level Objective.
 	SloNameLabel = "objective.name"
 
 	// CommitLabel is the openTelemetry attribute that describes the commit of the monitored codebase.
@@ -68,6 +72,9 @@ const (
 	VersionLabel = "version"
 	// BranchLabel is the openTelemetry attribute that describes the branch of the build of the monitored codebase.
 	BranchLabel = "branch"
+
+	// ServiceNameLabel is the openTelemetry attribute that describes the name of the Service being monitored.
+	ServiceNameLabel = "service.name"
 )
 
 func completeMeterName(meterName string) string {
@@ -91,12 +98,15 @@ func Init(meterName string, histogramBuckets []float64, buildInformation BuildIn
 	autometrics.SetVersion(buildInformation.Version)
 	autometrics.SetBranch(buildInformation.Branch)
 
-	exporter, err := prometheus.New(
-		// The units are removed from the exporter so that the names of the
-		// exported metrics after the View rename are consistent with the
-		// autometrics.rules.yml file
-		prometheus.WithoutUnits(),
-	)
+	if serviceName, ok := os.LookupEnv(autometrics.AutometricsServiceNameEnv); ok {
+		autometrics.SetService(serviceName)
+	} else if serviceName, ok := os.LookupEnv(autometrics.OTelServiceNameEnv); ok {
+		autometrics.SetService(serviceName)
+	} else if buildInformation.Service != "" {
+		autometrics.SetService(buildInformation.Service)
+	}
+
+	exporter, err := prometheus.New()
 	if err != nil {
 		return fmt.Errorf("error initializing prometheus exporter: %w", err)
 	}
@@ -141,6 +151,7 @@ func Init(meterName string, histogramBuckets []float64, buildInformation BuildIn
 			attribute.Key(CommitLabel).String(buildInformation.Commit),
 			attribute.Key(VersionLabel).String(buildInformation.Version),
 			attribute.Key(BranchLabel).String(buildInformation.Branch),
+			attribute.Key(ServiceNameLabel).String(autometrics.GetService()),
 		}...)
 
 	return nil

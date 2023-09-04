@@ -289,6 +289,7 @@ func FillBuildInfo(ctx context.Context) context.Context {
 		Version: GetVersion(),
 		Commit:  GetCommit(),
 		Branch:  GetBranch(),
+		Service: GetService(),
 	}
 
 	return SetBuildInfo(ctx, b)

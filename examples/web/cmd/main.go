@@ -89,21 +89,22 @@ func main() {
 // [Request Rate Callee]: http://localhost:9090/graph?g0.expr=%23+Rate+of+function+calls+emanating+from+%60indexHandler%60+function+per+second%2C+averaged+over+5+minute+windows%0A%0Asum+by+%28function%2C+module%2C+version%2C+commit%29+%28rate%28function_calls_count%7Bcaller%3D%22main.indexHandler%22%7D%5B5m%5D%29+%2A+on+%28instance%2C+job%29+group_left%28version%2C+commit%29+last_over_time%28build_info%5B1s%5D%29%29&g0.tab=0
 // [Error Ratio Callee]: http://localhost:9090/graph?g0.expr=%23+Percentage+of+function+emanating+from+%60indexHandler%60+function+that+return+errors%2C+averaged+over+5+minute+windows%0A%0A%28sum+by+%28function%2C+module%2C+version%2C+commit%29+%28rate%28function_calls_count%7Bcaller%3D%22main.indexHandler%22%2Cresult%3D%22error%22%7D%5B5m%5D%29+%2A+on+%28instance%2C+job%29+group_left%28version%2C+commit%29+last_over_time%28build_info%5B1s%5D%29%29%29+%2F+%28sum+by+%28function%2C+module%2C+version%2C+commit%29+%28rate%28function_calls_count%7Bcaller%3D%22main.indexHandler%22%7D%5B5m%5D%29+%2A+on+%28instance%2C+job%29+group_left%28version%2C+commit%29+last_over_time%28build_info%5B1s%5D%29%29%29&g0.tab=0
 //
-//autometrics:inst --slo "API" --latency-target 99 --latency-ms 100
+//autometrics:inst --slo "API" --latency-target 99 --latency-ms 5
 func indexHandler(w http.ResponseWriter, r *http.Request) error {
 	defer autometrics.Instrument(autometrics.PreInstrument(autometrics.NewContext(
 		r.Context(),
 		autometrics.WithConcurrentCalls(true),
 		autometrics.WithCallerName(true),
 		autometrics.WithSloName("API"),
-		autometrics.WithAlertLatency(100000000*time.Nanosecond, 99),
+		autometrics.WithAlertLatency(5000000*time.Nanosecond, 99),
 	)), nil) //autometrics:defer
 
-	time.Sleep(time.Duration(rand.Intn(200)) * time.Millisecond)
+	msSleep := rand.Intn(200)
+	time.Sleep(time.Duration(msSleep) * time.Millisecond)
 
-	fmt.Fprintf(w, "Hello, World!\n")
+	_, err := fmt.Fprintf(w, "Slept %v ms\n", msSleep)
 
-	return nil
+	return err
 }
 
 var handlerError = errors.New("failed to handle request")

@@ -3,9 +3,21 @@ package autometrics // import "github.com/autometrics-dev/autometrics-go/pkg/aut
 // These variables are describing the state of the application being autometricized,
 // _not_ the build information of the binary
 
+const (
+	// AutometricsServiceNameEnv is the name of the environment variable to declare to fetch the name of
+	// the service to use as a label. This environment variable has precedence over [OTelServiceNameEnv]
+	// _and_ over hardcoding the variable directly in [BuildInfo] struct in the Init call.
+	AutometricsServiceNameEnv = "AUTOMETRICS_SERVICE_NAME"
+	// OTelServiceNameEnv is the name of the environment variable to declare to fetch the name of
+	// the service to use as a label. This environment variable has precedence over variables hardcoded
+	// in the [BuildInfo] struct in the Init call.
+	OTelServiceNameEnv = "OTEL_SERVICE_NAME"
+)
+
 var version string
 var commit string
 var branch string
+var service string
 
 // GetVersion returns the version of the codebase being instrumented.
 func GetVersion() string {
@@ -35,4 +47,14 @@ func GetBranch() string {
 // SetBranch sets the branch of the build of the codebase being instrumented.
 func SetBranch(newBranch string) {
 	branch = newBranch
+}
+
+// GetService returns the service of the build of the codebase being instrumented.
+func GetService() string {
+	return service
+}
+
+// SetService sets the service name of the build of the codebase being instrumented.
+func SetService(newService string) {
+	service = newService
 }
