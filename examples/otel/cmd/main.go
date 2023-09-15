@@ -6,6 +6,7 @@ import (
 	"log"
 	"math/rand"
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/autometrics-dev/autometrics-go/otel/autometrics"
@@ -25,24 +26,42 @@ var (
 func main() {
 	rand.Seed(time.Now().UnixNano())
 
+	var pushConfiguration *autometrics.PushConfiguration
+	if os.Getenv("AUTOMETRICS_OTLP_URL") != "" {
+		pushConfiguration = &autometrics.PushConfiguration{
+			CollectorURL: os.Getenv("AUTOMETRICS_OTLP_URL"),
+			// NOTE: Setting the JobName is useful when you fully control the instances that will run it.
+			//   Otherwise (auto-scaling scenarii), it's better to leave this value out, and let
+			//   autometrics generate an IP-based or Ulid-based identifier for you.
+			// JobName:      "autometrics_go_otel_example",
+			Period:  1 * time.Second,
+			Timeout: 500 * time.Millisecond,
+		}
+	}
+
 	// Everything in BuildInfo is optional.
 	// You can also use any string variable whose value is
 	// injected at build time by ldflags.
-	autometrics.Init(
-		"web-server",
+	shutdown, err := autometrics.Init(
+		"web-server-go-component",
 		autometrics.DefBuckets,
 		autometrics.BuildInfo{
 			Version: Version,
 			Commit:  Commit,
 			Branch:  Branch,
 		},
+		pushConfiguration,
 	)
+	if err != nil {
+		log.Fatalf("Failed initialization of autometrics: %s", err)
+	}
+	defer shutdown(nil)
 
 	http.HandleFunc("/", errorable(indexHandler))
 	http.HandleFunc("/random-error", errorable(randomErrorHandler))
 	http.Handle("/metrics", promhttp.Handler())
 
-	log.Println("binding on http://localhost:62086")
+	log.Println("binding on http://0.0.0.0:62086")
 	log.Fatal(http.ListenAndServe(":62086", nil))
 }
 

@@ -14,10 +14,14 @@ const (
 	OTelServiceNameEnv = "OTEL_SERVICE_NAME"
 )
 
-var version string
-var commit string
-var branch string
-var service string
+var (
+	version     string
+	commit      string
+	branch      string
+	service     string
+	pushJobName string
+	pushJobURL  string
+)
 
 // GetVersion returns the version of the codebase being instrumented.
 func GetVersion() string {
@@ -57,4 +61,24 @@ func GetService() string {
 // SetService sets the service name of the build of the codebase being instrumented.
 func SetService(newService string) {
 	service = newService
+}
+
+// GetPushJobName returns the job name to use when the codebase being instrumented is pushing metrics to an OTEL Collector.
+func GetPushJobName() string {
+	return pushJobName
+}
+
+// SetPushJobName sets the job name to use when the codebase being instrumented is pushing metrics to an OTEL Collector.
+func SetPushJobName(newPushJobName string) {
+	pushJobName = newPushJobName
+}
+
+// GetPushJobURL returns the job url to use when the codebase being instrumented is pushing metrics to an OTEL Collector.
+func GetPushJobURL() string {
+	return pushJobURL
+}
+
+// SetPushJobURL sets the job url to use when the codebase being instrumented is pushing metrics to an OTEL Collector.
+func SetPushJobURL(newPushJobURL string) {
+	pushJobURL = newPushJobURL
 }

@@ -6,6 +6,7 @@ import (
 	"log"
 	"math/rand"
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/autometrics-dev/autometrics-go/prometheus/autometrics"
@@ -27,10 +28,20 @@ var (
 func main() {
 	rand.Seed(time.Now().UnixNano())
 
+	// Allow the application to use a push gateway with an environment variable
+	// In production, you would do it with a command-line flag.
+	var pushConfiguration *autometrics.PushConfiguration
+	if os.Getenv("AUTOMETRICS_PUSH_GATEWAY_URL") != "" {
+		pushConfiguration = &autometrics.PushConfiguration{
+			CollectorURL: os.Getenv("AUTOMETRICS_PUSH_GATEWAY_URL"),
+			JobName:      "autometrics_go_test",
+		}
+	}
+
 	// Everything in BuildInfo is optional.
 	// You can also use any string variable whose value is
 	// injected at build time by ldflags.
-	autometrics.Init(
+	shutdown, err := autometrics.Init(
 		nil,
 		autometrics.DefBuckets,
 		autometrics.BuildInfo{
@@ -38,7 +49,12 @@ func main() {
 			Commit:  Commit,
 			Branch:  Branch,
 		},
+		pushConfiguration,
 	)
+	if err != nil {
+		log.Fatalf("Failed initialization of autometrics: %s", err)
+	}
+	defer shutdown(nil)
 
 	http.HandleFunc("/", errorable(indexHandler))
 	// Wrapping a route in Autometrics middleware

@@ -3,11 +3,14 @@ package autometrics // import "github.com/autometrics-dev/autometrics-go/prometh
 import (
 	"context"
 	"encoding/hex"
+	"log"
 	"strconv"
 	"time"
 
 	am "github.com/autometrics-dev/autometrics-go/pkg/autometrics"
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/push"
+	"github.com/prometheus/common/expfmt"
 )
 
 // Instrument called in a defer statement wraps the body of a function
@@ -16,6 +19,10 @@ import (
 // The first argument SHOULD be a call to PreInstrument so that
 // the "concurrent calls" gauge is correctly setup.
 func Instrument(ctx context.Context, err *error) {
+	if amCtx.Err() != nil {
+		return
+	}
+
 	result := "ok"
 
 	if err != nil && *err != nil {
@@ -55,6 +62,11 @@ func Instrument(ctx context.Context, err *error) {
 		CommitLabel:            buildInfo.Commit,
 		VersionLabel:           buildInfo.Version,
 		ServiceNameLabel:       buildInfo.Service,
+		// REVIEW: This clear mode label is added to make the metrics work when
+		// pushing metrics to a gravel gateway. To reconsider once
+		// https://github.com/sinkingpoint/prometheus-gravel-gateway/issues/28
+		// is solved
+		ClearModeLabel: ClearModeFamily,
 	}).(prometheus.ExemplarAdder).AddWithExemplar(1, info)
 
 	functionCallsDuration.With(prometheus.Labels{
@@ -69,6 +81,11 @@ func Instrument(ctx context.Context, err *error) {
 		CommitLabel:            buildInfo.Commit,
 		VersionLabel:           buildInfo.Version,
 		ServiceNameLabel:       buildInfo.Service,
+		// REVIEW: This clear mode label is added to make the metrics work when
+		// pushing metrics to a gravel gateway. To reconsider once
+		// https://github.com/sinkingpoint/prometheus-gravel-gateway/issues/28
+		// is solved
+		ClearModeLabel: ClearModeFamily,
 	}).(prometheus.ExemplarObserver).ObserveWithExemplar(time.Since(am.GetStartTime(ctx)).Seconds(), info)
 
 	if am.GetTrackConcurrentCalls(ctx) {
@@ -81,7 +98,33 @@ func Instrument(ctx context.Context, err *error) {
 			CommitLabel:         buildInfo.Commit,
 			VersionLabel:        buildInfo.Version,
 			ServiceNameLabel:    buildInfo.Service,
+			// REVIEW: This clear mode label is added to make the metrics work when
+			// pushing metrics to a gravel gateway. To reconsider once
+			// https://github.com/sinkingpoint/prometheus-gravel-gateway/issues/28
+			// is solved
+			ClearModeLabel: ClearModeFamily,
 		}).Add(-1)
+	}
+
+	if pusher != nil {
+		go func(parentCtx context.Context) {
+			ctx, cancel := context.WithCancel(parentCtx)
+			defer cancel()
+			// PERF: This might induce way too much contention and a growing number of goroutines
+			if pusherLock.TryLock() {
+				defer pusherLock.Unlock()
+				localPusher := push.
+					New(am.GetPushJobURL(), am.GetPushJobName()).
+					Format(expfmt.FmtText).
+					Collector(functionCallsCount).
+					Collector(functionCallsDuration).
+					Collector(functionCallsConcurrent)
+				if err := localPusher.
+					AddContext(ctx); err != nil {
+					log.Printf("failed to push metrics to gateway: %s", err)
+				}
+			}
+		}(amCtx)
 	}
 }
 
@@ -90,6 +133,10 @@ func Instrument(ctx context.Context, err *error) {
 // It is meant to be called as the first argument to Instrument in a
 // defer call.
 func PreInstrument(ctx context.Context) context.Context {
+	if amCtx.Err() != nil {
+		return nil
+	}
+
 	callInfo := am.CallerInfo()
 	ctx = am.SetCallInfo(ctx, callInfo)
 	ctx = am.FillBuildInfo(ctx)
@@ -106,7 +153,30 @@ func PreInstrument(ctx context.Context) context.Context {
 			CommitLabel:         buildInfo.Commit,
 			VersionLabel:        buildInfo.Version,
 			ServiceNameLabel:    buildInfo.Service,
+			// REVIEW: This clear mode label is added to make the metrics work when
+			// pushing metrics to a gravel gateway. To reconsider once
+			// https://github.com/sinkingpoint/prometheus-gravel-gateway/issues/28
+			// is solved
+			ClearModeLabel: ClearModeFamily,
 		}).Add(1)
+	}
+
+	if pusher != nil {
+		go func(parentCtx context.Context) {
+			ctx, cancel := context.WithCancel(parentCtx)
+			defer cancel()
+			// PERF: Using Lock might induce way too much contention and a growing number of goroutines
+			if pusherLock.TryLock() {
+				defer pusherLock.Unlock()
+				localPusher := push.
+					New(am.GetPushJobURL(), am.GetPushJobName()).
+					Format(expfmt.FmtText).
+					Collector(functionCallsConcurrent)
+				if err := localPusher.AddContext(ctx); err != nil {
+					log.Printf("failed to push metrics to gateway: %s", err)
+				}
+			}
+		}(amCtx)
 	}
 
 	ctx = am.SetStartTime(ctx, time.Now())

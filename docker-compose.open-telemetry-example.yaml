@@ -52,7 +52,8 @@ services:
       context: .
       dockerfile: examples/otel/Dockerfile
     environment:
-      AUTOMETRICS_SERVICE_NAME: open-telemetry-autometrics-demo
+      AUTOMETRICS_SERVICE_NAME: autometrics_otel
+      AUTOMETRICS_OTLP_URL: $AUTOMETRICS_OTLP_URL
     container_name: web-server-otel
     restart: unless-stopped
     expose:
