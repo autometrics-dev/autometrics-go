@@ -6,7 +6,21 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Go module
 versioning](https://go.dev/doc/modules/version-numbers).
 
-## [Unreleased](https://github.com/autometrics-dev/autometrics-go/compare/v0.7.0...main)
+## [Unreleased](https://github.com/autometrics-dev/autometrics-go/compare/v0.8.0...main)
+
+### Added
+
+### Changed
+
+### Deprecated
+
+### Removed
+
+### Fixed
+
+### Security
+
+## [0.8.0](https://github.com/autometrics-dev/autometrics-go/releases/tag/v0.8.0) 2023-09-18
 
 ### Added
 
@@ -39,14 +53,6 @@ versioning](https://go.dev/doc/modules/version-numbers).
   now return a [CancelCauseFunc](https://pkg.go.dev/context#CancelCauseFunc)
   to cleanly shutdown (early or as a normal shutdown process) all metric collection.
 
-### Deprecated
-
-### Removed
-
-### Fixed
-
-### Security
-
 ## [0.7.0](https://github.com/autometrics-dev/autometrics-go/releases/tag/v0.7.0) 2023-09-04
 
 ### Added
@@ -59,7 +65,7 @@ versioning](https://go.dev/doc/modules/version-numbers).
 ### Changed
 
 - Function calls metric has been renamed from `function_calls_count_total` to `function_calls_total`
-- Function calls duration histogram has been renamed from `function_calls_duration` 
+- Function calls duration histogram has been renamed from `function_calls_duration`
   to `function_calls_duration_seconds`
 - Function caller label has been split from `caller` to `caller_function` and `caller_label`
 
@@ -70,7 +76,7 @@ versioning](https://go.dev/doc/modules/version-numbers).
 - The Go generator now removes all the old defer statements in function bodies before re-adding
   only the necessary ones. This means calling `go generate` on a file that has no annotation
   at all effectively cleans up the whole file from autometrics.
-  
+
 ### Changed
 
 - Instead of returning an error when the go generator does not find the autometrics import
@@ -155,7 +161,7 @@ import (
 - Build information (branch, commit, version) can optionally be added to metrics. All queries
   have been updated to use the new information when available
 - The generator has proper `--version` and `--help` subcommands
-- 
+-
 
 ### Changed
 
