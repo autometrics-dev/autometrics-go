@@ -35,12 +35,11 @@ func CallerInfo() (callInfo CallInfo) {
 	if index == -1 {
 		callInfo.FuncName = functionName
 	} else {
-		moduleIndex := strings.LastIndex(functionName[:index], ".")
-		if moduleIndex == -1 {
-			callInfo.ModuleName = functionName[:index]
-		} else {
-			callInfo.ModuleName = functionName[moduleIndex+1 : index]
-		}
+		callInfo.ModuleName = strings.ReplaceAll(strings.ReplaceAll(strings.ReplaceAll(
+			functionName[:index],
+			"(", ""),
+			")", ""),
+			"*", "")
 
 		callInfo.FuncName = functionName[index+1:]
 	}

@@ -12,6 +12,9 @@ versioning](https://go.dev/doc/modules/version-numbers).
 
 ### Changed
 
+- [All] autometrics now reports the fully qualified package name and cleans up the pointer
+  specifiers from reported pointer receiver methods
+
 ### Deprecated
 
 ### Removed
