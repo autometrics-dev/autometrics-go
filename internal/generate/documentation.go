@@ -2,6 +2,7 @@ package generate // import "github.com/autometrics-dev/autometrics-go/internal/g
 
 import (
 	"fmt"
+	"math"
 	"strings"
 
 	internal "github.com/autometrics-dev/autometrics-go/internal/autometrics"
@@ -40,7 +41,9 @@ func cleanUpAutometricsComments(ctx internal.GeneratorContext, funcDeclaration *
 
 		if oldStartCommentIndex >= 0 && oldEndCommentIndex > oldStartCommentIndex {
 			// We also remove the header and the footer that are used as block separation
-			docComments = append(docComments[:oldStartCommentIndex-1], docComments[oldEndCommentIndex+2:]...)
+			amCommentSectionStart := int(math.Max(0, float64(oldStartCommentIndex-1)))
+			amCommentSectionEnd := int(math.Min(float64(len(docComments)), float64(oldEndCommentIndex+2)))
+			docComments = append(docComments[:amCommentSectionStart], docComments[amCommentSectionEnd:]...)
 
 			// Remove the generated links from former passes
 			if ctx.DocumentationGenerator != nil {
