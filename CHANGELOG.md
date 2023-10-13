@@ -21,6 +21,11 @@ versioning](https://go.dev/doc/modules/version-numbers).
 
 ### Fixed
 
+- [All] Fixed an issue that could lead to panics when running the generator on already-annotated files (#70)
+- [All] autometrics will now add a single line doc comment with the function name if the function
+  had no comment besides the autometrics directive. This allows IDEs to properly render the generated
+  documentation even when going through gopls
+
 ### Security
 
 ## [0.8.0](https://github.com/autometrics-dev/autometrics-go/releases/tag/v0.8.0) 2023-09-18
