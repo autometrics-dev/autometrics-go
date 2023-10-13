@@ -170,6 +170,17 @@ func walkFuncDeclaration(ctx *internal.GeneratorContext, funcDeclaration *dst.Fu
 		// Insert comments
 		if !ctx.DisableDocGeneration && !ctx.FuncCtx.DisableDocGeneration {
 			autometricsComment := generateAutometricsComment(*ctx)
+
+			// HACK: gopls will ignore the doc comment completely when requested for documentation if the docComment
+			// starts with an indented line. Autometrics currently uses an indented line at the beginning of the
+			// generated section to be able to clean up after itself. Therefore gopls will _not_ display anx documentation
+			// if the docComment contains only autometrics docs.
+			// To fix this issue, if we detect that the autometrics comment would start the function documentation, we
+			// artificially insert an extra line that contains only the function name.
+			if listIndex == 0 {
+				autometricsComment = append([]string{fmt.Sprintf("// %s", funcDeclaration.Name.Name)}, autometricsComment...)
+			}
+
 			funcDeclaration.Decorations().Start.Replace(insertComments(docComments, listIndex, autometricsComment)...)
 		} else {
 			funcDeclaration.Decorations().Start.Replace(docComments...)
