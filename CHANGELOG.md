@@ -6,14 +6,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Go module
 versioning](https://go.dev/doc/modules/version-numbers).
 
-## [Unreleased](https://github.com/autometrics-dev/autometrics-go/compare/v0.8.0...main)
+## [Unreleased](https://github.com/autometrics-dev/autometrics-go/compare/v0.8.1...main)
 
 ### Added
 
 ### Changed
-
-- [All] autometrics now reports the fully qualified package name and cleans up the pointer
-  specifiers from reported pointer receiver methods
 
 ### Deprecated
 
@@ -21,12 +18,21 @@ versioning](https://go.dev/doc/modules/version-numbers).
 
 ### Fixed
 
+### Security
+
+## [0.8.1](https://github.com/autometrics-dev/autometrics-go/releases/tag/v0.8.1) 2023-10-13
+
+### Changed
+
+- [All] autometrics now reports the fully qualified package name and cleans up the pointer
+  specifiers from reported pointer receiver methods
+
+### Fixed
+
 - [All] Fixed an issue that could lead to panics when running the generator on already-annotated files (#70)
 - [All] autometrics will now add a single line doc comment with the function name if the function
   had no comment besides the autometrics directive. This allows IDEs to properly render the generated
   documentation even when going through gopls
-
-### Security
 
 ## [0.8.0](https://github.com/autometrics-dev/autometrics-go/releases/tag/v0.8.0) 2023-09-18
 
