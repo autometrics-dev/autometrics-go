@@ -10,6 +10,16 @@ versioning](https://go.dev/doc/modules/version-numbers).
 
 ### Added
 
+- [All] `autometrics` the go-generator binary accepts an `--inst-all` flag, to process all
+  functions in the file even if they do not have any annotation
+- [All] `autometrics` the go-generator binary accepts a `--rm-all` flag (that overrides the `--inst-all` flag)
+  to remove autometrics from all annotated functions. This is useful to offboard autometrics after trying it:
+  ```bash
+  AM_RM_ALL=true go generate ./...  # Will remove all godoc and instrumentation calls
+  sed -i '/\/\/.*autometrics/d' **/*.go   # A similar sed command will remove all comments containing 'autometrics'
+  # A go linter/formatter of your choice can then clean up all unused imports to remove the automatically added ones.
+  ```
+
 ### Changed
 
 ### Deprecated

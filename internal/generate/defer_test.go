@@ -53,7 +53,7 @@ func main(thisIsAContext context.Context) {
 		"	fmt.Println(hello) // line comment 3\n" +
 		"}\n"
 
-	ctx, err := internal.NewGeneratorContext(autometrics.PROMETHEUS, defaultPrometheusInstanceUrl, false, true)
+	ctx, err := internal.NewGeneratorContext(autometrics.PROMETHEUS, defaultPrometheusInstanceUrl, false, true, false, false)
 	if err != nil {
 		t.Fatalf("error creating the generation context: %s", err)
 	}
@@ -110,7 +110,7 @@ func main(thisIsAContext vanilla.Context) {
 		"	fmt.Println(hello) // line comment 3\n" +
 		"}\n"
 
-	ctx, err := internal.NewGeneratorContext(autometrics.PROMETHEUS, defaultPrometheusInstanceUrl, false, true)
+	ctx, err := internal.NewGeneratorContext(autometrics.PROMETHEUS, defaultPrometheusInstanceUrl, false, true, false, false)
 	if err != nil {
 		t.Fatalf("error creating the generation context: %s", err)
 	}
@@ -167,7 +167,7 @@ func main(thisIsAContext Context) {
 		"	fmt.Println(hello) // line comment 3\n" +
 		"}\n"
 
-	ctx, err := internal.NewGeneratorContext(autometrics.PROMETHEUS, defaultPrometheusInstanceUrl, false, true)
+	ctx, err := internal.NewGeneratorContext(autometrics.PROMETHEUS, defaultPrometheusInstanceUrl, false, true, false, false)
 	if err != nil {
 		t.Fatalf("error creating the generation context: %s", err)
 	}
@@ -224,7 +224,7 @@ func main(w http.ResponseWriter, req *http.Request) {
 		"	fmt.Println(hello) // line comment 3\n" +
 		"}\n"
 
-	ctx, err := internal.NewGeneratorContext(autometrics.PROMETHEUS, defaultPrometheusInstanceUrl, false, true)
+	ctx, err := internal.NewGeneratorContext(autometrics.PROMETHEUS, defaultPrometheusInstanceUrl, false, true, false, false)
 	if err != nil {
 		t.Fatalf("error creating the generation context: %s", err)
 	}
@@ -281,7 +281,7 @@ func main(w vanilla.ResponseWriter, req *vanilla.Request) {
 		"	fmt.Println(hello) // line comment 3\n" +
 		"}\n"
 
-	ctx, err := internal.NewGeneratorContext(autometrics.PROMETHEUS, defaultPrometheusInstanceUrl, false, true)
+	ctx, err := internal.NewGeneratorContext(autometrics.PROMETHEUS, defaultPrometheusInstanceUrl, false, true, false, false)
 	if err != nil {
 		t.Fatalf("error creating the generation context: %s", err)
 	}
@@ -338,7 +338,7 @@ func main(w ResponseWriter, req *Request) {
 		"	fmt.Println(hello) // line comment 3\n" +
 		"}\n"
 
-	ctx, err := internal.NewGeneratorContext(autometrics.PROMETHEUS, defaultPrometheusInstanceUrl, false, true)
+	ctx, err := internal.NewGeneratorContext(autometrics.PROMETHEUS, defaultPrometheusInstanceUrl, false, true, false, false)
 	if err != nil {
 		t.Fatalf("error creating the generation context: %s", err)
 	}
@@ -395,7 +395,7 @@ func main(thisIsAContext buffalo.Context) {
 		"	fmt.Println(hello) // line comment 3\n" +
 		"}\n"
 
-	ctx, err := internal.NewGeneratorContext(autometrics.PROMETHEUS, defaultPrometheusInstanceUrl, false, true)
+	ctx, err := internal.NewGeneratorContext(autometrics.PROMETHEUS, defaultPrometheusInstanceUrl, false, true, false, false)
 	if err != nil {
 		t.Fatalf("error creating the generation context: %s", err)
 	}
@@ -452,7 +452,7 @@ func main(thisIsAContext vanilla.Context) {
 		"	fmt.Println(hello) // line comment 3\n" +
 		"}\n"
 
-	ctx, err := internal.NewGeneratorContext(autometrics.PROMETHEUS, defaultPrometheusInstanceUrl, false, true)
+	ctx, err := internal.NewGeneratorContext(autometrics.PROMETHEUS, defaultPrometheusInstanceUrl, false, true, false, false)
 	if err != nil {
 		t.Fatalf("error creating the generation context: %s", err)
 	}
@@ -509,7 +509,7 @@ func main(thisIsAContext Context) {
 		"	fmt.Println(hello) // line comment 3\n" +
 		"}\n"
 
-	ctx, err := internal.NewGeneratorContext(autometrics.PROMETHEUS, defaultPrometheusInstanceUrl, false, true)
+	ctx, err := internal.NewGeneratorContext(autometrics.PROMETHEUS, defaultPrometheusInstanceUrl, false, true, false, false)
 	if err != nil {
 		t.Fatalf("error creating the generation context: %s", err)
 	}
@@ -568,7 +568,7 @@ func main(thisIsAContext echo.Context) {
 		"	fmt.Println(hello) // line comment 3\n" +
 		"}\n"
 
-	ctx, err := internal.NewGeneratorContext(autometrics.PROMETHEUS, defaultPrometheusInstanceUrl, false, true)
+	ctx, err := internal.NewGeneratorContext(autometrics.PROMETHEUS, defaultPrometheusInstanceUrl, false, true, false, false)
 	if err != nil {
 		t.Fatalf("error creating the generation context: %s", err)
 	}
@@ -627,7 +627,7 @@ func main(thisIsAContext vanilla.Context) {
 		"	fmt.Println(hello) // line comment 3\n" +
 		"}\n"
 
-	ctx, err := internal.NewGeneratorContext(autometrics.PROMETHEUS, defaultPrometheusInstanceUrl, false, true)
+	ctx, err := internal.NewGeneratorContext(autometrics.PROMETHEUS, defaultPrometheusInstanceUrl, false, true, false, false)
 	if err != nil {
 		t.Fatalf("error creating the generation context: %s", err)
 	}
@@ -686,7 +686,7 @@ func main(thisIsAContext Context) {
 		"	fmt.Println(hello) // line comment 3\n" +
 		"}\n"
 
-	ctx, err := internal.NewGeneratorContext(autometrics.PROMETHEUS, defaultPrometheusInstanceUrl, false, true)
+	ctx, err := internal.NewGeneratorContext(autometrics.PROMETHEUS, defaultPrometheusInstanceUrl, false, true, false, false)
 	if err != nil {
 		t.Fatalf("error creating the generation context: %s", err)
 	}
@@ -745,7 +745,7 @@ func main(thisIsAContext *gin.Context) {
 		"	fmt.Println(hello) // line comment 3\n" +
 		"}\n"
 
-	ctx, err := internal.NewGeneratorContext(autometrics.PROMETHEUS, defaultPrometheusInstanceUrl, false, true)
+	ctx, err := internal.NewGeneratorContext(autometrics.PROMETHEUS, defaultPrometheusInstanceUrl, false, true, false, false)
 	if err != nil {
 		t.Fatalf("error creating the generation context: %s", err)
 	}
@@ -804,7 +804,7 @@ func main(thisIsAContext *vanilla.Context) {
 		"	fmt.Println(hello) // line comment 3\n" +
 		"}\n"
 
-	ctx, err := internal.NewGeneratorContext(autometrics.PROMETHEUS, defaultPrometheusInstanceUrl, false, true)
+	ctx, err := internal.NewGeneratorContext(autometrics.PROMETHEUS, defaultPrometheusInstanceUrl, false, true, false, false)
 	if err != nil {
 		t.Fatalf("error creating the generation context: %s", err)
 	}
@@ -863,7 +863,7 @@ func main(thisIsAContext *Context) {
 		"	fmt.Println(hello) // line comment 3\n" +
 		"}\n"
 
-	ctx, err := internal.NewGeneratorContext(autometrics.PROMETHEUS, defaultPrometheusInstanceUrl, false, true)
+	ctx, err := internal.NewGeneratorContext(autometrics.PROMETHEUS, defaultPrometheusInstanceUrl, false, true, false, false)
 	if err != nil {
 		t.Fatalf("error creating the generation context: %s", err)
 	}

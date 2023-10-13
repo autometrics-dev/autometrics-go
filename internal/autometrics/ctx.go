@@ -30,6 +30,12 @@ type GeneratorContext struct {
 	//
 	// This can be set in the command for the generator or through the environment.
 	DisableDocGeneration bool
+	// Flag to ask the generator to process all function declaration even if they
+	// do not have any annotation. The flag is overriden by the RemoveEverything one.
+	InstrumentEverything bool
+	// Flag to ask the generator to only remove all autometrics generated code in the
+	// file.
+	RemoveEverything bool
 	// ImportMap maps the alias to import in the current file, to canonical names associated with that name.
 	ImportsMap map[string]string
 }
@@ -143,11 +149,13 @@ func (c *GeneratorContext) SetCommentIdx(i int) {
 	c.FuncCtx.CommentIndex = i
 }
 
-func NewGeneratorContext(implementation autometrics.Implementation, prometheusUrl string, allowCustomLatencies, disableDocGeneration bool) (GeneratorContext, error) {
+func NewGeneratorContext(implementation autometrics.Implementation, prometheusUrl string, allowCustomLatencies, disableDocGeneration, instrumentEverything, removeEverything bool) (GeneratorContext, error) {
 	ctx := GeneratorContext{
 		Implementation:       implementation,
 		AllowCustomLatencies: allowCustomLatencies,
 		DisableDocGeneration: disableDocGeneration,
+		InstrumentEverything: instrumentEverything,
+		RemoveEverything:     removeEverything,
 		RuntimeCtx:           DefaultRuntimeCtxInfo(),
 		FuncCtx:              GeneratorFunctionContext{},
 		ImportsMap:           make(map[string]string),
