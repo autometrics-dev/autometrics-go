@@ -116,6 +116,28 @@ compatibility comes out of the box).
 
 ### 3. Add directives for each function you want to instrument
 
+#### 3a. The VERY quick way
+
+Use find and sed to insert a `//go:generate` directive that will instrument all
+the functions in all source files under the current directory:
+
+(Replace `gsed` with `sed` on linux; `gsed` is installed with `brew gsed`)
+
+``` bash
+find . \
+ -type f \
+ -path ./vendor -prune -or \
+ -name '*.go*' \
+ -print0 | xargs -0 gsed -i -e '/package/{a\//go:generate autometrics --instrument-all --no-doc' -e ':a;n;ba}'
+```
+
+You can remove the `--no-doc` to get the full experience, but the generator will add a lot of comments if so.
+
+#### 3b. The slower quick way
+
+This grants you more control over what gets instrumented, but it is longer
+to add.
+
 > **Warning**
 > You must both add the `//go:generate` directive, and one `//autometrics:inst`
 directive per function you want to instrument
@@ -133,7 +155,7 @@ subsection to see details:
 
 Once it is done, you can call the [generator](#4-generate-the-documentation-and-instrumentation-code)
 
-#### For error-returning functions
+##### For error-returning functions
 
 <details><summary><i>Expand to instrument error returning functions</i></summary>
 
@@ -165,7 +187,7 @@ _must_ name the error return value. This is why we recommend to name the error
 value you return for the function you want to instrument.
 </details>
 
-#### For HTTP handler functions
+##### For HTTP handler functions
 
 <details><summary><i>Expand to instrument HTTP handlers functions</i></summary>
 
@@ -477,6 +499,23 @@ instrumentation only, you have multiple options:
 $ AM_NO_DOCGEN=true go generate ./...
 ```
 
+##### Offboarding
+
+If for some reason you want to stop using autometrics, the easiest way includes 3 steps.
+
+First is to use the environment variable `AM_RM_ALL` to remove all generated documentation
+and code:
+
+``` console
+$ AM_RM_ALL=true go generate ./...
+```
+
+Second step is to use grep/your text-editor/your IDE of choice to remove all lines starting with
+`//go:generate autometrics` from your files so `go generate` will stop creating autometrics code.
+
+Last step is to use your text-editor IDE to remove remnants:
+- a "go imports" cleaner to remove the `autometrics` imports (or grep-ing again)
+- remove the `autometrics.Init` call from the main entrypoint of your code.
 
 # Contributing
 

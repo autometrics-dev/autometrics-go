@@ -84,7 +84,7 @@ func GenerateDocumentationAndInstrumentation(ctx internal.GeneratorContext, sour
 		}
 	}
 
-	if !foundAmImport {
+	if !ctx.RemoveEverything && !foundAmImport {
 		err = addAutometricsImport(&ctx, fileTree)
 		if err != nil {
 			return "", fmt.Errorf("error adding the autometrics import: %w", err)
@@ -125,7 +125,7 @@ func GenerateDocumentationAndInstrumentation(ctx internal.GeneratorContext, sour
 
 // walkFuncDeclaration uses the context to generate documentation and code if necessary for a function declaration in a file.
 func walkFuncDeclaration(ctx *internal.GeneratorContext, funcDeclaration *dst.FuncDecl, moduleName string) error {
-	if ctx.FuncCtx.ImplImportName == "" {
+	if !ctx.RemoveEverything && ctx.FuncCtx.ImplImportName == "" {
 		if ctx.Implementation == autometrics.PROMETHEUS {
 			return fmt.Errorf("the source file is missing a %v import", AmPromPackage)
 		} else if ctx.Implementation == autometrics.OTEL {
@@ -153,6 +153,12 @@ func walkFuncDeclaration(ctx *internal.GeneratorContext, funcDeclaration *dst.Fu
 			"error removing an older autometrics defer statement in %v: %w",
 			funcDeclaration.Name.Name,
 			err)
+	}
+
+	// Early exit if we wanted to remove everything
+	if ctx.RemoveEverything {
+		funcDeclaration.Decorations().Start.Replace(docComments...)
+		return nil
 	}
 
 	// Detect autometrics directive
@@ -248,6 +254,13 @@ func parseAutometricsFnContext(ctx *internal.GeneratorContext, commentGroup []st
 
 			return nil
 		}
+	}
+
+	// If the function didn't have any directive, BUT we asked to process all functions, we change the context still
+	if ctx.InstrumentEverything {
+		ctx.FuncCtx.CommentIndex = len(commentGroup)
+		ctx.RuntimeCtx = internal.DefaultRuntimeCtxInfo()
+		return nil
 	}
 
 	ctx.FuncCtx.CommentIndex = -1
