@@ -116,7 +116,12 @@ compatibility comes out of the box).
 
 ### 3. Add directives for each function you want to instrument
 
-#### 3a. The VERY quick way
+#### 3a. The QUICKEST way
+
+If you have [`am`](https://github.com/autometrics-dev/am) installed in version `0.6.0` or later, you can
+use `am instrumtent single -e /vendor/ -l go .` to instrument everything (excluding a possible `/vendor` subdirectory)
+
+#### 3b. The VERY quick way
 
 Use find and sed to insert a `//go:generate` directive that will instrument all
 the functions in all source files under the current directory:
@@ -125,15 +130,14 @@ the functions in all source files under the current directory:
 
 ``` bash
 find . \
- -type f \
- -path ./vendor -prune -or \
- -name '*.go*' \
- -print0 | xargs -0 gsed -i -e '/package/{a\//go:generate autometrics --instrument-all --no-doc' -e ':a;n;ba}'
+  -type d -name vendor -prune -or \
+  -type f -name '*.go' \
+  -print0 | xargs -0 gsed -i -e '/package/{a\//go:generate autometrics --inst-all --no-doc' -e ':a;n;ba}'
 ```
 
 You can remove the `--no-doc` to get the full experience, but the generator will add a lot of comments if so.
 
-#### 3b. The slower quick way
+#### 3c. The slower quick way
 
 This grants you more control over what gets instrumented, but it is longer
 to add.
