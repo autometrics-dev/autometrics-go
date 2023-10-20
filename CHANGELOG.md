@@ -6,7 +6,21 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Go module
 versioning](https://go.dev/doc/modules/version-numbers).
 
-## [Unreleased](https://github.com/autometrics-dev/autometrics-go/compare/v0.8.1...main)
+## [Unreleased](https://github.com/autometrics-dev/autometrics-go/compare/v0.8.2...main)
+
+### Added
+
+### Changed
+
+### Deprecated
+
+### Removed
+
+### Fixed
+
+### Security
+
+## [0.8.2](https://github.com/autometrics-dev/autometrics-go/releases/tag/v0.8.2) 2023-10-20
 
 ### Added
 
@@ -19,16 +33,6 @@ versioning](https://go.dev/doc/modules/version-numbers).
   sed -i '/\/\/.*autometrics/d' **/*.go   # A similar sed command will remove all comments containing 'autometrics'
   # A go linter/formatter of your choice can then clean up all unused imports to remove the automatically added ones.
   ```
-
-### Changed
-
-### Deprecated
-
-### Removed
-
-### Fixed
-
-### Security
 
 ## [0.8.1](https://github.com/autometrics-dev/autometrics-go/releases/tag/v0.8.1) 2023-10-13
 
