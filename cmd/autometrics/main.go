@@ -24,7 +24,7 @@ type args struct {
 	UseOtel              bool   `arg:"--otel" default:"false" help:"Use OpenTelemetry client library to instrument code instead of default Prometheus."`
 	AllowCustomLatencies bool   `arg:"--custom-latency" default:"false" help:"Allow non-default latencies to be used in latency-based SLOs."`
 	DisableDocGeneration bool   `arg:"--no-doc,env:AM_NO_DOCGEN" default:"false" help:"Disable documentation links generation for all instrumented functions. Has the same effect as --no-doc in the //autometrics:inst directive."`
-	ProcessAllFunctions  bool   `arg:"-i,--instrument-all,--inst-all,env:AM_INSTRUMENT_ALL" default:"false" help:"Instrument all function declared in the file to transform. Overwritten by the --rm-all argument if both are set."`
+	ProcessAllFunctions  bool   `arg:"-i,--inst-all,env:AM_INSTRUMENT_ALL" default:"false" help:"Instrument all function declared in the file to transform. Overwritten by the --rm-all argument if both are set."`
 	RemoveAllFunctions   bool   `arg:"--rm-all,env:AM_RM_ALL" default:"false" help:"Remove all function instrumentation in the file to transform."`
 }
 
