@@ -84,6 +84,13 @@ const (
 	// BranchLabel is the openTelemetry attribute that describes the branch of the build of the monitored codebase.
 	BranchLabel = "branch"
 
+	// RepositoryURLLabel is the openTelemetry attribute that describes the URL at which the repository containing
+	// the monitored service can be found
+	RepositoryURLLabel = "repository.url"
+	// RepositoryProviderLabel is the openTelemetry attribute that describes the service provider for the monitored
+	// service repository url
+	RepositoryProviderLabel = "repository.provider"
+
 	// ServiceNameLabel is the openTelemetry attribute that describes the name of the Service being monitored.
 	ServiceNameLabel = "service.name"
 
@@ -190,6 +197,17 @@ func Init(meterName string, histogramBuckets []float64, buildInformation BuildIn
 		autometrics.SetService(buildInformation.Service)
 	}
 
+	if repoURL, ok := os.LookupEnv(autometrics.AutometricsRepoURLEnv); ok {
+		autometrics.SetRepositoryURL(repoURL)
+	} else if buildInformation.RepositoryURL != "" {
+		autometrics.SetRepositoryURL(buildInformation.RepositoryURL)
+	}
+	if repoProvider, ok := os.LookupEnv(autometrics.AutometricsRepoProviderEnv); ok {
+		autometrics.SetRepositoryURL(repoProvider)
+	} else if buildInformation.RepositoryProvider != "" {
+		autometrics.SetRepositoryURL(buildInformation.RepositoryProvider)
+	}
+
 	provider, err := initProvider(pushExporter, pushConfiguration, meterName, histogramBuckets)
 	if err != nil {
 		return nil, err
@@ -223,6 +241,8 @@ func Init(meterName string, histogramBuckets []float64, buildInformation BuildIn
 				attribute.Key(VersionLabel).String(buildInformation.Version),
 				attribute.Key(BranchLabel).String(buildInformation.Branch),
 				attribute.Key(ServiceNameLabel).String(autometrics.GetService()),
+				attribute.Key(RepositoryProviderLabel).String(autometrics.GetRepositoryProvider()),
+				attribute.Key(RepositoryURLLabel).String(autometrics.GetRepositoryURL()),
 				attribute.Key(JobNameLabel).String(autometrics.GetPushJobName()),
 			}...))
 

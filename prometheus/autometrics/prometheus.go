@@ -76,15 +76,15 @@ const (
 	// BranchLabel is the prometheus label that describes the branch of the build of the monitored codebase.
 	BranchLabel = "branch"
 
+	// RepositoryURLLabel is the prometheus label that describes the URL at which the repository containing
+	// the monitored service can be found
+	RepositoryURLLabel = "repository_url"
+	// RepositoryProviderLabel is the prometheus label that describes the service provider for the monitored
+	// service repository url
+	RepositoryProviderLabel = "repository_provider"
+
 	// ServiceNameLabel is the prometheus label that describes the name of the service being monitored
 	ServiceNameLabel = "service_name"
-
-	// ClearModeLabel is the label used by Prometheus Gravel Gateway to deal with aggregation.
-	ClearModeLabel = "clearmode"
-
-	ClearModeFamily    = "family"
-	ClearModeAggregate = "aggregate"
-	ClearModeReplace   = "replace"
 
 	traceIdExemplar      = "trace_id"
 	spanIdExemplar       = "span_id"
@@ -160,22 +160,33 @@ func Init(reg *prometheus.Registry, histogramBuckets []float64, buildInformation
 		autometrics.SetService(buildInformation.Service)
 	}
 
+	if repoURL, ok := os.LookupEnv(autometrics.AutometricsRepoURLEnv); ok {
+		autometrics.SetRepositoryURL(repoURL)
+	} else if buildInformation.RepositoryURL != "" {
+		autometrics.SetRepositoryURL(buildInformation.RepositoryURL)
+	}
+	if repoProvider, ok := os.LookupEnv(autometrics.AutometricsRepoProviderEnv); ok {
+		autometrics.SetRepositoryURL(repoProvider)
+	} else if buildInformation.RepositoryProvider != "" {
+		autometrics.SetRepositoryURL(buildInformation.RepositoryProvider)
+	}
+
 	functionCallsCount = prometheus.NewCounterVec(prometheus.CounterOpts{
 		Name: FunctionCallsCountName,
-	}, []string{FunctionLabel, ModuleLabel, CallerFunctionLabel, CallerModuleLabel, ResultLabel, TargetSuccessRateLabel, SloNameLabel, CommitLabel, VersionLabel, BranchLabel, ServiceNameLabel, ClearModeLabel})
+	}, []string{FunctionLabel, ModuleLabel, CallerFunctionLabel, CallerModuleLabel, ResultLabel, TargetSuccessRateLabel, SloNameLabel, CommitLabel, VersionLabel, BranchLabel, ServiceNameLabel})
 
 	functionCallsDuration = prometheus.NewHistogramVec(prometheus.HistogramOpts{
 		Name:    FunctionCallsDurationName,
 		Buckets: histogramBuckets,
-	}, []string{FunctionLabel, ModuleLabel, CallerFunctionLabel, CallerModuleLabel, TargetLatencyLabel, TargetSuccessRateLabel, SloNameLabel, CommitLabel, VersionLabel, BranchLabel, ServiceNameLabel, ClearModeLabel})
+	}, []string{FunctionLabel, ModuleLabel, CallerFunctionLabel, CallerModuleLabel, TargetLatencyLabel, TargetSuccessRateLabel, SloNameLabel, CommitLabel, VersionLabel, BranchLabel, ServiceNameLabel})
 
 	functionCallsConcurrent = prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Name: FunctionCallsConcurrentName,
-	}, []string{FunctionLabel, ModuleLabel, CallerFunctionLabel, CallerModuleLabel, CommitLabel, VersionLabel, BranchLabel, ServiceNameLabel, ClearModeLabel})
+	}, []string{FunctionLabel, ModuleLabel, CallerFunctionLabel, CallerModuleLabel, CommitLabel, VersionLabel, BranchLabel, ServiceNameLabel})
 
 	buildInfo = prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Name: BuildInfoName,
-	}, []string{CommitLabel, VersionLabel, BranchLabel, ServiceNameLabel, ClearModeLabel})
+	}, []string{CommitLabel, VersionLabel, BranchLabel, ServiceNameLabel, RepositoryURLLabel, RepositoryProviderLabel})
 
 	if reg != nil {
 		reg.MustRegister(functionCallsCount)
@@ -190,11 +201,12 @@ func Init(reg *prometheus.Registry, histogramBuckets []float64, buildInformation
 	}
 
 	buildInfo.With(prometheus.Labels{
-		CommitLabel:      buildInformation.Commit,
-		VersionLabel:     buildInformation.Version,
-		BranchLabel:      buildInformation.Branch,
-		ServiceNameLabel: autometrics.GetService(),
-		ClearModeLabel:   ClearModeFamily,
+		CommitLabel:             buildInformation.Commit,
+		VersionLabel:            buildInformation.Version,
+		BranchLabel:             buildInformation.Branch,
+		ServiceNameLabel:        autometrics.GetService(),
+		RepositoryURLLabel:      autometrics.GetRepositoryURL(),
+		RepositoryProviderLabel: autometrics.GetRepositoryProvider(),
 	}).Set(1)
 
 	if pusher != nil {

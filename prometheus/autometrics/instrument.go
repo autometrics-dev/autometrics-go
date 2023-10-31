@@ -62,11 +62,6 @@ func Instrument(ctx context.Context, err *error) {
 		CommitLabel:            buildInfo.Commit,
 		VersionLabel:           buildInfo.Version,
 		ServiceNameLabel:       buildInfo.Service,
-		// REVIEW: This clear mode label is added to make the metrics work when
-		// pushing metrics to a gravel gateway. To reconsider once
-		// https://github.com/sinkingpoint/prometheus-gravel-gateway/issues/28
-		// is solved
-		ClearModeLabel: ClearModeFamily,
 	}).(prometheus.ExemplarAdder).AddWithExemplar(1, info)
 
 	functionCallsDuration.With(prometheus.Labels{
@@ -81,11 +76,6 @@ func Instrument(ctx context.Context, err *error) {
 		CommitLabel:            buildInfo.Commit,
 		VersionLabel:           buildInfo.Version,
 		ServiceNameLabel:       buildInfo.Service,
-		// REVIEW: This clear mode label is added to make the metrics work when
-		// pushing metrics to a gravel gateway. To reconsider once
-		// https://github.com/sinkingpoint/prometheus-gravel-gateway/issues/28
-		// is solved
-		ClearModeLabel: ClearModeFamily,
 	}).(prometheus.ExemplarObserver).ObserveWithExemplar(time.Since(am.GetStartTime(ctx)).Seconds(), info)
 
 	if am.GetTrackConcurrentCalls(ctx) {
@@ -98,11 +88,6 @@ func Instrument(ctx context.Context, err *error) {
 			CommitLabel:         buildInfo.Commit,
 			VersionLabel:        buildInfo.Version,
 			ServiceNameLabel:    buildInfo.Service,
-			// REVIEW: This clear mode label is added to make the metrics work when
-			// pushing metrics to a gravel gateway. To reconsider once
-			// https://github.com/sinkingpoint/prometheus-gravel-gateway/issues/28
-			// is solved
-			ClearModeLabel: ClearModeFamily,
 		}).Add(-1)
 	}
 
@@ -153,11 +138,6 @@ func PreInstrument(ctx context.Context) context.Context {
 			CommitLabel:         buildInfo.Commit,
 			VersionLabel:        buildInfo.Version,
 			ServiceNameLabel:    buildInfo.Service,
-			// REVIEW: This clear mode label is added to make the metrics work when
-			// pushing metrics to a gravel gateway. To reconsider once
-			// https://github.com/sinkingpoint/prometheus-gravel-gateway/issues/28
-			// is solved
-			ClearModeLabel: ClearModeFamily,
 		}).Add(1)
 	}
 

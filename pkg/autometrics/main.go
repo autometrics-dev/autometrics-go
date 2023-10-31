@@ -51,8 +51,12 @@ type BuildInfo struct {
 	Version string
 	// Branch is the branch of the build of the codebase.
 	Branch string
-	// ServiceName is the name of the service
+	// Service is the name of the service
 	Service string
+	// RepositoryURL is the URL of the repository containing the code
+	RepositoryURL string
+	// RepositoryProvider is the service provider for the repository containing the code
+	RepositoryProvider string
 }
 
 // PushConfiguration holds the information necessary to push metrics to an OTEL Collector.
