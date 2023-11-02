@@ -1,5 +1,9 @@
 package autometrics // import "github.com/autometrics-dev/autometrics-go/pkg/autometrics"
 
+import (
+	"fmt"
+)
+
 // These variables are describing the state of the application being autometricized,
 // _not_ the build information of the binary
 
@@ -23,15 +27,21 @@ const (
 )
 
 var (
-	version      string
-	commit       string
-	branch       string
-	service      string
-	repoURL      string
-	repoProvider string
-	pushJobName  string
-	pushJobURL   string
+	version           string
+	commit            string
+	branch            string
+	service           string
+	repoURL           string
+	repoProvider      string
+	pushJobName       string
+	pushJobURL        string
+	instrumentedSpans map[spanKey]FunctionID = make(map[spanKey]FunctionID)
 )
+
+type spanKey struct {
+	tid TraceID
+	sid SpanID
+}
 
 // GetVersion returns the version of the codebase being instrumented.
 func GetVersion() string {
@@ -112,4 +122,21 @@ func GetPushJobURL() string {
 // SetPushJobURL sets the job url to use when the codebase being instrumented is pushing metrics to an OTEL Collector.
 func SetPushJobURL(newPushJobURL string) {
 	pushJobURL = newPushJobURL
+}
+
+func fetchFunctionName(traceID TraceID, spanID SpanID) (FunctionID, error) {
+	fid, ok := instrumentedSpans[spanKey{tid: traceID, sid: spanID}]
+	if !ok {
+		return FunctionID{}, fmt.Errorf("%v,%v is not a known traceID/spanID pair now", traceID, spanID)
+	}
+
+	return fid, nil
+}
+
+func popFunctionName(traceID TraceID, spanID SpanID) {
+	delete(instrumentedSpans, spanKey{tid: traceID, sid: spanID})
+}
+
+func pushFunctionName(traceID TraceID, spanID SpanID, functionID FunctionID) {
+	instrumentedSpans[spanKey{tid: traceID, sid: spanID}] = functionID
 }

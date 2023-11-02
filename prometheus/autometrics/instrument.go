@@ -51,10 +51,10 @@ func Instrument(ctx context.Context, err *error) {
 	info := exemplars(ctx)
 
 	functionCallsCount.With(prometheus.Labels{
-		FunctionLabel:          callInfo.FuncName,
-		ModuleLabel:            callInfo.ModuleName,
-		CallerFunctionLabel:    callInfo.ParentFuncName,
-		CallerModuleLabel:      callInfo.ParentModuleName,
+		FunctionLabel:          callInfo.Current.Function,
+		ModuleLabel:            callInfo.Current.Module,
+		CallerFunctionLabel:    callInfo.Parent.Function,
+		CallerModuleLabel:      callInfo.Parent.Module,
 		ResultLabel:            result,
 		TargetSuccessRateLabel: successObjective,
 		SloNameLabel:           sloName,
@@ -65,10 +65,10 @@ func Instrument(ctx context.Context, err *error) {
 	}).(prometheus.ExemplarAdder).AddWithExemplar(1, info)
 
 	functionCallsDuration.With(prometheus.Labels{
-		FunctionLabel:          callInfo.FuncName,
-		ModuleLabel:            callInfo.ModuleName,
-		CallerFunctionLabel:    callInfo.ParentFuncName,
-		CallerModuleLabel:      callInfo.ParentModuleName,
+		FunctionLabel:          callInfo.Current.Function,
+		ModuleLabel:            callInfo.Current.Module,
+		CallerFunctionLabel:    callInfo.Parent.Function,
+		CallerModuleLabel:      callInfo.Parent.Module,
 		TargetLatencyLabel:     latencyTarget,
 		TargetSuccessRateLabel: latencyObjective,
 		SloNameLabel:           sloName,
@@ -80,10 +80,10 @@ func Instrument(ctx context.Context, err *error) {
 
 	if am.GetTrackConcurrentCalls(ctx) {
 		functionCallsConcurrent.With(prometheus.Labels{
-			FunctionLabel:       callInfo.FuncName,
-			ModuleLabel:         callInfo.ModuleName,
-			CallerFunctionLabel: callInfo.ParentFuncName,
-			CallerModuleLabel:   callInfo.ParentModuleName,
+			FunctionLabel:       callInfo.Current.Function,
+			ModuleLabel:         callInfo.Current.Module,
+			CallerFunctionLabel: callInfo.Parent.Function,
+			CallerModuleLabel:   callInfo.Parent.Module,
 			BranchLabel:         buildInfo.Branch,
 			CommitLabel:         buildInfo.Commit,
 			VersionLabel:        buildInfo.Version,
@@ -111,6 +111,11 @@ func Instrument(ctx context.Context, err *error) {
 			}
 		}(amCtx)
 	}
+
+	// NOTE: This call means that goroutines that outlive this function as the caller will not have access to parent
+	// caller information, but hopefully by that point we got all the necessary accesses done.
+	// If not, it is a convenience we accept to give up to prevent memory usage from exploding
+	am.PopFunctionName(ctx)
 }
 
 // PreInstrument runs the "before wrappee" part of instrumentation.
@@ -122,18 +127,17 @@ func PreInstrument(ctx context.Context) context.Context {
 		return nil
 	}
 
-	callInfo := am.CallerInfo()
-	ctx = am.SetCallInfo(ctx, callInfo)
+	ctx = am.FillTracingAndCallerInfo(ctx)
 	ctx = am.FillBuildInfo(ctx)
-	ctx = am.FillTracingInfo(ctx)
 	buildInfo := am.GetBuildInfo(ctx)
+	callInfo := am.GetCallInfo(ctx)
 
 	if am.GetTrackConcurrentCalls(ctx) {
 		functionCallsConcurrent.With(prometheus.Labels{
-			FunctionLabel:       callInfo.FuncName,
-			ModuleLabel:         callInfo.ModuleName,
-			CallerFunctionLabel: callInfo.ParentFuncName,
-			CallerModuleLabel:   callInfo.ParentModuleName,
+			FunctionLabel:       callInfo.Current.Function,
+			ModuleLabel:         callInfo.Current.Module,
+			CallerFunctionLabel: callInfo.Parent.Function,
+			CallerModuleLabel:   callInfo.Parent.Module,
 			BranchLabel:         buildInfo.Branch,
 			CommitLabel:         buildInfo.Commit,
 			VersionLabel:        buildInfo.Version,
