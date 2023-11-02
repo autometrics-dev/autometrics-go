@@ -94,7 +94,7 @@ func Instrument(ctx context.Context, err *error) {
 	// NOTE: This call means that goroutines that outlive this function as the caller will not have access to parent
 	// caller information, but hopefully by that point we got all the necessary accesses done.
 	// If not, it is a convenience we accept to give up to prevent memory usage from exploding
-	am.PopFunctionName(ctx)
+	_ = am.PopFunctionName(ctx)
 }
 
 // PreInstrument runs the "before wrappee" part of instrumentation.
