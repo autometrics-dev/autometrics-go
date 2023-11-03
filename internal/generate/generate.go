@@ -154,6 +154,13 @@ func walkFuncDeclaration(ctx *internal.GeneratorContext, funcDeclaration *dst.Fu
 			funcDeclaration.Name.Name,
 			err)
 	}
+	err = removeContextStatement(ctx, funcDeclaration)
+	if err != nil {
+		return fmt.Errorf(
+			"error removing an older autometrics context statement in %v: %w",
+			funcDeclaration.Name.Name,
+			err)
+	}
 
 	// Early exit if we wanted to remove everything
 	if ctx.RemoveEverything {
@@ -192,8 +199,14 @@ func walkFuncDeclaration(ctx *internal.GeneratorContext, funcDeclaration *dst.Fu
 			funcDeclaration.Decorations().Start.Replace(docComments...)
 		}
 
+		// context statement
+		_, err := injectContextStatement(ctx, funcDeclaration)
+		if err != nil {
+			return fmt.Errorf("failed to inject context statement: %w", err)
+		}
+
 		// defer statement
-		err := injectDeferStatement(ctx, funcDeclaration)
+		err = injectDeferStatement(ctx, funcDeclaration)
 		if err != nil {
 			return fmt.Errorf("failed to inject defer statement: %w", err)
 		}

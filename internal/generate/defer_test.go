@@ -42,13 +42,14 @@ func main(thisIsAContext context.Context) {
 		"//\n" +
 		"//autometrics:inst --no-doc --slo \"Service Test\" --success-target 99\n" +
 		"func main(thisIsAContext context.Context) {\n" +
-		"\tdefer prom.Instrument(prom.PreInstrument(prom.NewContext(\n" +
+		"\tthisIsAContext = prom.PreInstrument(prom.NewContext(\n" +
 		"\t\tthisIsAContext,\n" +
 		"\t\tprom.WithConcurrentCalls(true),\n" +
 		"\t\tprom.WithCallerName(true),\n" +
 		"\t\tprom.WithSloName(\"Service Test\"),\n" +
 		"\t\tprom.WithAlertSuccess(99),\n" +
-		"\t)), nil) //autometrics:defer\n" +
+		"\t)) //autometrics:shadow-ctx\n" +
+		"\tdefer prom.Instrument(thisIsAContext, nil) //autometrics:defer\n" +
 		"\n" +
 		"	fmt.Println(hello) // line comment 3\n" +
 		"}\n"
@@ -99,13 +100,14 @@ func main(thisIsAContext vanilla.Context) {
 		"//\n" +
 		"//autometrics:inst --no-doc --slo \"Service Test\" --success-target 99\n" +
 		"func main(thisIsAContext vanilla.Context) {\n" +
-		"\tdefer prom.Instrument(prom.PreInstrument(prom.NewContext(\n" +
+		"\tthisIsAContext = prom.PreInstrument(prom.NewContext(\n" +
 		"\t\tthisIsAContext,\n" +
 		"\t\tprom.WithConcurrentCalls(true),\n" +
 		"\t\tprom.WithCallerName(true),\n" +
 		"\t\tprom.WithSloName(\"Service Test\"),\n" +
 		"\t\tprom.WithAlertSuccess(99),\n" +
-		"\t)), nil) //autometrics:defer\n" +
+		"\t)) //autometrics:shadow-ctx\n" +
+		"\tdefer prom.Instrument(thisIsAContext, nil) //autometrics:defer\n" +
 		"\n" +
 		"	fmt.Println(hello) // line comment 3\n" +
 		"}\n"
@@ -156,13 +158,14 @@ func main(thisIsAContext Context) {
 		"//\n" +
 		"//autometrics:inst --no-doc --slo \"Service Test\" --success-target 99\n" +
 		"func main(thisIsAContext Context) {\n" +
-		"\tdefer prom.Instrument(prom.PreInstrument(prom.NewContext(\n" +
+		"\tthisIsAContext = prom.PreInstrument(prom.NewContext(\n" +
 		"\t\tthisIsAContext,\n" +
 		"\t\tprom.WithConcurrentCalls(true),\n" +
 		"\t\tprom.WithCallerName(true),\n" +
 		"\t\tprom.WithSloName(\"Service Test\"),\n" +
 		"\t\tprom.WithAlertSuccess(99),\n" +
-		"\t)), nil) //autometrics:defer\n" +
+		"\t)) //autometrics:shadow-ctx\n" +
+		"\tdefer prom.Instrument(thisIsAContext, nil) //autometrics:defer\n" +
 		"\n" +
 		"	fmt.Println(hello) // line comment 3\n" +
 		"}\n"
@@ -213,13 +216,14 @@ func main(w http.ResponseWriter, req *http.Request) {
 		"//\n" +
 		"//autometrics:inst --no-doc --slo \"Service Test\" --success-target 99\n" +
 		"func main(w http.ResponseWriter, req *http.Request) {\n" +
-		"\tdefer prom.Instrument(prom.PreInstrument(prom.NewContext(\n" +
+		"\treq.Context() = prom.PreInstrument(prom.NewContext(\n" +
 		"\t\treq.Context(),\n" +
 		"\t\tprom.WithConcurrentCalls(true),\n" +
 		"\t\tprom.WithCallerName(true),\n" +
 		"\t\tprom.WithSloName(\"Service Test\"),\n" +
 		"\t\tprom.WithAlertSuccess(99),\n" +
-		"\t)), nil) //autometrics:defer\n" +
+		"\t)) //autometrics:shadow-ctx\n" +
+		"\tdefer prom.Instrument(req.Context(), nil) //autometrics:defer\n" +
 		"\n" +
 		"	fmt.Println(hello) // line comment 3\n" +
 		"}\n"
@@ -270,13 +274,14 @@ func main(w vanilla.ResponseWriter, req *vanilla.Request) {
 		"//\n" +
 		"//autometrics:inst --no-doc --slo \"Service Test\" --success-target 99\n" +
 		"func main(w vanilla.ResponseWriter, req *vanilla.Request) {\n" +
-		"\tdefer prom.Instrument(prom.PreInstrument(prom.NewContext(\n" +
+		"\treq.Context() = prom.PreInstrument(prom.NewContext(\n" +
 		"\t\treq.Context(),\n" +
 		"\t\tprom.WithConcurrentCalls(true),\n" +
 		"\t\tprom.WithCallerName(true),\n" +
 		"\t\tprom.WithSloName(\"Service Test\"),\n" +
 		"\t\tprom.WithAlertSuccess(99),\n" +
-		"\t)), nil) //autometrics:defer\n" +
+		"\t)) //autometrics:shadow-ctx\n" +
+		"\tdefer prom.Instrument(req.Context(), nil) //autometrics:defer\n" +
 		"\n" +
 		"	fmt.Println(hello) // line comment 3\n" +
 		"}\n"
@@ -327,13 +332,14 @@ func main(w ResponseWriter, req *Request) {
 		"//\n" +
 		"//autometrics:inst --no-doc --slo \"Service Test\" --success-target 99\n" +
 		"func main(w ResponseWriter, req *Request) {\n" +
-		"\tdefer prom.Instrument(prom.PreInstrument(prom.NewContext(\n" +
+		"\treq.Context() = prom.PreInstrument(prom.NewContext(\n" +
 		"\t\treq.Context(),\n" +
 		"\t\tprom.WithConcurrentCalls(true),\n" +
 		"\t\tprom.WithCallerName(true),\n" +
 		"\t\tprom.WithSloName(\"Service Test\"),\n" +
 		"\t\tprom.WithAlertSuccess(99),\n" +
-		"\t)), nil) //autometrics:defer\n" +
+		"\t)) //autometrics:shadow-ctx\n" +
+		"\tdefer prom.Instrument(req.Context(), nil) //autometrics:defer\n" +
 		"\n" +
 		"	fmt.Println(hello) // line comment 3\n" +
 		"}\n"
@@ -384,13 +390,14 @@ func main(thisIsAContext buffalo.Context) {
 		"//\n" +
 		"//autometrics:inst --no-doc --slo \"Service Test\" --success-target 99\n" +
 		"func main(thisIsAContext buffalo.Context) {\n" +
-		"\tdefer prom.Instrument(prom.PreInstrument(prom.NewContext(\n" +
+		"\tthisIsAContext = prom.PreInstrument(prom.NewContext(\n" +
 		"\t\tthisIsAContext,\n" +
 		"\t\tprom.WithConcurrentCalls(true),\n" +
 		"\t\tprom.WithCallerName(true),\n" +
 		"\t\tprom.WithSloName(\"Service Test\"),\n" +
 		"\t\tprom.WithAlertSuccess(99),\n" +
-		"\t)), nil) //autometrics:defer\n" +
+		"\t)) //autometrics:shadow-ctx\n" +
+		"\tdefer prom.Instrument(thisIsAContext, nil) //autometrics:defer\n" +
 		"\n" +
 		"	fmt.Println(hello) // line comment 3\n" +
 		"}\n"
@@ -441,13 +448,14 @@ func main(thisIsAContext vanilla.Context) {
 		"//\n" +
 		"//autometrics:inst --no-doc --slo \"Service Test\" --success-target 99\n" +
 		"func main(thisIsAContext vanilla.Context) {\n" +
-		"\tdefer prom.Instrument(prom.PreInstrument(prom.NewContext(\n" +
+		"\tthisIsAContext = prom.PreInstrument(prom.NewContext(\n" +
 		"\t\tthisIsAContext,\n" +
 		"\t\tprom.WithConcurrentCalls(true),\n" +
 		"\t\tprom.WithCallerName(true),\n" +
 		"\t\tprom.WithSloName(\"Service Test\"),\n" +
 		"\t\tprom.WithAlertSuccess(99),\n" +
-		"\t)), nil) //autometrics:defer\n" +
+		"\t)) //autometrics:shadow-ctx\n" +
+		"\tdefer prom.Instrument(thisIsAContext, nil) //autometrics:defer\n" +
 		"\n" +
 		"	fmt.Println(hello) // line comment 3\n" +
 		"}\n"
@@ -498,13 +506,14 @@ func main(thisIsAContext Context) {
 		"//\n" +
 		"//autometrics:inst --no-doc --slo \"Service Test\" --success-target 99\n" +
 		"func main(thisIsAContext Context) {\n" +
-		"\tdefer prom.Instrument(prom.PreInstrument(prom.NewContext(\n" +
+		"\tthisIsAContext = prom.PreInstrument(prom.NewContext(\n" +
 		"\t\tthisIsAContext,\n" +
 		"\t\tprom.WithConcurrentCalls(true),\n" +
 		"\t\tprom.WithCallerName(true),\n" +
 		"\t\tprom.WithSloName(\"Service Test\"),\n" +
 		"\t\tprom.WithAlertSuccess(99),\n" +
-		"\t)), nil) //autometrics:defer\n" +
+		"\t)) //autometrics:shadow-ctx\n" +
+		"\tdefer prom.Instrument(thisIsAContext, nil) //autometrics:defer\n" +
 		"\n" +
 		"	fmt.Println(hello) // line comment 3\n" +
 		"}\n"
@@ -555,7 +564,7 @@ func main(thisIsAContext echo.Context) {
 		"//\n" +
 		"//autometrics:inst --no-doc --slo \"Service Test\" --success-target 99\n" +
 		"func main(thisIsAContext echo.Context) {\n" +
-		"\tdefer prom.Instrument(prom.PreInstrument(prom.NewContext(\n" +
+		"\tamCtx := prom.PreInstrument(prom.NewContext(\n" +
 		"\t\tnil,\n" +
 		"\t\tprom.WithTraceID(prom.DecodeString(thisIsAContext.Get(\"autometricsTraceID\"))),\n" +
 		"\t\tprom.WithSpanID(prom.DecodeString(thisIsAContext.Get(\"autometricsSpanID\"))),\n" +
@@ -563,7 +572,8 @@ func main(thisIsAContext echo.Context) {
 		"\t\tprom.WithCallerName(true),\n" +
 		"\t\tprom.WithSloName(\"Service Test\"),\n" +
 		"\t\tprom.WithAlertSuccess(99),\n" +
-		"\t)), nil) //autometrics:defer\n" +
+		"\t)) //autometrics:shadow-ctx\n" +
+		"\tdefer prom.Instrument(amCtx, nil) //autometrics:defer\n" +
 		"\n" +
 		"	fmt.Println(hello) // line comment 3\n" +
 		"}\n"
@@ -614,7 +624,7 @@ func main(thisIsAContext vanilla.Context) {
 		"//\n" +
 		"//autometrics:inst --no-doc --slo \"Service Test\" --success-target 99\n" +
 		"func main(thisIsAContext vanilla.Context) {\n" +
-		"\tdefer prom.Instrument(prom.PreInstrument(prom.NewContext(\n" +
+		"\tamCtx := prom.PreInstrument(prom.NewContext(\n" +
 		"\t\tnil,\n" +
 		"\t\tprom.WithTraceID(prom.DecodeString(thisIsAContext.Get(\"autometricsTraceID\"))),\n" +
 		"\t\tprom.WithSpanID(prom.DecodeString(thisIsAContext.Get(\"autometricsSpanID\"))),\n" +
@@ -622,7 +632,8 @@ func main(thisIsAContext vanilla.Context) {
 		"\t\tprom.WithCallerName(true),\n" +
 		"\t\tprom.WithSloName(\"Service Test\"),\n" +
 		"\t\tprom.WithAlertSuccess(99),\n" +
-		"\t)), nil) //autometrics:defer\n" +
+		"\t)) //autometrics:shadow-ctx\n" +
+		"\tdefer prom.Instrument(amCtx, nil) //autometrics:defer\n" +
 		"\n" +
 		"	fmt.Println(hello) // line comment 3\n" +
 		"}\n"
@@ -673,7 +684,7 @@ func main(thisIsAContext Context) {
 		"//\n" +
 		"//autometrics:inst --no-doc --slo \"Service Test\" --success-target 99\n" +
 		"func main(thisIsAContext Context) {\n" +
-		"\tdefer prom.Instrument(prom.PreInstrument(prom.NewContext(\n" +
+		"\tamCtx := prom.PreInstrument(prom.NewContext(\n" +
 		"\t\tnil,\n" +
 		"\t\tprom.WithTraceID(prom.DecodeString(thisIsAContext.Get(\"autometricsTraceID\"))),\n" +
 		"\t\tprom.WithSpanID(prom.DecodeString(thisIsAContext.Get(\"autometricsSpanID\"))),\n" +
@@ -681,7 +692,8 @@ func main(thisIsAContext Context) {
 		"\t\tprom.WithCallerName(true),\n" +
 		"\t\tprom.WithSloName(\"Service Test\"),\n" +
 		"\t\tprom.WithAlertSuccess(99),\n" +
-		"\t)), nil) //autometrics:defer\n" +
+		"\t)) //autometrics:shadow-ctx\n" +
+		"\tdefer prom.Instrument(amCtx, nil) //autometrics:defer\n" +
 		"\n" +
 		"	fmt.Println(hello) // line comment 3\n" +
 		"}\n"
@@ -732,7 +744,7 @@ func main(thisIsAContext *gin.Context) {
 		"//\n" +
 		"//autometrics:inst --no-doc --slo \"Service Test\" --success-target 99\n" +
 		"func main(thisIsAContext *gin.Context) {\n" +
-		"\tdefer prom.Instrument(prom.PreInstrument(prom.NewContext(\n" +
+		"\tamCtx := prom.PreInstrument(prom.NewContext(\n" +
 		"\t\tnil,\n" +
 		"\t\tprom.WithTraceID(prom.DecodeString(thisIsAContext.GetString(\"autometricsTraceID\"))),\n" +
 		"\t\tprom.WithSpanID(prom.DecodeString(thisIsAContext.GetString(\"autometricsSpanID\"))),\n" +
@@ -740,7 +752,8 @@ func main(thisIsAContext *gin.Context) {
 		"\t\tprom.WithCallerName(true),\n" +
 		"\t\tprom.WithSloName(\"Service Test\"),\n" +
 		"\t\tprom.WithAlertSuccess(99),\n" +
-		"\t)), nil) //autometrics:defer\n" +
+		"\t)) //autometrics:shadow-ctx\n" +
+		"\tdefer prom.Instrument(amCtx, nil) //autometrics:defer\n" +
 		"\n" +
 		"	fmt.Println(hello) // line comment 3\n" +
 		"}\n"
@@ -791,7 +804,7 @@ func main(thisIsAContext *vanilla.Context) {
 		"//\n" +
 		"//autometrics:inst --no-doc --slo \"Service Test\" --success-target 99\n" +
 		"func main(thisIsAContext *vanilla.Context) {\n" +
-		"\tdefer prom.Instrument(prom.PreInstrument(prom.NewContext(\n" +
+		"\tamCtx := prom.PreInstrument(prom.NewContext(\n" +
 		"\t\tnil,\n" +
 		"\t\tprom.WithTraceID(prom.DecodeString(thisIsAContext.GetString(\"autometricsTraceID\"))),\n" +
 		"\t\tprom.WithSpanID(prom.DecodeString(thisIsAContext.GetString(\"autometricsSpanID\"))),\n" +
@@ -799,7 +812,8 @@ func main(thisIsAContext *vanilla.Context) {
 		"\t\tprom.WithCallerName(true),\n" +
 		"\t\tprom.WithSloName(\"Service Test\"),\n" +
 		"\t\tprom.WithAlertSuccess(99),\n" +
-		"\t)), nil) //autometrics:defer\n" +
+		"\t)) //autometrics:shadow-ctx\n" +
+		"\tdefer prom.Instrument(amCtx, nil) //autometrics:defer\n" +
 		"\n" +
 		"	fmt.Println(hello) // line comment 3\n" +
 		"}\n"
@@ -850,7 +864,7 @@ func main(thisIsAContext *Context) {
 		"//\n" +
 		"//autometrics:inst --no-doc --slo \"Service Test\" --success-target 99\n" +
 		"func main(thisIsAContext *Context) {\n" +
-		"\tdefer prom.Instrument(prom.PreInstrument(prom.NewContext(\n" +
+		"\tamCtx := prom.PreInstrument(prom.NewContext(\n" +
 		"\t\tnil,\n" +
 		"\t\tprom.WithTraceID(prom.DecodeString(thisIsAContext.GetString(\"autometricsTraceID\"))),\n" +
 		"\t\tprom.WithSpanID(prom.DecodeString(thisIsAContext.GetString(\"autometricsSpanID\"))),\n" +
@@ -858,7 +872,8 @@ func main(thisIsAContext *Context) {
 		"\t\tprom.WithCallerName(true),\n" +
 		"\t\tprom.WithSloName(\"Service Test\"),\n" +
 		"\t\tprom.WithAlertSuccess(99),\n" +
-		"\t)), nil) //autometrics:defer\n" +
+		"\t)) //autometrics:shadow-ctx\n" +
+		"\tdefer prom.Instrument(amCtx, nil) //autometrics:defer\n" +
 		"\n" +
 		"	fmt.Println(hello) // line comment 3\n" +
 		"}\n"

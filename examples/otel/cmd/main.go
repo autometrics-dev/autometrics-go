@@ -98,13 +98,14 @@ func main() {
 //
 //autometrics:doc --slo "API" --latency-target 99 --latency-ms 5
 func indexHandler(w http.ResponseWriter, r *http.Request) error {
-	defer autometrics.Instrument(autometrics.PreInstrument(autometrics.NewContext(
+	r.Context() = autometrics.PreInstrument(autometrics.NewContext(
 		r.Context(),
 		autometrics.WithConcurrentCalls(true),
 		autometrics.WithCallerName(true),
 		autometrics.WithSloName("API"),
 		autometrics.WithAlertLatency(5000000*time.Nanosecond, 99),
-	)), nil) //autometrics:defer
+	)) //autometrics:shadow-ctx
+	defer autometrics.Instrument(r.Context(), nil) //autometrics:defer
 
 	msSleep := rand.Intn(200)
 	time.Sleep(time.Duration(msSleep) * time.Millisecond)
@@ -148,13 +149,14 @@ var handlerError = errors.New("failed to handle request")
 //
 //autometrics:doc --slo "API" --success-target 90
 func randomErrorHandler(w http.ResponseWriter, r *http.Request) (err error) {
-	defer autometrics.Instrument(autometrics.PreInstrument(autometrics.NewContext(
+	r.Context() = autometrics.PreInstrument(autometrics.NewContext(
 		r.Context(),
 		autometrics.WithConcurrentCalls(true),
 		autometrics.WithCallerName(true),
 		autometrics.WithSloName("API"),
 		autometrics.WithAlertSuccess(90),
-	)), &err) //autometrics:defer
+	)) //autometrics:shadow-ctx
+	defer autometrics.Instrument(r.Context(), &err) //autometrics:defer
 
 	isOk := rand.Intn(10) == 0
 
