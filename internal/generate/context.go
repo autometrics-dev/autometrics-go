@@ -351,10 +351,20 @@ func detectContext(ctx *internal.GeneratorContext, funcDeclaration *dst.FuncDecl
 					return err
 				}
 			} else {
-				return fmt.Errorf("expecting the type being pointed to to be an identifier, got %s instead", reflect.TypeOf(argType.X).String())
+				log.Printf("the type being pointed to by argument %s in %s is %s, skipping...",
+					argName,
+					funcDeclaration.Name.Name,
+					reflect.TypeOf(argType.X).String(),
+				)
+				continue
 			}
 		} else {
-			return fmt.Errorf("expecting the type of argGroup to be an identifier, got %s instead", reflect.TypeOf(argGroup.Type).String())
+			log.Printf("the type of argument %s in %s is %s, skipping...",
+				argName,
+				funcDeclaration.Name.Name,
+				reflect.TypeOf(argGroup.Type).String(),
+			)
+			continue
 		}
 	}
 
