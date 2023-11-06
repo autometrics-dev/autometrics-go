@@ -28,6 +28,23 @@ const (
 	AmOtelPackage = "\"github.com/autometrics-dev/autometrics-go/otel/autometrics\""
 )
 
+type GenerateError struct {
+	FunctionName string
+	Detail       error
+}
+
+type GenerateErrors []GenerateError
+
+func (errs GenerateErrors) Error() string {
+	var sb strings.Builder
+
+	for _, err := range errs {
+		sb.WriteString(fmt.Sprintf("in %v: %v\n", err.FunctionName, err.Detail.Error()))
+	}
+
+	return sb.String()
+}
+
 // TransformFile takes a file path and generates the documentation
 // for the `//autometrics:inst` functions.
 //
@@ -53,7 +70,7 @@ func TransformFile(ctx internal.GeneratorContext, path, moduleName string) error
 	sourceCode := string(sourceBytes)
 	transformedSource, err := GenerateDocumentationAndInstrumentation(ctx, sourceCode, moduleName)
 	if err != nil {
-		return fmt.Errorf("error generating documentation: %w", err)
+		return fmt.Errorf("errors generating instrumentation and documentation: %w", err)
 	}
 
 	err = os.WriteFile(path, []byte(transformedSource), permissions)
@@ -74,7 +91,7 @@ func GenerateDocumentationAndInstrumentation(ctx internal.GeneratorContext, sour
 		return "", fmt.Errorf("error parsing source code: %w", err)
 	}
 
-	var inspectErr error
+	var inspectErr GenerateErrors
 	var foundAmImport bool
 
 	for _, importSpec := range fileTree.Imports {
@@ -97,11 +114,10 @@ func GenerateDocumentationAndInstrumentation(ctx internal.GeneratorContext, sour
 
 	fileWalk := func(node dst.Node) bool {
 		if funcDeclaration, ok := node.(*dst.FuncDecl); ok {
-			inspectErr = walkFuncDeclaration(&ctx, funcDeclaration, moduleName)
-		}
-
-		if inspectErr != nil {
-			return false
+			individualError := walkFuncDeclaration(&ctx, funcDeclaration, moduleName)
+			if individualError != nil {
+				inspectErr = append(inspectErr, *individualError)
+			}
 		}
 
 		return true
@@ -110,7 +126,7 @@ func GenerateDocumentationAndInstrumentation(ctx internal.GeneratorContext, sour
 	dst.Inspect(fileTree, fileWalk)
 
 	if inspectErr != nil {
-		return "", fmt.Errorf("error while transforming file in %v: %w", moduleName, inspectErr)
+		return "", fmt.Errorf("errors while transforming file in %v: %w", moduleName, inspectErr)
 	}
 
 	var buf strings.Builder
@@ -124,14 +140,23 @@ func GenerateDocumentationAndInstrumentation(ctx internal.GeneratorContext, sour
 }
 
 // walkFuncDeclaration uses the context to generate documentation and code if necessary for a function declaration in a file.
-func walkFuncDeclaration(ctx *internal.GeneratorContext, funcDeclaration *dst.FuncDecl, moduleName string) error {
+func walkFuncDeclaration(ctx *internal.GeneratorContext, funcDeclaration *dst.FuncDecl, moduleName string) *GenerateError {
 	if !ctx.RemoveEverything && ctx.FuncCtx.ImplImportName == "" {
 		if ctx.Implementation == autometrics.PROMETHEUS {
-			return fmt.Errorf("the source file is missing a %v import", AmPromPackage)
+			return &GenerateError{
+				FunctionName: funcDeclaration.Name.Name,
+				Detail:       fmt.Errorf("the source file is missing a %v import", AmPromPackage),
+			}
 		} else if ctx.Implementation == autometrics.OTEL {
-			return fmt.Errorf("the source file is missing a %v import", AmOtelPackage)
+			return &GenerateError{
+				FunctionName: funcDeclaration.Name.Name,
+				Detail:       fmt.Errorf("the source file is missing a %v import", AmOtelPackage),
+			}
 		} else {
-			return fmt.Errorf("unknown implementation of metrics has been queried")
+			return &GenerateError{
+				FunctionName: funcDeclaration.Name.Name,
+				Detail:       fmt.Errorf("unknown implementation of metrics has been queried"),
+			}
 		}
 	}
 
@@ -144,22 +169,31 @@ func walkFuncDeclaration(ctx *internal.GeneratorContext, funcDeclaration *dst.Fu
 	// Clean up old autometrics comments
 	docComments, err := cleanUpAutometricsComments(*ctx, funcDeclaration)
 	if err != nil {
-		return fmt.Errorf("error trying to remove autometrics comment from former pass: %w", err)
+		return &GenerateError{
+			FunctionName: funcDeclaration.Name.Name,
+			Detail:       fmt.Errorf("error trying to remove autometrics comment from former pass: %w", err),
+		}
 	}
 
 	err = removeDeferStatement(ctx, funcDeclaration)
 	if err != nil {
-		return fmt.Errorf(
-			"error removing an older autometrics defer statement in %v: %w",
-			funcDeclaration.Name.Name,
-			err)
+		return &GenerateError{
+			FunctionName: funcDeclaration.Name.Name,
+			Detail: fmt.Errorf(
+				"error removing an older autometrics defer statement in %v: %w",
+				funcDeclaration.Name.Name,
+				err),
+		}
 	}
 	err = removeContextStatement(ctx, funcDeclaration)
 	if err != nil {
-		return fmt.Errorf(
-			"error removing an older autometrics context statement in %v: %w",
-			funcDeclaration.Name.Name,
-			err)
+		return &GenerateError{
+			FunctionName: funcDeclaration.Name.Name,
+			Detail: fmt.Errorf(
+				"error removing an older autometrics context statement in %v: %w",
+				funcDeclaration.Name.Name,
+				err),
+		}
 	}
 
 	// Early exit if we wanted to remove everything
@@ -171,10 +205,13 @@ func walkFuncDeclaration(ctx *internal.GeneratorContext, funcDeclaration *dst.Fu
 	// Detect autometrics directive
 	err = parseAutometricsFnContext(ctx, docComments)
 	if err != nil {
-		return fmt.Errorf(
-			"failed to parse //autometrics directive for %v: %w",
-			funcDeclaration.Name.Name,
-			err)
+		return &GenerateError{
+			FunctionName: funcDeclaration.Name.Name,
+			Detail: fmt.Errorf(
+				"failed to parse //autometrics directive for %v: %w",
+				funcDeclaration.Name.Name,
+				err),
+		}
 	}
 
 	// This block only runs on functions that still have the autometrics directive
@@ -202,13 +239,19 @@ func walkFuncDeclaration(ctx *internal.GeneratorContext, funcDeclaration *dst.Fu
 		// context statement
 		_, err := injectContextStatement(ctx, funcDeclaration)
 		if err != nil {
-			return fmt.Errorf("failed to inject context statement: %w", err)
+			return &GenerateError{
+				FunctionName: funcDeclaration.Name.Name,
+				Detail:       fmt.Errorf("failed to inject context statement: %w", err),
+			}
 		}
 
 		// defer statement
 		err = injectDeferStatement(ctx, funcDeclaration)
 		if err != nil {
-			return fmt.Errorf("failed to inject defer statement: %w", err)
+			return &GenerateError{
+				FunctionName: funcDeclaration.Name.Name,
+				Detail:       fmt.Errorf("failed to inject defer statement: %w", err),
+			}
 		}
 	}
 	return nil
