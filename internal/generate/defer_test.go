@@ -216,14 +216,14 @@ func main(w http.ResponseWriter, req *http.Request) {
 		"//\n" +
 		"//autometrics:inst --no-doc --slo \"Service Test\" --success-target 99\n" +
 		"func main(w http.ResponseWriter, req *http.Request) {\n" +
-		"\treq.Context() = prom.PreInstrument(prom.NewContext(\n" +
+		"\tamCtx := prom.PreInstrument(prom.NewContext(\n" +
 		"\t\treq.Context(),\n" +
 		"\t\tprom.WithConcurrentCalls(true),\n" +
 		"\t\tprom.WithCallerName(true),\n" +
 		"\t\tprom.WithSloName(\"Service Test\"),\n" +
 		"\t\tprom.WithAlertSuccess(99),\n" +
 		"\t)) //autometrics:shadow-ctx\n" +
-		"\tdefer prom.Instrument(req.Context(), nil) //autometrics:defer\n" +
+		"\tdefer prom.Instrument(amCtx, nil) //autometrics:defer\n" +
 		"\n" +
 		"	fmt.Println(hello) // line comment 3\n" +
 		"}\n"
@@ -274,14 +274,14 @@ func main(w vanilla.ResponseWriter, req *vanilla.Request) {
 		"//\n" +
 		"//autometrics:inst --no-doc --slo \"Service Test\" --success-target 99\n" +
 		"func main(w vanilla.ResponseWriter, req *vanilla.Request) {\n" +
-		"\treq.Context() = prom.PreInstrument(prom.NewContext(\n" +
+		"\tamCtx := prom.PreInstrument(prom.NewContext(\n" +
 		"\t\treq.Context(),\n" +
 		"\t\tprom.WithConcurrentCalls(true),\n" +
 		"\t\tprom.WithCallerName(true),\n" +
 		"\t\tprom.WithSloName(\"Service Test\"),\n" +
 		"\t\tprom.WithAlertSuccess(99),\n" +
 		"\t)) //autometrics:shadow-ctx\n" +
-		"\tdefer prom.Instrument(req.Context(), nil) //autometrics:defer\n" +
+		"\tdefer prom.Instrument(amCtx, nil) //autometrics:defer\n" +
 		"\n" +
 		"	fmt.Println(hello) // line comment 3\n" +
 		"}\n"
@@ -332,14 +332,14 @@ func main(w ResponseWriter, req *Request) {
 		"//\n" +
 		"//autometrics:inst --no-doc --slo \"Service Test\" --success-target 99\n" +
 		"func main(w ResponseWriter, req *Request) {\n" +
-		"\treq.Context() = prom.PreInstrument(prom.NewContext(\n" +
+		"\tamCtx := prom.PreInstrument(prom.NewContext(\n" +
 		"\t\treq.Context(),\n" +
 		"\t\tprom.WithConcurrentCalls(true),\n" +
 		"\t\tprom.WithCallerName(true),\n" +
 		"\t\tprom.WithSloName(\"Service Test\"),\n" +
 		"\t\tprom.WithAlertSuccess(99),\n" +
 		"\t)) //autometrics:shadow-ctx\n" +
-		"\tdefer prom.Instrument(req.Context(), nil) //autometrics:defer\n" +
+		"\tdefer prom.Instrument(amCtx, nil) //autometrics:defer\n" +
 		"\n" +
 		"	fmt.Println(hello) // line comment 3\n" +
 		"}\n"

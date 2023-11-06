@@ -148,8 +148,8 @@ func buildAutometricsContextNode(agc *internal.GeneratorContext) (newContextCall
 		}
 	}
 
-	contextShadowName = agc.RuntimeCtx.ContextVariableName
-	if contextShadowName == "nil" {
+	contextShadowName = agc.RuntimeCtx.NewContextVariableName
+	if contextShadowName == "nil" || contextShadowName == "" {
 		contextShadowName = amDefaultContextName
 	}
 
@@ -224,6 +224,7 @@ func detectContextIdentImpl(ctx *internal.GeneratorContext, argName string, iden
 
 		if canonical == vanillaContext && typeName == "Context" {
 			ctx.RuntimeCtx.ContextVariableName = argName
+			ctx.RuntimeCtx.NewContextVariableName = argName
 			ctx.RuntimeCtx.SpanIDGetter = ""
 			ctx.RuntimeCtx.TraceIDGetter = ""
 			return true, nil
@@ -236,6 +237,7 @@ func detectContextIdentImpl(ctx *internal.GeneratorContext, argName string, iden
 			} else {
 				ctx.RuntimeCtx.ContextVariableName = fmt.Sprintf("%s.Context()", argName)
 			}
+			ctx.RuntimeCtx.NewContextVariableName = ""
 			ctx.RuntimeCtx.SpanIDGetter = ""
 			ctx.RuntimeCtx.TraceIDGetter = ""
 			return true, nil
@@ -250,6 +252,7 @@ func detectContextIdentImpl(ctx *internal.GeneratorContext, argName string, iden
 		// Buffalo context embeds a context.Context so it can work like vanilla
 		if canonical == buffalo && typeName == "Context" {
 			ctx.RuntimeCtx.ContextVariableName = argName
+			ctx.RuntimeCtx.NewContextVariableName = argName
 			ctx.RuntimeCtx.SpanIDGetter = ""
 			ctx.RuntimeCtx.TraceIDGetter = ""
 			return true, nil
@@ -275,6 +278,7 @@ func detectContextSelectorImpl(ctx *internal.GeneratorContext, argName string, s
 		for alias, canonical := range ctx.ImportsMap {
 			if canonical == vanillaContext && parentName == alias && typeName == "Context" {
 				ctx.RuntimeCtx.ContextVariableName = argName
+				ctx.RuntimeCtx.NewContextVariableName = argName
 				ctx.RuntimeCtx.SpanIDGetter = ""
 				ctx.RuntimeCtx.TraceIDGetter = ""
 				return true, nil
@@ -288,6 +292,7 @@ func detectContextSelectorImpl(ctx *internal.GeneratorContext, argName string, s
 				} else {
 					ctx.RuntimeCtx.ContextVariableName = fmt.Sprintf("%s.Context()", argName)
 				}
+				ctx.RuntimeCtx.NewContextVariableName = ""
 				ctx.RuntimeCtx.SpanIDGetter = ""
 				ctx.RuntimeCtx.TraceIDGetter = ""
 				return true, nil
@@ -302,6 +307,7 @@ func detectContextSelectorImpl(ctx *internal.GeneratorContext, argName string, s
 			// Buffalo context embeds a context.Context so it can work like vanilla
 			if canonical == buffalo && parentName == alias && typeName == "Context" {
 				ctx.RuntimeCtx.ContextVariableName = argName
+				ctx.RuntimeCtx.NewContextVariableName = argName
 				ctx.RuntimeCtx.SpanIDGetter = ""
 				ctx.RuntimeCtx.TraceIDGetter = ""
 				return true, nil

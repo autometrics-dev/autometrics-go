@@ -107,14 +107,14 @@ func main() {
 //
 //autometrics:inst --slo "API" --latency-target 99 --latency-ms 5
 func indexHandler(w http.ResponseWriter, r *http.Request) error {
-	r.Context() = autometrics.PreInstrument(autometrics.NewContext(
+	amCtx := autometrics.PreInstrument(autometrics.NewContext(
 		r.Context(),
 		autometrics.WithConcurrentCalls(true),
 		autometrics.WithCallerName(true),
 		autometrics.WithSloName("API"),
 		autometrics.WithAlertLatency(5000000*time.Nanosecond, 99),
 	)) //autometrics:shadow-ctx
-	defer autometrics.Instrument(r.Context(), nil) //autometrics:defer
+	defer autometrics.Instrument(amCtx, nil) //autometrics:defer
 
 	msSleep := rand.Intn(200)
 	time.Sleep(time.Duration(msSleep) * time.Millisecond)

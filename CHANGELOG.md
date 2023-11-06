@@ -27,10 +27,11 @@ specification.
   tracking. If `autometrics` detects a `context.Context` it can use, it will shadow the
   context with the autometrics augmented one to reduce the changes to make in the code.
   Currently, `autometrics` can detect arguments of specific types in the function signatures
-  to replace contexts:
-  + `context.Context`
-  + `http.Request`
-  + `buffalo.Request`
+  to read from and replace contexts:
+  + `context.Context` (read and replace)
+  + `http.Request` (read only)
+  + `buffalo.Request` (read and replace)
+  + `gin.Context` (read only; _very_ experimental)
 - [Generator] The generator now tries to keep going with instrumentation even if some instrumentation
   fails. On error, still _No file will be modified_, and the generator will exit with an error code
   and output all the collected errors instead of only the first one.
