@@ -8,9 +8,32 @@ versioning](https://go.dev/doc/modules/version-numbers).
 
 ## [Unreleased](https://github.com/autometrics-dev/autometrics-go/compare/v0.8.2...main)
 
+The main goal of this release is to reach compatibility with 1.0.0 version of Autometrics
+specification.
+
 ### Added
 
+- [All] `autometrics` now also optionnally adds the repository where the code comes from
+  in the `build_info` metric. `repository.url` and `repository.provider` can be either
+  set in the `BuildInformation` structure when calling `autometrics.Init`, or by setting
+  environment variables `AUTOMETRICS_REPOSITORY_URL` and `AUTOMETRICS_REPOSITORY_PROVIDER`,
+  respectively.
+
 ### Changed
+
+- [All] `autometrics` now inserts 2 statements in each function it instruments. The context
+  created to track the function execution is now put in a variable, so that callees in the
+  function body can optionnally use the context to help with better trace/span/call graph
+  tracking. If `autometrics` detects a `context.Context` it can use, it will shadow the
+  context with the autometrics augmented one to reduce the changes to make in the code.
+  Currently, `autometrics` can detect arguments of specific types in the function signatures
+  to replace contexts:
+  + `context.Context`
+  + `http.Request`
+  + `buffalo.Request`
+- [Generator] The generator now tries to keep going with instrumentation even if some instrumentation
+  fails. All files will stay modified, and the generator will exit with an error code and output
+  all the collected errors.
 
 ### Deprecated
 
@@ -19,6 +42,10 @@ versioning](https://go.dev/doc/modules/version-numbers).
 ### Fixed
 
 ### Security
+
+- Update all dependencies to reduce dependabot alerts in
+  + `google.golang.org/grpc`
+  + `golang.org/x/net`
 
 ## [0.8.2](https://github.com/autometrics-dev/autometrics-go/releases/tag/v0.8.2) 2023-10-20
 
