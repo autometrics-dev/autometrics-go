@@ -164,7 +164,7 @@ func NewGeneratorContext(implementation autometrics.Implementation, prometheusUr
 	if prometheusUrl != "" {
 		promUrl, err := url.Parse(prometheusUrl)
 		if err != nil {
-			return ctx, fmt.Errorf("failed to parse prometheus URL: %w", err)
+			return ctx, fmt.Errorf("parsing prometheus URL: %w", err)
 		}
 
 		ctx.DocumentationGenerator = NewPrometheusDoc(*promUrl)

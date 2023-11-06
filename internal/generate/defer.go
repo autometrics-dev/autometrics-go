@@ -21,12 +21,12 @@ const (
 func injectDeferStatement(ctx *internal.GeneratorContext, funcDeclaration *dst.FuncDecl) error {
 	contextAssignmentIndex, found := findContextStatement(ctx, funcDeclaration)
 	if !found {
-		return fmt.Errorf("failed to get context: the %v statement is missing", contextDecoration)
+		return fmt.Errorf("getting context: the %v statement is missing", contextDecoration)
 	}
 
 	variable, err := errorReturnValueName(funcDeclaration)
 	if err != nil {
-		return fmt.Errorf("failed to get error return value name: %w", err)
+		return fmt.Errorf("getting error return value name: %w", err)
 	}
 
 	if len(variable) == 0 {
@@ -37,7 +37,7 @@ func injectDeferStatement(ctx *internal.GeneratorContext, funcDeclaration *dst.F
 
 	autometricsDeferStatement, err := buildAutometricsDeferStatement(ctx, variable)
 	if err != nil {
-		return fmt.Errorf("failed to build the defer statement for instrumentation: %w", err)
+		return fmt.Errorf("building the defer statement for instrumentation: %w", err)
 	}
 
 	funcDeclaration.Body.List = insertStatements(funcDeclaration.Body.List, contextAssignmentIndex+1, []dst.Stmt{&autometricsDeferStatement})

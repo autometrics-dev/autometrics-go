@@ -246,7 +246,7 @@ func ForceFlush() error {
 				Collector(functionCallsConcurrent)
 			if err := localPusher.
 				AddContext(ctx); err != nil {
-				return fmt.Errorf("failed to push metrics to gateway: %w", err)
+				return fmt.Errorf("pushing metrics to gateway: %w", err)
 			}
 		}
 	}

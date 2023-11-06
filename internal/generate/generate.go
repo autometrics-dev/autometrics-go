@@ -88,7 +88,7 @@ func TransformFile(ctx internal.GeneratorContext, path, moduleName string) error
 func GenerateDocumentationAndInstrumentation(ctx internal.GeneratorContext, sourceCode, moduleName string) (string, error) {
 	fileTree, err := decorator.Parse(sourceCode)
 	if err != nil {
-		return "", fmt.Errorf("error parsing source code: %w", err)
+		return "", fmt.Errorf("parsing source code: %w", err)
 	}
 
 	var inspectErr GenerateErrors
@@ -104,7 +104,7 @@ func GenerateDocumentationAndInstrumentation(ctx internal.GeneratorContext, sour
 	if !ctx.RemoveEverything && !foundAmImport {
 		err = addAutometricsImport(&ctx, fileTree)
 		if err != nil {
-			return "", fmt.Errorf("error adding the autometrics import: %w", err)
+			return "", fmt.Errorf("adding the autometrics import: %w", err)
 		}
 	}
 
@@ -126,14 +126,14 @@ func GenerateDocumentationAndInstrumentation(ctx internal.GeneratorContext, sour
 	dst.Inspect(fileTree, fileWalk)
 
 	if inspectErr != nil {
-		return "", fmt.Errorf("errors while transforming file in %v: %w", moduleName, inspectErr)
+		return "", fmt.Errorf("transforming file in %v: %w", moduleName, inspectErr)
 	}
 
 	var buf strings.Builder
 
 	err = decorator.Fprint(&buf, fileTree)
 	if err != nil {
-		return "", fmt.Errorf("error writing the AST to buffer: %w", err)
+		return "", fmt.Errorf("writing the AST to buffer: %w", err)
 	}
 
 	return buf.String(), nil
@@ -171,7 +171,7 @@ func walkFuncDeclaration(ctx *internal.GeneratorContext, funcDeclaration *dst.Fu
 	if err != nil {
 		return &GenerateError{
 			FunctionName: funcDeclaration.Name.Name,
-			Detail:       fmt.Errorf("error trying to remove autometrics comment from former pass: %w", err),
+			Detail:       fmt.Errorf("removing autometrics comment from former pass: %w", err),
 		}
 	}
 
@@ -180,7 +180,7 @@ func walkFuncDeclaration(ctx *internal.GeneratorContext, funcDeclaration *dst.Fu
 		return &GenerateError{
 			FunctionName: funcDeclaration.Name.Name,
 			Detail: fmt.Errorf(
-				"error removing an older autometrics defer statement in %v: %w",
+				"removing an older autometrics defer statement in %v: %w",
 				funcDeclaration.Name.Name,
 				err),
 		}
@@ -190,7 +190,7 @@ func walkFuncDeclaration(ctx *internal.GeneratorContext, funcDeclaration *dst.Fu
 		return &GenerateError{
 			FunctionName: funcDeclaration.Name.Name,
 			Detail: fmt.Errorf(
-				"error removing an older autometrics context statement in %v: %w",
+				"removing an older autometrics context statement in %v: %w",
 				funcDeclaration.Name.Name,
 				err),
 		}
@@ -208,7 +208,7 @@ func walkFuncDeclaration(ctx *internal.GeneratorContext, funcDeclaration *dst.Fu
 		return &GenerateError{
 			FunctionName: funcDeclaration.Name.Name,
 			Detail: fmt.Errorf(
-				"failed to parse //autometrics directive for %v: %w",
+				"parsing //autometrics directive for %v: %w",
 				funcDeclaration.Name.Name,
 				err),
 		}
@@ -241,7 +241,7 @@ func walkFuncDeclaration(ctx *internal.GeneratorContext, funcDeclaration *dst.Fu
 		if err != nil {
 			return &GenerateError{
 				FunctionName: funcDeclaration.Name.Name,
-				Detail:       fmt.Errorf("failed to inject context statement: %w", err),
+				Detail:       fmt.Errorf("injecting context statement: %w", err),
 			}
 		}
 
@@ -250,7 +250,7 @@ func walkFuncDeclaration(ctx *internal.GeneratorContext, funcDeclaration *dst.Fu
 		if err != nil {
 			return &GenerateError{
 				FunctionName: funcDeclaration.Name.Name,
-				Detail:       fmt.Errorf("failed to inject defer statement: %w", err),
+				Detail:       fmt.Errorf("injecting defer statement: %w", err),
 			}
 		}
 	}
@@ -269,7 +269,7 @@ func parseAutometricsFnContext(ctx *internal.GeneratorContext, commentGroup []st
 
 			tokens, err := shlex.Split(args)
 			if err != nil {
-				return fmt.Errorf("could not parse the directive arguments: %w", err)
+				return fmt.Errorf("parsing the directive arguments: %w", err)
 			}
 			tokenIndex := 0
 			for tokenIndex < len(tokens) {
@@ -278,22 +278,22 @@ func parseAutometricsFnContext(ctx *internal.GeneratorContext, commentGroup []st
 				case token == SloNameArgument:
 					tokenIndex, err = parseSloName(tokenIndex, tokens, ctx)
 					if err != nil {
-						return fmt.Errorf("error parsing %v argument: %w", SloNameArgument, err)
+						return fmt.Errorf("parsing %v argument: %w", SloNameArgument, err)
 					}
 				case token == SuccessObjArgument:
 					tokenIndex, err = parseSuccessObjective(tokenIndex, tokens, ctx)
 					if err != nil {
-						return fmt.Errorf("error parsing %v argument: %w", SuccessObjArgument, err)
+						return fmt.Errorf("parsing %v argument: %w", SuccessObjArgument, err)
 					}
 				case token == LatencyMsArgument:
 					tokenIndex, err = parseLatencyMs(tokenIndex, tokens, ctx)
 					if err != nil {
-						return fmt.Errorf("error parsing %v argument: %w", LatencyMsArgument, err)
+						return fmt.Errorf("parsing %v argument: %w", LatencyMsArgument, err)
 					}
 				case token == LatencyObjArgument:
 					tokenIndex, err = parseLatencyObjective(tokenIndex, tokens, ctx)
 					if err != nil {
-						return fmt.Errorf("error parsing %v argument: %w", LatencyObjArgument, err)
+						return fmt.Errorf("parsing %v argument: %w", LatencyObjArgument, err)
 					}
 				case token == NoDocArgument:
 					ctx.FuncCtx.DisableDocGeneration = true

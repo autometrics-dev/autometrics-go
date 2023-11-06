@@ -30,12 +30,12 @@ const (
 func injectContextStatement(ctx *internal.GeneratorContext, funcDeclaration *dst.FuncDecl) (identName string, err error) {
 	err = detectContext(ctx, funcDeclaration)
 	if err != nil {
-		return "", fmt.Errorf("failed to get context for tracing: %w", err)
+		return "", fmt.Errorf("getting context for tracing: %w", err)
 	}
 
 	autometricsContextStatement, err := buildAutometricsContextStatement(ctx)
 	if err != nil {
-		return "", fmt.Errorf("failed to build the defer statement for instrumentation: %w", err)
+		return "", fmt.Errorf("building the defer statement for instrumentation: %w", err)
 	}
 
 	funcDeclaration.Body.List = append([]dst.Stmt{&autometricsContextStatement}, funcDeclaration.Body.List...)
