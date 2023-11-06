@@ -31,7 +31,11 @@ type args struct {
 func (args) Version() string {
 	var buf strings.Builder
 
-	fmt.Fprintf(&buf, "Autometrics %s", build.Version)
+	fmt.Fprintf(&buf, "Autometrics %s (built by %s on %s)",
+		build.Version,
+		build.User,
+		build.Time,
+	)
 
 	return buf.String()
 }

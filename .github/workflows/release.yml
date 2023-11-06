@@ -33,6 +33,7 @@ jobs:
         with:
           # We need all tags
           fetch-depth: 0
+          fetch-tags: true
       - name: Set up Go
         uses: actions/setup-go@v4
         with:
