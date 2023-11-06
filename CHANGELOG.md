@@ -32,14 +32,16 @@ specification.
   + `http.Request`
   + `buffalo.Request`
 - [Generator] The generator now tries to keep going with instrumentation even if some instrumentation
-  fails. All files will stay modified, and the generator will exit with an error code and output
-  all the collected errors.
+  fails. On error, still _No file will be modified_, and the generator will exit with an error code
+  and output all the collected errors instead of only the first one.
 
 ### Deprecated
 
 ### Removed
 
 ### Fixed
+
+- [Generator] Fix a few generator crashes when instrumented functions have specific argument types.
 
 ### Security
 
