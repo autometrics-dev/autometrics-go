@@ -1,5 +1,9 @@
 package autometrics // import "github.com/autometrics-dev/autometrics-go/pkg/autometrics"
 
+import (
+	"fmt"
+)
+
 // These variables are describing the state of the application being autometricized,
 // _not_ the build information of the binary
 
@@ -12,16 +16,32 @@ const (
 	// the service to use as a label. This environment variable has precedence over variables hardcoded
 	// in the [BuildInfo] struct in the Init call.
 	OTelServiceNameEnv = "OTEL_SERVICE_NAME"
+	// AutometricsRepoURLEnv is the name of the environment variable to declare to give the URL of
+	// the repository for the service to use as a label. This environment variable has precedence over
+	// over hardcoding the variable directly in [BuildInfo] struct in the Init call.
+	AutometricsRepoURLEnv = "AUTOMETRICS_REPOSITORY_URL"
+	// AutometricsRepoProviderEnv is the name of the environment variable to declare to give the name of
+	// the repository provider to use as a label. This environment variable has precedence over
+	// over hardcoding the variable directly in [BuildInfo] struct in the Init call.
+	AutometricsRepoProviderEnv = "AUTOMETRICS_REPOSITORY_PROVIDER"
 )
 
 var (
-	version     string
-	commit      string
-	branch      string
-	service     string
-	pushJobName string
-	pushJobURL  string
+	version           string
+	commit            string
+	branch            string
+	service           string
+	repoURL           string
+	repoProvider      string
+	pushJobName       string
+	pushJobURL        string
+	instrumentedSpans map[spanKey]FunctionID = make(map[spanKey]FunctionID)
 )
+
+type spanKey struct {
+	tid TraceID
+	sid SpanID
+}
 
 // GetVersion returns the version of the codebase being instrumented.
 func GetVersion() string {
@@ -63,6 +83,27 @@ func SetService(newService string) {
 	service = newService
 }
 
+// GetRepositoryURL returns the URL of the repo of the codebase being instrumented.
+func GetRepositoryURL() string {
+	return repoURL
+}
+
+// SetRepositoryURL sets the URL of the repo of the codebase being instrumented.
+func SetRepositoryURL(newRepositoryURL string) {
+	repoURL = newRepositoryURL
+
+}
+
+// GetRepositoryProvider returns the service provider of the repo for the codebase being instrumented.
+func GetRepositoryProvider() string {
+	return repoProvider
+}
+
+// SetRepositoryProvider sets the service provider of the repo for the codebase being instrumented.
+func SetRepositoryProvider(newRepositoryProvider string) {
+	repoProvider = newRepositoryProvider
+}
+
 // GetPushJobName returns the job name to use when the codebase being instrumented is pushing metrics to an OTEL Collector.
 func GetPushJobName() string {
 	return pushJobName
@@ -81,4 +122,21 @@ func GetPushJobURL() string {
 // SetPushJobURL sets the job url to use when the codebase being instrumented is pushing metrics to an OTEL Collector.
 func SetPushJobURL(newPushJobURL string) {
 	pushJobURL = newPushJobURL
+}
+
+func fetchFunctionName(traceID TraceID, spanID SpanID) (FunctionID, error) {
+	fid, ok := instrumentedSpans[spanKey{tid: traceID, sid: spanID}]
+	if !ok {
+		return FunctionID{}, fmt.Errorf("%v,%v is not a known traceID/spanID pair now", traceID, spanID)
+	}
+
+	return fid, nil
+}
+
+func popFunctionName(traceID TraceID, spanID SpanID) {
+	delete(instrumentedSpans, spanKey{tid: traceID, sid: spanID})
+}
+
+func pushFunctionName(traceID TraceID, spanID SpanID, functionID FunctionID) {
+	instrumentedSpans[spanKey{tid: traceID, sid: spanID}] = functionID
 }

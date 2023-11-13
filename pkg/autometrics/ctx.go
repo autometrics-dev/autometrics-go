@@ -2,6 +2,7 @@ package autometrics // import "github.com/autometrics-dev/autometrics-go/pkg/aut
 
 import (
 	"context"
+	"errors"
 	"log"
 	"math/rand"
 	"time"
@@ -229,12 +230,12 @@ func GetParentSpanID(c context.Context) (SpanID, bool) {
 	return sid, ok
 }
 
-// FillTracingInfo ensures the context has a traceID and a spanID.
+// FillTracingAndCallerInfo ensures the context has a traceID and a spanID, and looks for relevant caller information to add in the context as well.
 // If they do not have this information, this method adds randomly
 // generated IDs in the context to be used later for exemplars
 //
 // The random generator is a PRNG, seeded with the timestamp of the first time new IDs are needed.
-func FillTracingInfo(ctx context.Context) context.Context {
+func FillTracingAndCallerInfo(ctx context.Context) context.Context {
 	// We are using a PRNG because FillTracingInfo is expected to be called in PreInstrument.
 	// Therefore it can have a noticeable impact on the performance of instrumented code.
 	// Pseudo randomness should be enough for our use cases, true randomness might introduce too much latency.
@@ -257,6 +258,19 @@ func FillTracingInfo(ctx context.Context) context.Context {
 		_, _ = randSource.Read(tid[:])
 		ctx = SetTraceID(ctx, tid)
 	}
+
+	callInfo := callerInfo(ctx)
+	ctx = SetCallInfo(ctx, callInfo)
+
+	// Adds an entry in the global map from current (traceID, spanID) to the function ID
+	// NOTE: this will "leak" memory if PopFunctionName is never called for the matching (TraceId, SpanId) pair.
+	// Calling the cleanup function is the responsibility of the otel.Instrument() and prometheus.Instrument()
+	// functions as the closers.
+	// NOTE: This also means that goroutines that outlive their as the caller will not have access to parent
+	// caller information, but hopefully by that point we got all the necessary accesses done.
+	// If not, it is a convenience we accept to give up to prevent memory usage from exploding.
+	// TODO: once settled on a login library, log the error instead of ignoring it
+	_ = PushFunctionName(ctx, callInfo.Current)
 
 	return ctx
 }
@@ -335,4 +349,47 @@ func GetValidHttpCodeRanges(c context.Context) []InclusiveIntRange {
 	}
 
 	return ranges
+}
+
+func ParentFunctionName(ctx context.Context) (FunctionID, error) {
+	tid, ok := GetTraceID(ctx)
+	if !ok {
+		return FunctionID{}, errors.New("context does not have any trace ID to follow.")
+	}
+	pSpanID, ok := GetParentSpanID(ctx)
+	if !ok {
+		return FunctionID{}, errors.New("context does not have any parent span ID to follow.")
+	}
+
+	return fetchFunctionName(tid, pSpanID)
+}
+
+func PopFunctionName(ctx context.Context) error {
+	tid, ok := GetTraceID(ctx)
+	if !ok {
+		return errors.New("context does not have any trace ID to follow.")
+	}
+	sid, ok := GetSpanID(ctx)
+	if !ok {
+		return errors.New("context does not have any current span ID to follow.")
+	}
+
+	popFunctionName(tid, sid)
+
+	return nil
+}
+
+func PushFunctionName(ctx context.Context, functionID FunctionID) error {
+	tid, ok := GetTraceID(ctx)
+	if !ok {
+		return errors.New("context does not have any trace ID to follow.")
+	}
+	sid, ok := GetSpanID(ctx)
+	if !ok {
+		return errors.New("context does not have any current span ID to follow.")
+	}
+
+	pushFunctionName(tid, sid, functionID)
+
+	return nil
 }

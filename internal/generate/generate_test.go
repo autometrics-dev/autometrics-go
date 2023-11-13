@@ -69,13 +69,14 @@ import (
 //
 //autometrics:inst --slo "Service Test" --success-target 99
 func main() {
-	defer prom.Instrument(prom.PreInstrument(prom.NewContext(
+	amCtx := prom.PreInstrument(prom.NewContext(
 		nil,
 		prom.WithConcurrentCalls(true),
 		prom.WithCallerName(true),
 		prom.WithSloName("Service Test"),
 		prom.WithAlertSuccess(99),
-	)), nil) //autometrics:defer
+	)) //autometrics:shadow-ctx
+	defer prom.Instrument(amCtx, nil) //autometrics:defer
 
 	fmt.Println(hello) // line comment 3
 }
@@ -148,13 +149,14 @@ import (
 //
 //autometrics:inst --slo "Service Test" --success-target 99
 func main() {
-	defer prom.Instrument(prom.PreInstrument(prom.NewContext(
+	amCtx := prom.PreInstrument(prom.NewContext(
 		nil,
 		prom.WithConcurrentCalls(true),
 		prom.WithCallerName(true),
 		prom.WithSloName("Service Test"),
 		prom.WithAlertSuccess(99),
-	)), nil) //autometrics:defer
+	)) //autometrics:shadow-ctx
+	defer prom.Instrument(amCtx, nil) //autometrics:defer
 
 	fmt.Println(hello) // line comment 3
 }
@@ -199,13 +201,14 @@ import (
 //
 //autometrics:inst --no-doc --slo "Service Test" --success-target 99
 func main() {
-	defer prom.Instrument(prom.PreInstrument(prom.NewContext(
+	amCtx := prom.PreInstrument(prom.NewContext(
 		nil,
 		prom.WithConcurrentCalls(true),
 		prom.WithCallerName(true),
 		prom.WithSloName("Service Test"),
 		prom.WithAlertSuccess(99),
-	)), nil) //autometrics:defer
+	)) //autometrics:shadow-ctx
+	defer prom.Instrument(amCtx, nil) //autometrics:defer
 
 	fmt.Println(hello) // line comment 3
 }
@@ -271,11 +274,12 @@ import (
 // [Request Rate Callee]: http://localhost:9090/graph?g0.expr=%23+Rate+of+function+calls+emanating+from+%60main%60+function+per+second%2C+averaged+over+5+minute+windows%0A%0Asum+by+%28function%2C+module%2C+service_name%2C+version%2C+commit%29+%28rate%28function_calls_total%7Bcaller_function%3D%22main%22%7D%5B5m%5D%29+%2A+on+%28instance%2C+job%29+group_left%28version%2C+commit%29+last_over_time%28build_info%5B1s%5D%29%29&g0.tab=0
 // [Error Ratio Callee]: http://localhost:9090/graph?g0.expr=%23+Percentage+of+function+emanating+from+%60main%60+function+that+return+errors%2C+averaged+over+5+minute+windows%0A%0A%28sum+by+%28function%2C+module%2C+service_name%2C+version%2C+commit%29+%28rate%28function_calls_total%7Bcaller_function%3D%22main%22%2Cresult%3D%22error%22%7D%5B5m%5D%29+%2A+on+%28instance%2C+job%29+group_left%28version%2C+commit%29+last_over_time%28build_info%5B1s%5D%29%29%29+%2F+%28sum+by+%28function%2C+module%2C+service_name%2C+version%2C+commit%29+%28rate%28function_calls_total%7Bcaller_function%3D%22main%22%7D%5B5m%5D%29+%2A+on+%28instance%2C+job%29+group_left%28version%2C+commit%29+last_over_time%28build_info%5B1s%5D%29%29%29&g0.tab=0
 func main() {
-	defer prom.Instrument(prom.PreInstrument(prom.NewContext(
+	amCtx := prom.PreInstrument(prom.NewContext(
 		nil,
 		prom.WithConcurrentCalls(true),
 		prom.WithCallerName(true),
-	)), nil) //autometrics:defer
+	)) //autometrics:shadow-ctx
+	defer prom.Instrument(amCtx, nil) //autometrics:defer
 
 	fmt.Println(hello) // line comment 3
 }
@@ -315,11 +319,12 @@ import (
 )
 
 func main() {
-	defer prom.Instrument(prom.PreInstrument(prom.NewContext(
+	amCtx := prom.PreInstrument(prom.NewContext(
 		nil,
 		prom.WithConcurrentCalls(true),
 		prom.WithCallerName(true),
-	)), nil) //autometrics:defer
+	)) //autometrics:shadow-ctx
+	defer prom.Instrument(amCtx, nil) //autometrics:defer
 
 	fmt.Println(hello) // line comment 3
 }
@@ -361,13 +366,14 @@ import (
 
 //autometrics:inst --no-doc --slo "Service Test" --success-target 99
 func main() {
-	defer prom.Instrument(prom.PreInstrument(prom.NewContext(
+	amCtx := prom.PreInstrument(prom.NewContext(
 		nil,
 		prom.WithConcurrentCalls(true),
 		prom.WithCallerName(true),
 		prom.WithSloName("Service Test"),
 		prom.WithAlertSuccess(99),
-	)), nil) //autometrics:defer
+	)) //autometrics:shadow-ctx
+	defer prom.Instrument(amCtx, nil) //autometrics:defer
 
 	fmt.Println(hello) // line comment 3
 }
@@ -525,13 +531,14 @@ import (
 //
 //autometrics:inst --slo "API" --latency-target 99.9 --latency-ms 500
 func main() {
-	defer prom.Instrument(prom.PreInstrument(prom.NewContext(
+	amCtx := prom.PreInstrument(prom.NewContext(
 		nil,
 		prom.WithConcurrentCalls(true),
 		prom.WithCallerName(true),
 		prom.WithSloName("API"),
 		prom.WithAlertLatency(500000000*time.Nanosecond, 99.9),
-	)), nil) //autometrics:defer
+	)) //autometrics:shadow-ctx
+	defer prom.Instrument(amCtx, nil) //autometrics:defer
 
 	fmt.Println(hello) // line comment 3
 }
@@ -573,13 +580,14 @@ import "github.com/autometrics-dev/autometrics-go/prometheus/autometrics"
 //
 //autometrics:inst --no-doc --slo "API" --latency-target 99.9 --latency-ms 500
 func main() {
-	defer autometrics.Instrument(autometrics.PreInstrument(autometrics.NewContext(
+	amCtx := autometrics.PreInstrument(autometrics.NewContext(
 		nil,
 		autometrics.WithConcurrentCalls(true),
 		autometrics.WithCallerName(true),
 		autometrics.WithSloName("API"),
 		autometrics.WithAlertLatency(500000000*time.Nanosecond, 99.9),
-	)), nil) //autometrics:defer
+	)) //autometrics:shadow-ctx
+	defer autometrics.Instrument(amCtx, nil) //autometrics:defer
 
 	fmt.Println(hello) // line comment 3
 }
@@ -630,13 +638,14 @@ import (
 //
 //autometrics:inst --no-doc --slo "API" --latency-target 99.9 --latency-ms 500
 func main() {
-	defer autometrics.Instrument(autometrics.PreInstrument(autometrics.NewContext(
+	amCtx := autometrics.PreInstrument(autometrics.NewContext(
 		nil,
 		autometrics.WithConcurrentCalls(true),
 		autometrics.WithCallerName(true),
 		autometrics.WithSloName("API"),
 		autometrics.WithAlertLatency(500000000*time.Nanosecond, 99.9),
-	)), nil) //autometrics:defer
+	)) //autometrics:shadow-ctx
+	defer autometrics.Instrument(amCtx, nil) //autometrics:defer
 
 	fmt.Println(hello) // line comment 3
 }
@@ -687,13 +696,14 @@ import "github.com/autometrics-dev/autometrics-go/prometheus/autometrics"
 // This comment is associated with the main function.
 //autometrics:inst --no-doc --slo "API" --latency-target 99.9 --latency-ms 500
 func main() {
-	defer autometrics.Instrument(autometrics.PreInstrument(autometrics.NewContext(
+	amCtx := autometrics.PreInstrument(autometrics.NewContext(
 		nil,
 		autometrics.WithConcurrentCalls(true),
 		autometrics.WithCallerName(true),
 		autometrics.WithSloName("API"),
 		autometrics.WithAlertLatency(500000000*time.Nanosecond, 99.9),
-	)), nil) //autometrics:defer
+	)) //autometrics:shadow-ctx
+	defer autometrics.Instrument(amCtx, nil) //autometrics:defer
 
 	fmt.Println(hello) // line comment 3
 }
@@ -751,13 +761,14 @@ import (
 //
 //autometrics:inst --slo "API" --latency-target 99.9 --latency-ms 500
 func main() {
-	defer prom.Instrument(prom.PreInstrument(prom.NewContext(
+	amCtx := prom.PreInstrument(prom.NewContext(
 		nil,
 		prom.WithConcurrentCalls(true),
 		prom.WithCallerName(true),
 		prom.WithSloName("API"),
 		prom.WithAlertLatency(500000000*time.Nanosecond, 99.9),
-	)), nil) //autometrics:defer
+	)) //autometrics:shadow-ctx
+	defer prom.Instrument(amCtx, nil) //autometrics:defer
 
 	fmt.Println(hello) // line comment 3
 }
@@ -1388,7 +1399,7 @@ func implementContextCodeGenTest(t *testing.T, contextToSerialize internal.Runti
 		},
 	}
 
-	node, err := buildAutometricsContextNode(&sourceContext)
+	node, _, err := buildAutometricsContextNode(&sourceContext)
 	if err != nil {
 		t.Fatalf("error building the context node: %s", err)
 	}
@@ -1526,13 +1537,14 @@ import _ "github.com/autometrics-dev/autometrics-go/prometheus/autometrics"
 //
 //autometrics:inst --no-doc --slo "API" --latency-target 99.9 --latency-ms 500
 func main() {
-	defer Instrument(PreInstrument(NewContext(
+	amCtx := PreInstrument(NewContext(
 		nil,
 		WithConcurrentCalls(true),
 		WithCallerName(true),
 		WithSloName("API"),
 		WithAlertLatency(500000000*time.Nanosecond, 99.9),
-	)), nil) //autometrics:defer
+	)) //autometrics:shadow-ctx
+	defer Instrument(amCtx, nil) //autometrics:defer
 
 	fmt.Println(hello) // line comment 3
 }

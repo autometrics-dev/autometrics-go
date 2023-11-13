@@ -1,6 +1,7 @@
 package autometrics
 
 import (
+	"context"
 	"reflect"
 	"runtime"
 	"strings"
@@ -8,7 +9,7 @@ import (
 
 // CallerInfo returns the (method name, module name) of the function that called the function that called this function.
 //
-// It also returns the information about its grandparent.
+// It also returns the information about its autometricized grandparent.
 //
 // The module name and the parent module names are cropped to their last part, because the generator we use
 // only has access to the last "package" name in `GOPACKAGE` environment variable.
@@ -17,7 +18,7 @@ import (
 // then we can lift this artificial limitation here and use the full "module name" from the caller information.
 // Currently this compromise is the only way to have the documentation links generator creating correct
 // queries.
-func CallerInfo() (callInfo CallInfo) {
+func callerInfo(ctx context.Context) (callInfo CallInfo) {
 	programCounters := make([]uintptr, 15)
 
 	// skip 3 frames to start with:
@@ -33,39 +34,45 @@ func CallerInfo() (callInfo CallInfo) {
 	index := strings.LastIndex(functionName, ".")
 
 	if index == -1 {
-		callInfo.FuncName = functionName
+		callInfo.Current.Function = functionName
 	} else {
-		callInfo.ModuleName = strings.ReplaceAll(strings.ReplaceAll(strings.ReplaceAll(
+		callInfo.Current.Module = strings.ReplaceAll(strings.ReplaceAll(strings.ReplaceAll(
 			functionName[:index],
 			"(", ""),
 			")", ""),
 			"*", "")
 
-		callInfo.FuncName = functionName[index+1:]
+		callInfo.Current.Function = functionName[index+1:]
 	}
 
-	if !hasParent {
+	parent, err := ParentFunctionName(ctx)
+
+	if err != nil {
+		// We try to fallback to the parent in the call stack if we don't have the info
+		if !hasParent {
+			return
+		}
+
+		parentFrame, _ := frames.Next()
+		parentFrameFunctionName := parentFrame.Function
+		index = strings.LastIndex(parentFrameFunctionName, ".")
+
+		if index == -1 {
+			callInfo.Parent.Function = parentFrameFunctionName
+		} else {
+			callInfo.Parent.Module = strings.ReplaceAll(strings.ReplaceAll(strings.ReplaceAll(
+				parentFrameFunctionName[:index],
+				"(", ""),
+				")", ""),
+				"*", "")
+
+			callInfo.Parent.Function = functionName[index+1:]
+		}
+
 		return
 	}
 
-	// Do the same with the parent
-	parentFrame, _ := frames.Next()
-
-	parentFunctionName := parentFrame.Function
-	index = strings.LastIndex(parentFunctionName, ".")
-
-	if index == -1 {
-		callInfo.ParentFuncName = parentFunctionName
-	} else {
-		moduleIndex := strings.LastIndex(parentFunctionName[:index], ".")
-		if moduleIndex == -1 {
-			callInfo.ParentModuleName = parentFunctionName[:index]
-		} else {
-			callInfo.ParentModuleName = parentFunctionName[moduleIndex+1 : index]
-		}
-
-		callInfo.ParentFuncName = parentFunctionName[index+1:]
-	}
+	callInfo.Parent = parent
 
 	return
 }
@@ -80,15 +87,15 @@ func ReflectFunctionModuleName(f interface{}) (callInfo CallInfo) {
 
 	index := strings.LastIndex(functionName, ".")
 	if index == -1 {
-		callInfo.FuncName = functionName
+		callInfo.Current.Function = functionName
 	} else {
-		moduleIndex := strings.LastIndex(functionName[:index], ".")
-		if moduleIndex == -1 {
-			callInfo.ModuleName = functionName[:index]
-		} else {
-			callInfo.ModuleName = functionName[moduleIndex+1 : index]
-		}
-		callInfo.FuncName = functionName[index+1:]
+		callInfo.Current.Module = strings.ReplaceAll(strings.ReplaceAll(strings.ReplaceAll(
+			functionName[:index],
+			"(", ""),
+			")", ""),
+			"*", "")
+
+		callInfo.Current.Function = functionName[index+1:]
 	}
 
 	return callInfo

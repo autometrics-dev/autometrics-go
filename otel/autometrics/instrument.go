@@ -47,10 +47,10 @@ func Instrument(ctx context.Context, err *error) {
 
 	functionCallsCount.Add(ctx, 1,
 		metric.WithAttributes([]attribute.KeyValue{
-			attribute.Key(FunctionLabel).String(callInfo.FuncName),
-			attribute.Key(ModuleLabel).String(callInfo.ModuleName),
-			attribute.Key(CallerFunctionLabel).String(callInfo.ParentFuncName),
-			attribute.Key(CallerModuleLabel).String(callInfo.ParentModuleName),
+			attribute.Key(FunctionLabel).String(callInfo.Current.Function),
+			attribute.Key(ModuleLabel).String(callInfo.Current.Module),
+			attribute.Key(CallerFunctionLabel).String(callInfo.Parent.Function),
+			attribute.Key(CallerModuleLabel).String(callInfo.Parent.Module),
 			attribute.Key(ResultLabel).String(result),
 			attribute.Key(TargetSuccessRateLabel).String(successObjective),
 			attribute.Key(SloNameLabel).String(sloName),
@@ -62,10 +62,10 @@ func Instrument(ctx context.Context, err *error) {
 		}...))
 	functionCallsDuration.Record(ctx, time.Since(am.GetStartTime(ctx)).Seconds(),
 		metric.WithAttributes([]attribute.KeyValue{
-			attribute.Key(FunctionLabel).String(callInfo.FuncName),
-			attribute.Key(ModuleLabel).String(callInfo.ModuleName),
-			attribute.Key(CallerFunctionLabel).String(callInfo.ParentFuncName),
-			attribute.Key(CallerModuleLabel).String(callInfo.ParentModuleName),
+			attribute.Key(FunctionLabel).String(callInfo.Current.Function),
+			attribute.Key(ModuleLabel).String(callInfo.Current.Module),
+			attribute.Key(CallerFunctionLabel).String(callInfo.Parent.Function),
+			attribute.Key(CallerModuleLabel).String(callInfo.Parent.Module),
 			attribute.Key(TargetLatencyLabel).String(latencyTarget),
 			attribute.Key(TargetSuccessRateLabel).String(latencyObjective),
 			attribute.Key(SloNameLabel).String(sloName),
@@ -79,10 +79,10 @@ func Instrument(ctx context.Context, err *error) {
 	if am.GetTrackConcurrentCalls(ctx) {
 		functionCallsConcurrent.Add(ctx, -1,
 			metric.WithAttributes([]attribute.KeyValue{
-				attribute.Key(FunctionLabel).String(callInfo.FuncName),
-				attribute.Key(ModuleLabel).String(callInfo.ModuleName),
-				attribute.Key(CallerFunctionLabel).String(callInfo.ParentFuncName),
-				attribute.Key(CallerModuleLabel).String(callInfo.ParentModuleName),
+				attribute.Key(FunctionLabel).String(callInfo.Current.Function),
+				attribute.Key(ModuleLabel).String(callInfo.Current.Module),
+				attribute.Key(CallerFunctionLabel).String(callInfo.Parent.Function),
+				attribute.Key(CallerModuleLabel).String(callInfo.Parent.Module),
 				attribute.Key(CommitLabel).String(buildInfo.Commit),
 				attribute.Key(VersionLabel).String(buildInfo.Version),
 				attribute.Key(BranchLabel).String(buildInfo.Branch),
@@ -90,6 +90,11 @@ func Instrument(ctx context.Context, err *error) {
 				attribute.Key(JobNameLabel).String(am.GetPushJobName()),
 			}...))
 	}
+
+	// NOTE: This call means that goroutines that outlive this function as the caller will not have access to parent
+	// caller information, but hopefully by that point we got all the necessary accesses done.
+	// If not, it is a convenience we accept to give up to prevent memory usage from exploding
+	_ = am.PopFunctionName(ctx)
 }
 
 // PreInstrument runs the "before wrappee" part of instrumentation.
@@ -101,19 +106,19 @@ func PreInstrument(ctx context.Context) context.Context {
 		return nil
 	}
 
-	callInfo := am.CallerInfo()
-	ctx = am.SetCallInfo(ctx, callInfo)
+	ctx = am.FillTracingAndCallerInfo(ctx)
 	ctx = am.FillBuildInfo(ctx)
-	ctx = am.FillTracingInfo(ctx)
+
+	callInfo := am.GetCallInfo(ctx)
 
 	if am.GetTrackConcurrentCalls(ctx) {
 		buildInfo := am.GetBuildInfo(ctx)
 		functionCallsConcurrent.Add(ctx, 1,
 			metric.WithAttributes([]attribute.KeyValue{
-				attribute.Key(FunctionLabel).String(callInfo.FuncName),
-				attribute.Key(ModuleLabel).String(callInfo.ModuleName),
-				attribute.Key(CallerFunctionLabel).String(callInfo.ParentFuncName),
-				attribute.Key(CallerModuleLabel).String(callInfo.ParentModuleName),
+				attribute.Key(FunctionLabel).String(callInfo.Current.Function),
+				attribute.Key(ModuleLabel).String(callInfo.Current.Module),
+				attribute.Key(CallerFunctionLabel).String(callInfo.Parent.Function),
+				attribute.Key(CallerModuleLabel).String(callInfo.Parent.Module),
 				attribute.Key(CommitLabel).String(buildInfo.Commit),
 				attribute.Key(VersionLabel).String(buildInfo.Version),
 				attribute.Key(BranchLabel).String(buildInfo.Branch),

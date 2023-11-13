@@ -47,8 +47,11 @@ type GeneratorContext struct {
 // only statically-known information is useful at this point.
 type RuntimeCtxInfo struct {
 	// Name of the variable to use as context.Context when building the autometrics.Context.
-	// The string will be empty if and only if 'nil' must be used as autometrics.NewContext() argument.
+	// The string will be empty if 'nil' must be used as autometrics.NewContext() argument.
 	ContextVariableName string
+	// Name of the variable to assign to the context returned by autometrics.PreInstrument
+	// The string will be empty if a new variable must be used as autometrics.PreInstrument() return value assignment.
+	NewContextVariableName string
 	// Verbatim code to use to fetch the TraceID.
 	// For example, if the instrumented function is detected to use Gin, like
 	// `func ginHandler(ginVarName *gin.Context)`
@@ -65,9 +68,10 @@ type RuntimeCtxInfo struct {
 
 func DefaultRuntimeCtxInfo() RuntimeCtxInfo {
 	return RuntimeCtxInfo{
-		TrackConcurrentCalls: true,
-		TrackCallerName:      true,
-		ContextVariableName:  "nil",
+		TrackConcurrentCalls:   true,
+		TrackCallerName:        true,
+		ContextVariableName:    "nil",
+		NewContextVariableName: "",
 	}
 }
 
@@ -164,7 +168,7 @@ func NewGeneratorContext(implementation autometrics.Implementation, prometheusUr
 	if prometheusUrl != "" {
 		promUrl, err := url.Parse(prometheusUrl)
 		if err != nil {
-			return ctx, fmt.Errorf("failed to parse prometheus URL: %w", err)
+			return ctx, fmt.Errorf("parsing prometheus URL: %w", err)
 		}
 
 		ctx.DocumentationGenerator = NewPrometheusDoc(*promUrl)

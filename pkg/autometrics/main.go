@@ -31,16 +31,26 @@ const (
 	MiddlewareTraceIDKey = "autometricsTraceID"
 )
 
+// FunctionID is a unique identifier for a function (on a per-codebase basis)
+type FunctionID struct {
+	// Function is the name of the function being tracked
+	Function string
+	// Module is the name of the module containing the function being tracked, up to (and including) the class name
+	Module string
+}
+
 // CallInfo holds the information about the current function call and its parent names.
 type CallInfo struct {
-	// FuncName is name of the function being tracked.
-	FuncName string
-	// ModuleName is name of the module of the function being tracked.
-	ModuleName string
-	// ParentFuncName is name of the caller of the function being tracked.
-	ParentFuncName string
-	// ParentModuleName is name of the module of the caller of the function being tracked.
-	ParentModuleName string
+	// Current is the identifier of the function being tracked
+	Current FunctionID
+	// Parent is the identifirs of the caller of the function being tracked.
+	//
+	// The parent information is only included for autometricized functions. This
+	// means:
+	// - if A calls B calls C,
+	// - only A and C have autometrics annotations,
+	// then the Caller information when working with C is going to be A, _not_ B
+	Parent FunctionID
 }
 
 // BuildInfo holds the information about the current build of the instrumented code.
@@ -51,8 +61,12 @@ type BuildInfo struct {
 	Version string
 	// Branch is the branch of the build of the codebase.
 	Branch string
-	// ServiceName is the name of the service
+	// Service is the name of the service
 	Service string
+	// RepositoryURL is the URL of the repository containing the code
+	RepositoryURL string
+	// RepositoryProvider is the service provider for the repository containing the code
+	RepositoryProvider string
 }
 
 // PushConfiguration holds the information necessary to push metrics to an OTEL Collector.

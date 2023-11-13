@@ -35,6 +35,10 @@ var (
 )
 
 const (
+	// AutometricsSpecVersion is the version of the specification the library follows
+	// The specifications can be found in https://github.com/autometrics-dev/autometrics-shared/tree/main/specs
+	AutometricsSpecVersion = "1.0.0"
+
 	// FunctionCallsCountName is the name of the openTelemetry metric for the counter of calls to specific functions.
 	FunctionCallsCountName = "function.calls"
 	// FunctionCallsDurationName is the name of the openTelemetry metric for the duration histogram of calls to specific functions.
@@ -83,6 +87,17 @@ const (
 	VersionLabel = "version"
 	// BranchLabel is the openTelemetry attribute that describes the branch of the build of the monitored codebase.
 	BranchLabel = "branch"
+
+	// RepositoryURLLabel is the openTelemetry attribute that describes the URL at which the repository containing
+	// the monitored service can be found
+	RepositoryURLLabel = "repository.url"
+	// RepositoryProviderLabel is the openTelemetry attribute that describes the service provider for the monitored
+	// service repository url
+	RepositoryProviderLabel = "repository.provider"
+
+	// AutometricsVersionLabel is the openTelemetry attribute that describes the version of the Autometrics specification
+	// the library follows
+	AutometricsVersionLabel = "autometrics.version"
 
 	// ServiceNameLabel is the openTelemetry attribute that describes the name of the Service being monitored.
 	ServiceNameLabel = "service.name"
@@ -190,6 +205,17 @@ func Init(meterName string, histogramBuckets []float64, buildInformation BuildIn
 		autometrics.SetService(buildInformation.Service)
 	}
 
+	if repoURL, ok := os.LookupEnv(autometrics.AutometricsRepoURLEnv); ok {
+		autometrics.SetRepositoryURL(repoURL)
+	} else if buildInformation.RepositoryURL != "" {
+		autometrics.SetRepositoryURL(buildInformation.RepositoryURL)
+	}
+	if repoProvider, ok := os.LookupEnv(autometrics.AutometricsRepoProviderEnv); ok {
+		autometrics.SetRepositoryURL(repoProvider)
+	} else if buildInformation.RepositoryProvider != "" {
+		autometrics.SetRepositoryURL(buildInformation.RepositoryProvider)
+	}
+
 	provider, err := initProvider(pushExporter, pushConfiguration, meterName, histogramBuckets)
 	if err != nil {
 		return nil, err
@@ -223,7 +249,10 @@ func Init(meterName string, histogramBuckets []float64, buildInformation BuildIn
 				attribute.Key(VersionLabel).String(buildInformation.Version),
 				attribute.Key(BranchLabel).String(buildInformation.Branch),
 				attribute.Key(ServiceNameLabel).String(autometrics.GetService()),
+				attribute.Key(RepositoryProviderLabel).String(autometrics.GetRepositoryProvider()),
+				attribute.Key(RepositoryURLLabel).String(autometrics.GetRepositoryURL()),
 				attribute.Key(JobNameLabel).String(autometrics.GetPushJobName()),
+				attribute.Key(AutometricsVersionLabel).String(AutometricsSpecVersion),
 			}...))
 
 	return cancelFunc, nil
