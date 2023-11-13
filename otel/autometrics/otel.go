@@ -35,6 +35,10 @@ var (
 )
 
 const (
+	// AutometricsSpecVersion is the version of the specification the library follows
+	// The specifications can be found in https://github.com/autometrics-dev/autometrics-shared/tree/main/specs
+	AutometricsSpecVersion = "1.0.0"
+
 	// FunctionCallsCountName is the name of the openTelemetry metric for the counter of calls to specific functions.
 	FunctionCallsCountName = "function.calls"
 	// FunctionCallsDurationName is the name of the openTelemetry metric for the duration histogram of calls to specific functions.
@@ -90,6 +94,10 @@ const (
 	// RepositoryProviderLabel is the openTelemetry attribute that describes the service provider for the monitored
 	// service repository url
 	RepositoryProviderLabel = "repository.provider"
+
+	// AutometricsVersionLabel is the openTelemetry attribute that describes the version of the Autometrics specification
+	// the library follows
+	AutometricsVersionLabel = "autometrics.version"
 
 	// ServiceNameLabel is the openTelemetry attribute that describes the name of the Service being monitored.
 	ServiceNameLabel = "service.name"
@@ -244,6 +252,7 @@ func Init(meterName string, histogramBuckets []float64, buildInformation BuildIn
 				attribute.Key(RepositoryProviderLabel).String(autometrics.GetRepositoryProvider()),
 				attribute.Key(RepositoryURLLabel).String(autometrics.GetRepositoryURL()),
 				attribute.Key(JobNameLabel).String(autometrics.GetPushJobName()),
+				attribute.Key(AutometricsVersionLabel).String(AutometricsSpecVersion),
 			}...))
 
 	return cancelFunc, nil

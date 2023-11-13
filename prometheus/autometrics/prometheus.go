@@ -27,6 +27,10 @@ var (
 )
 
 const (
+	// AutometricsSpecVersion is the version of the specification the library follows
+	// The specifications can be found in https://github.com/autometrics-dev/autometrics-shared/tree/main/specs
+	AutometricsSpecVersion = "1.0.0"
+
 	// FunctionCallsCountName is the name of the prometheus metric for the counter of calls to specific functions.
 	FunctionCallsCountName = "function_calls_total"
 	// FunctionCallsDurationName is the name of the prometheus metric for the duration histogram of calls to specific functions.
@@ -82,6 +86,10 @@ const (
 	// RepositoryProviderLabel is the prometheus label that describes the service provider for the monitored
 	// service repository url
 	RepositoryProviderLabel = "repository_provider"
+
+	// AutometricsVersionLabel is the prometheus label that describes the version of the Autometrics specification
+	// the library follows
+	AutometricsVersionLabel = "autometrics_version"
 
 	// ServiceNameLabel is the prometheus label that describes the name of the service being monitored
 	ServiceNameLabel = "service_name"
@@ -186,7 +194,7 @@ func Init(reg *prometheus.Registry, histogramBuckets []float64, buildInformation
 
 	buildInfo = prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Name: BuildInfoName,
-	}, []string{CommitLabel, VersionLabel, BranchLabel, ServiceNameLabel, RepositoryURLLabel, RepositoryProviderLabel})
+	}, []string{CommitLabel, VersionLabel, BranchLabel, ServiceNameLabel, RepositoryURLLabel, RepositoryProviderLabel, AutometricsVersionLabel})
 
 	if reg != nil {
 		reg.MustRegister(functionCallsCount)
@@ -207,6 +215,7 @@ func Init(reg *prometheus.Registry, histogramBuckets []float64, buildInformation
 		ServiceNameLabel:        autometrics.GetService(),
 		RepositoryURLLabel:      autometrics.GetRepositoryURL(),
 		RepositoryProviderLabel: autometrics.GetRepositoryProvider(),
+		AutometricsVersionLabel: AutometricsSpecVersion,
 	}).Set(1)
 
 	if pusher != nil {
