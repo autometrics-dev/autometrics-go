@@ -4,12 +4,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log"
 	"os"
 	"sync"
 	"time"
 
 	"github.com/autometrics-dev/autometrics-go/pkg/autometrics"
+	"github.com/autometrics-dev/autometrics-go/pkg/autometrics/log"
 
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc"
@@ -120,6 +120,17 @@ func completeMeterName(meterName string) string {
 // the current (otel) package imported at the call site.
 type BuildInfo = autometrics.BuildInfo
 
+// Logger is an interface for logging autometrics-related events.
+//
+// This is a reexport to allow using only the current package at call site.
+type Logger = log.Logger
+
+// This is a reexport to allow using only the current package at call site.
+type PrintLogger = log.PrintLogger
+
+// This is a reexport to allow using only the current package at call site.
+type NoOpLogger = log.NoOpLogger
+
 // PushConfiguration holds meta information about the push-to-collector configuration of the instrumented code.
 type PushConfiguration struct {
 	// URL of the collector to push to. It must be non-empty if this struct is built.
@@ -180,7 +191,7 @@ type PushConfiguration struct {
 // Make sure that all the latency targets you want to use for SLOs are
 // present in the histogramBuckets array, otherwise the alerts will fail
 // to work (they will never trigger).
-func Init(meterName string, histogramBuckets []float64, buildInformation BuildInfo, pushConfiguration *PushConfiguration) (context.CancelCauseFunc, error) {
+func Init(meterName string, histogramBuckets []float64, buildInformation BuildInfo, pushConfiguration *PushConfiguration, logger log.Logger) (context.CancelCauseFunc, error) {
 	var err error
 	newCtx, cancelFunc := context.WithCancelCause(context.Background())
 	amCtx = newCtx
@@ -188,6 +199,11 @@ func Init(meterName string, histogramBuckets []float64, buildInformation BuildIn
 	autometrics.SetCommit(buildInformation.Commit)
 	autometrics.SetVersion(buildInformation.Version)
 	autometrics.SetBranch(buildInformation.Branch)
+	if logger == nil {
+		autometrics.SetLogger(log.NoOpLogger{})
+	} else {
+		autometrics.SetLogger(logger)
+	}
 
 	var pushExporter metric.Exporter
 	if pushConfiguration != nil {
@@ -334,7 +350,7 @@ func initProvider(pushExporter metric.Exporter, pushConfiguration *PushConfigura
 			metric.WithResource(autometricsSrc),
 		), nil
 	} else {
-		log.Printf("autometrics: opentelemetry: setting up OTLP push configuration, pushing %s to %s\n",
+		autometrics.GetLogger().Debug("opentelemetry: setting up OTLP push configuration, pushing %s to %s\n",
 			autometrics.GetPushJobName(),
 			autometrics.GetPushJobURL(),
 		)
@@ -368,7 +384,7 @@ func initProvider(pushExporter metric.Exporter, pushConfiguration *PushConfigura
 }
 
 func initPushExporter(pushConfiguration *PushConfiguration) (metric.Exporter, error) {
-	log.Println("autometrics: opentelemetry: Init: detected push configuration")
+	autometrics.GetLogger().Debug("opentelemetry: Init: detected push configuration")
 	if pushConfiguration.CollectorURL == "" {
 		return nil, errors.New("invalid PushConfiguration: the CollectorURL must be set.")
 	}

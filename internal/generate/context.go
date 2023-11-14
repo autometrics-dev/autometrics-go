@@ -320,9 +320,7 @@ func detectContextSelectorImpl(ctx *internal.GeneratorContext, argName string, s
 			}
 		}
 	} else {
-		// TODO: log that autometrics cannot detect multi-nested contexts instead of errorring
-		// continue
-		return true, fmt.Errorf("expecting parent to be an identifier, got %s instead", reflect.TypeOf(selector.X).String())
+		am.GetLogger().Error("expecting parent to be an identifier, got %s instead", reflect.TypeOf(selector.X).String())
 	}
 	return false, nil
 }

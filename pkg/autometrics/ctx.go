@@ -269,8 +269,10 @@ func FillTracingAndCallerInfo(ctx context.Context) context.Context {
 	// NOTE: This also means that goroutines that outlive their as the caller will not have access to parent
 	// caller information, but hopefully by that point we got all the necessary accesses done.
 	// If not, it is a convenience we accept to give up to prevent memory usage from exploding.
-	// TODO: once settled on a login library, log the error instead of ignoring it
-	_ = PushFunctionName(ctx, callInfo.Current)
+	err := PushFunctionName(ctx, callInfo.Current)
+	if err != nil {
+		GetLogger().Error("adding a function name to the known spans: %s", err)
+	}
 
 	return ctx
 }
