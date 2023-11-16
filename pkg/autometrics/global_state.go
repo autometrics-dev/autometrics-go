@@ -2,6 +2,8 @@ package autometrics // import "github.com/autometrics-dev/autometrics-go/pkg/aut
 
 import (
 	"fmt"
+
+	"github.com/autometrics-dev/autometrics-go/pkg/autometrics/log"
 )
 
 // These variables are describing the state of the application being autometricized,
@@ -36,11 +38,22 @@ var (
 	pushJobName       string
 	pushJobURL        string
 	instrumentedSpans map[spanKey]FunctionID = make(map[spanKey]FunctionID)
+	logger            log.Logger
 )
 
 type spanKey struct {
 	tid TraceID
 	sid SpanID
+}
+
+// GetLogger returns the current logging interface for Autometrics
+func GetLogger() log.Logger {
+	return logger
+}
+
+// SetLogger sets the logging interface for Autometrics.
+func SetLogger(newLogger log.Logger) {
+	logger = newLogger
 }
 
 // GetVersion returns the version of the codebase being instrumented.

@@ -50,6 +50,7 @@ func main() {
 			Branch:  Branch,
 		},
 		pushConfiguration,
+		autometrics.PrintLogger{},
 	)
 	if err != nil {
 		log.Fatalf("Failed initialization of autometrics: %s", err)

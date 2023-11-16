@@ -35,6 +35,9 @@ specification.
 - [Generator] The generator now tries to keep going with instrumentation even if some instrumentation
   fails. On error, still _No file will be modified_, and the generator will exit with an error code
   and output all the collected errors instead of only the first one.
+- [All] `autometrics.Init` function takes an additional argument, a logging interface to decide whether
+  and how users want autometrics to log events. Passing `nil` for the argument value will use a "No Op"
+  logger that does not do anything.
 
 ### Deprecated
 

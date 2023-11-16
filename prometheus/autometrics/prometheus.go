@@ -4,11 +4,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log"
 	"os"
 	"sync"
 
 	"github.com/autometrics-dev/autometrics-go/pkg/autometrics"
+	"github.com/autometrics-dev/autometrics-go/pkg/autometrics/log"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/push"
 	"github.com/prometheus/common/expfmt"
@@ -105,6 +105,17 @@ const (
 // the current (prometheus) package imported at the call site.
 type BuildInfo = autometrics.BuildInfo
 
+// Logger is an interface for logging autometrics-related events.
+//
+// This is a reexport to allow using only the current package at call site.
+type Logger = log.Logger
+
+// This is a reexport to allow using only the current package at call site.
+type PrintLogger = log.PrintLogger
+
+// This is a reexport to allow using only the current package at call site.
+type NoOpLogger = log.NoOpLogger
+
 // PushConfiguration holds meta information about the push-to-collector configuration of the instrumented code.
 //
 // This is a reexport of the autometrics type to allow [Init] to work with only
@@ -131,17 +142,22 @@ type PushConfiguration = autometrics.PushConfiguration
 // Make sure that all the latency targets you want to use for SLOs are
 // present in the histogramBuckets array, otherwise the alerts will fail
 // to work (they will never trigger.)
-func Init(reg *prometheus.Registry, histogramBuckets []float64, buildInformation BuildInfo, pushConfiguration *PushConfiguration) (context.CancelCauseFunc, error) {
+func Init(reg *prometheus.Registry, histogramBuckets []float64, buildInformation BuildInfo, pushConfiguration *PushConfiguration, logger log.Logger) (context.CancelCauseFunc, error) {
 	newCtx, cancelFunc := context.WithCancelCause(context.Background())
 	amCtx = newCtx
 
 	autometrics.SetCommit(buildInformation.Commit)
 	autometrics.SetVersion(buildInformation.Version)
 	autometrics.SetBranch(buildInformation.Branch)
+	if logger == nil {
+		autometrics.SetLogger(log.NoOpLogger{})
+	} else {
+		autometrics.SetLogger(logger)
+	}
 
 	pusher = nil
 	if pushConfiguration != nil {
-		log.Printf("autometrics: Init: detected push configuration to %s", pushConfiguration.CollectorURL)
+		autometrics.GetLogger().Debug("Init: detected push configuration to %s", pushConfiguration.CollectorURL)
 
 		if pushConfiguration.CollectorURL == "" {
 			return nil, errors.New("invalid PushConfiguration: the CollectorURL must be set.")

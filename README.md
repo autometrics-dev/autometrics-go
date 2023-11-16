@@ -98,6 +98,7 @@ And then in your main function initialize the metrics
 		autometrics.DefBuckets,
 		autometrics.BuildInfo{Version: "0.4.0", Commit: "anySHA", Branch: "", Service: "myApp"},
 		nil,
+		nil,
 	)
 	if err != nil {
 		log.Fatalf("could not initialize autometrics: %s", err)
@@ -273,6 +274,7 @@ func main() {
 		autometrics.DefBuckets,
 		autometrics.BuildInfo{Version: "0.4.0", Commit: "anySHA", Branch: "", Service: "myApp"},
 		nil,
+		nil,
 	)
 	http.Handle("/metrics", promhttp.Handler())
 }
@@ -384,6 +386,7 @@ metric. You can use the name of the application or its version for example
 		autometrics.DefBuckets,
 		autometrics.BuildInfo{ Version: "2.1.37", Commit: "anySHA", Branch: "", Service: "myApp" },
 		nil,
+		nil,
 	)
 ```
 
@@ -447,6 +450,7 @@ passing a non `nil` argument to `autometrics.Init` for the `pushConfiguration`:
 +			Period: 1 * time.Second,                       // Period is only relevant when using OpenTelemetry implementation
 +			Timeout: 500 * time.Millisecond,               // Timeout is only relevant when using OpenTelementry implementation
 +		},
+    nil,
 	)
 ```
 
@@ -455,6 +459,35 @@ passing a non `nil` argument to `autometrics.Init` for the `pushConfiguration`:
 can contact us so we can setup a managed instance of Prometheus for you. We will effectively
 give you collector URLs, that will work with both OpenTelemetry and Prometheus; and can be 
 visualized easily with our explorer as well!
+
+#### Logging
+
+Monitoring/Observability must not crash the application.
+
+So when Autometrics encounters
+errors, instead of bubbling it up until the program stops, it will log the error and absorb it.
+To leave choice in the logging implementation (depending on your application dependencies),
+Autometrics exposes a `Logger` interface you can implement and then inject in the `Init` call
+to have the logging you want.
+
+The `Logger` interface is a subset of `slog.Logger` methods, so that most loggers can be used.
+Autometrics also provides 2 simple loggers out of the box:
+- `NoOpLogger`, which is the default logger and does nothing,
+- `PrintLogger` which uses `fmt.Print` to write logging messages on stdout.
+ 
+To use the `PrintLogger` instead of the `NoOpLogger` for examble, you just have to change
+the `Init` call:
+
+``` patch
+	shutdown, err := autometrics.Init(
+		nil,
+		autometrics.DefBuckets,
+		autometrics.BuildInfo{ Version: "2.1.37", Commit: "anySHA", Branch: "", Service: "myApp" },
+		nil,
+-		nil,
++   autometrics.PrintLogger{},
+	)
+```
 
 #### Git hook
 
