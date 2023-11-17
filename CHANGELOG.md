@@ -6,7 +6,21 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Go module
 versioning](https://go.dev/doc/modules/version-numbers).
 
-## [Unreleased](https://github.com/autometrics-dev/autometrics-go/compare/v0.8.2...main)
+## [Unreleased](https://github.com/autometrics-dev/autometrics-go/compare/v0.9.0...main)
+
+### Added
+
+### Changed
+
+### Deprecated
+
+### Removed
+
+### Fixed
+
+### Security
+
+## [0.9.0](https://github.com/autometrics-dev/autometrics-go/releases/tag/v0.9.0) 2023-11-17
 
 The main goal of this release is to reach compatibility with 1.0.0 version of Autometrics
 specification.
@@ -18,6 +32,9 @@ specification.
   set in the `BuildInformation` structure when calling `autometrics.Init`, or by setting
   environment variables `AUTOMETRICS_REPOSITORY_URL` and `AUTOMETRICS_REPOSITORY_PROVIDER`,
   respectively.
+- [All] `autometrics` now adds the version of the specification it follows in the `build_info`
+  metric. `autometrics.version` label will point the version of autometrics specification the
+  associated metrics will follow.
 
 ### Changed
 
@@ -38,10 +55,6 @@ specification.
 - [All] `autometrics.Init` function takes an additional argument, a logging interface to decide whether
   and how users want autometrics to log events. Passing `nil` for the argument value will use a "No Op"
   logger that does not do anything.
-
-### Deprecated
-
-### Removed
 
 ### Fixed
 
