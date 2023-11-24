@@ -120,7 +120,7 @@ compatibility comes out of the box).
 #### 3a. The QUICKEST way
 
 If you have [`am`](https://github.com/autometrics-dev/am) installed in version `0.6.0` or later, you can
-use `am instrumtent single -e /vendor/ -l go .` to instrument everything (excluding a possible `/vendor` subdirectory)
+use `am instrument single -e /vendor/ -l go .` to instrument everything (excluding a possible `/vendor` subdirectory)
 
 #### 3b. The VERY quick way
 
