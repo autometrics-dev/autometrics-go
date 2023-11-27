@@ -142,33 +142,32 @@ type PushConfiguration = autometrics.PushConfiguration
 // Make sure that all the latency targets you want to use for SLOs are
 // present in the histogramBuckets array, otherwise the alerts will fail
 // to work (they will never trigger.)
-func Init(reg *prometheus.Registry, histogramBuckets []float64, buildInformation BuildInfo, pushConfiguration *PushConfiguration, logger log.Logger) (context.CancelCauseFunc, error) {
+func Init(initOpts ...InitOption) (context.CancelCauseFunc, error) {
 	newCtx, cancelFunc := context.WithCancelCause(context.Background())
 	amCtx = newCtx
 
-	autometrics.SetCommit(buildInformation.Commit)
-	autometrics.SetVersion(buildInformation.Version)
-	autometrics.SetBranch(buildInformation.Branch)
-	if logger == nil {
-		autometrics.SetLogger(log.NoOpLogger{})
-	} else {
-		autometrics.SetLogger(logger)
+	initArgs := defaultInitArguments()
+	for _, initOpt := range initOpts {
+		if err := initOpt.Apply(&initArgs); err != nil {
+			return nil, fmt.Errorf("initialization argument: %w", err)
+		}
 	}
 
-	pusher = nil
-	if pushConfiguration != nil {
-		autometrics.GetLogger().Debug("Init: detected push configuration to %s", pushConfiguration.CollectorURL)
+	autometrics.SetCommit(initArgs.commit)
+	autometrics.SetVersion(initArgs.version)
+	autometrics.SetBranch(initArgs.branch)
+	autometrics.SetLogger(initArgs.logger)
 
-		if pushConfiguration.CollectorURL == "" {
+	pusher = nil
+	if initArgs.HasPushEnabled() {
+		autometrics.GetLogger().Debug("Init: detected push configuration to %s", initArgs.pushCollectorURL)
+
+		if initArgs.pushCollectorURL == "" {
 			return nil, errors.New("invalid PushConfiguration: the CollectorURL must be set.")
 		}
-		autometrics.SetPushJobURL(pushConfiguration.CollectorURL)
+		autometrics.SetPushJobURL(initArgs.pushCollectorURL)
 
-		if pushConfiguration.JobName == "" {
-			autometrics.SetPushJobName(autometrics.DefaultJobName())
-		} else {
-			autometrics.SetPushJobName(pushConfiguration.JobName)
-		}
+		autometrics.SetPushJobName(initArgs.pushJobName)
 
 		pusher = push.
 			New(autometrics.GetPushJobURL(), autometrics.GetPushJobName()).
@@ -180,19 +179,19 @@ func Init(reg *prometheus.Registry, histogramBuckets []float64, buildInformation
 		autometrics.SetService(serviceName)
 	} else if serviceName, ok := os.LookupEnv(autometrics.OTelServiceNameEnv); ok {
 		autometrics.SetService(serviceName)
-	} else if buildInformation.Service != "" {
-		autometrics.SetService(buildInformation.Service)
+	} else {
+		autometrics.SetService(initArgs.service)
 	}
 
 	if repoURL, ok := os.LookupEnv(autometrics.AutometricsRepoURLEnv); ok {
 		autometrics.SetRepositoryURL(repoURL)
-	} else if buildInformation.RepositoryURL != "" {
-		autometrics.SetRepositoryURL(buildInformation.RepositoryURL)
+	} else {
+		autometrics.SetRepositoryURL(initArgs.repoURL)
 	}
 	if repoProvider, ok := os.LookupEnv(autometrics.AutometricsRepoProviderEnv); ok {
 		autometrics.SetRepositoryURL(repoProvider)
-	} else if buildInformation.RepositoryProvider != "" {
-		autometrics.SetRepositoryURL(buildInformation.RepositoryProvider)
+	} else {
+		autometrics.SetRepositoryURL(initArgs.repoProvider)
 	}
 
 	functionCallsCount = prometheus.NewCounterVec(prometheus.CounterOpts{
@@ -201,7 +200,7 @@ func Init(reg *prometheus.Registry, histogramBuckets []float64, buildInformation
 
 	functionCallsDuration = prometheus.NewHistogramVec(prometheus.HistogramOpts{
 		Name:    FunctionCallsDurationName,
-		Buckets: histogramBuckets,
+		Buckets: initArgs.histogramBuckets,
 	}, []string{FunctionLabel, ModuleLabel, CallerFunctionLabel, CallerModuleLabel, TargetLatencyLabel, TargetSuccessRateLabel, SloNameLabel, CommitLabel, VersionLabel, BranchLabel, ServiceNameLabel})
 
 	functionCallsConcurrent = prometheus.NewGaugeVec(prometheus.GaugeOpts{
@@ -212,11 +211,11 @@ func Init(reg *prometheus.Registry, histogramBuckets []float64, buildInformation
 		Name: BuildInfoName,
 	}, []string{CommitLabel, VersionLabel, BranchLabel, ServiceNameLabel, RepositoryURLLabel, RepositoryProviderLabel, AutometricsVersionLabel})
 
-	if reg != nil {
-		reg.MustRegister(functionCallsCount)
-		reg.MustRegister(functionCallsDuration)
-		reg.MustRegister(functionCallsConcurrent)
-		reg.MustRegister(buildInfo)
+	if initArgs.registry != nil {
+		initArgs.registry.MustRegister(functionCallsCount)
+		initArgs.registry.MustRegister(functionCallsDuration)
+		initArgs.registry.MustRegister(functionCallsConcurrent)
+		initArgs.registry.MustRegister(buildInfo)
 	} else {
 		prometheus.DefaultRegisterer.MustRegister(functionCallsCount)
 		prometheus.DefaultRegisterer.MustRegister(functionCallsDuration)
@@ -225,9 +224,9 @@ func Init(reg *prometheus.Registry, histogramBuckets []float64, buildInformation
 	}
 
 	buildInfo.With(prometheus.Labels{
-		CommitLabel:             buildInformation.Commit,
-		VersionLabel:            buildInformation.Version,
-		BranchLabel:             buildInformation.Branch,
+		CommitLabel:             autometrics.GetCommit(),
+		VersionLabel:            autometrics.GetVersion(),
+		BranchLabel:             autometrics.GetBranch(),
 		ServiceNameLabel:        autometrics.GetService(),
 		RepositoryURLLabel:      autometrics.GetRepositoryURL(),
 		RepositoryProviderLabel: autometrics.GetRepositoryProvider(),
