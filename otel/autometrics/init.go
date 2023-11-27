@@ -1,6 +1,8 @@
 package autometrics // import "github.com/autometrics-dev/autometrics-go/prometheus/autometrics"
 
 import (
+	"errors"
+	"strings"
 	"time"
 
 	am "github.com/autometrics-dev/autometrics-go/pkg/autometrics"
@@ -62,6 +64,7 @@ func (fn initOptionFunc) Apply(initArgs *initArguments) error {
 // The default value is an empty string
 func WithMeterName(currentMeterName string) InitOption {
 	return initOptionFunc(func(initArgs *initArguments) error {
+		initArgs.meterName = currentMeterName
 		return nil
 	})
 }
@@ -72,6 +75,7 @@ func WithMeterName(currentMeterName string) InitOption {
 // autometrics-specific events.
 func WithLogger(logger log.Logger) InitOption {
 	return initOptionFunc(func(initArgs *initArguments) error {
+		initArgs.logger = logger
 		return nil
 	})
 }
@@ -81,6 +85,7 @@ func WithLogger(logger log.Logger) InitOption {
 // The default value is an empty string.
 func WithCommit(currentCommit string) InitOption {
 	return initOptionFunc(func(initArgs *initArguments) error {
+		initArgs.commit = currentCommit
 		return nil
 	})
 }
@@ -90,6 +95,7 @@ func WithCommit(currentCommit string) InitOption {
 // The default value is an empty string.
 func WithVersion(currentVersion string) InitOption {
 	return initOptionFunc(func(initArgs *initArguments) error {
+		initArgs.version = currentVersion
 		return nil
 	})
 }
@@ -99,6 +105,7 @@ func WithVersion(currentVersion string) InitOption {
 // The default value is an empty string.
 func WithBranch(currentBranch string) InitOption {
 	return initOptionFunc(func(initArgs *initArguments) error {
+		initArgs.branch = currentBranch
 		return nil
 	})
 }
@@ -108,6 +115,7 @@ func WithBranch(currentBranch string) InitOption {
 // The default value is an empty string.
 func WithService(currentService string) InitOption {
 	return initOptionFunc(func(initArgs *initArguments) error {
+		initArgs.service = currentService
 		return nil
 	})
 }
@@ -117,6 +125,7 @@ func WithService(currentService string) InitOption {
 // The default value is an empty string.
 func WithRepoURL(currentRepoURL string) InitOption {
 	return initOptionFunc(func(initArgs *initArguments) error {
+		initArgs.repoURL = currentRepoURL
 		return nil
 	})
 }
@@ -126,6 +135,7 @@ func WithRepoURL(currentRepoURL string) InitOption {
 // The default value is an empty string.
 func WithRepoProvider(currentRepoProvider string) InitOption {
 	return initOptionFunc(func(initArgs *initArguments) error {
+		initArgs.repoProvider = currentRepoProvider
 		return nil
 	})
 }
@@ -138,6 +148,10 @@ func WithRepoProvider(currentRepoProvider string) InitOption {
 // The default value is an empty string, which also disables metric pushing.
 func WithPushCollectorURL(pushCollectorURL string) InitOption {
 	return initOptionFunc(func(initArgs *initArguments) error {
+		if strings.Contains(pushCollectorURL, "/metrics/jobs") {
+			return errors.New("set push collector URL: the URL should not contain the /metrics/jobs part")
+		}
+		initArgs.pushCollectorURL = pushCollectorURL
 		return nil
 	})
 }
@@ -154,6 +168,7 @@ func WithPushCollectorURL(pushCollectorURL string) InitOption {
 // The default value is an empty string, which will make autometrics generate a Ulid
 func WithPushJobName(pushJobName string) InitOption {
 	return initOptionFunc(func(initArgs *initArguments) error {
+		initArgs.pushJobName = pushJobName
 		return nil
 	})
 }
@@ -163,6 +178,7 @@ func WithPushJobName(pushJobName string) InitOption {
 // The default value is 10 seconds.
 func WithPushPeriod(pushPeriod time.Duration) InitOption {
 	return initOptionFunc(func(initArgs *initArguments) error {
+		initArgs.pushPeriod = pushPeriod
 		return nil
 	})
 }
@@ -172,6 +188,7 @@ func WithPushPeriod(pushPeriod time.Duration) InitOption {
 // The default value is 5 seconds.
 func WithPushTimeout(pushTimeout time.Duration) InitOption {
 	return initOptionFunc(func(initArgs *initArguments) error {
+		initArgs.pushTimeout = pushTimeout
 		return nil
 	})
 }
@@ -181,6 +198,7 @@ func WithPushTimeout(pushTimeout time.Duration) InitOption {
 // The default value is to use gRPC.
 func WithPushHTTP() InitOption {
 	return initOptionFunc(func(initArgs *initArguments) error {
+		initArgs.pushUseHTTP = true
 		return nil
 	})
 }
@@ -191,6 +209,7 @@ func WithPushHTTP() InitOption {
 // The default value is to use secure channels only.
 func WithPushInsecure() InitOption {
 	return initOptionFunc(func(initArgs *initArguments) error {
+		initArgs.pushInsecure = true
 		return nil
 	})
 }
@@ -201,6 +220,7 @@ func WithPushInsecure() InitOption {
 // The default value is empty.
 func WithPushHeaders(headers map[string]string) InitOption {
 	return initOptionFunc(func(initArgs *initArguments) error {
+		initArgs.pushHeaders = headers
 		return nil
 	})
 }
@@ -213,6 +233,10 @@ func WithPushHeaders(headers map[string]string) InitOption {
 // The default value is [autometrics.DefBuckets]
 func WithHistogramBuckets(histogramBuckets []float64) InitOption {
 	return initOptionFunc(func(initArgs *initArguments) error {
+		if len(histogramBuckets) == 0 {
+			return errors.New("setting histogram buckets: the histogram buckets should have at least 1 value.")
+		}
+		initArgs.histogramBuckets = histogramBuckets
 		return nil
 	})
 }

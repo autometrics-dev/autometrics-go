@@ -153,6 +153,11 @@ func Init(initOpts ...InitOption) (context.CancelCauseFunc, error) {
 		}
 	}
 
+	err := initArgs.Validate()
+	if err != nil {
+		return nil, fmt.Errorf("init options validation: %w", err)
+	}
+
 	autometrics.SetCommit(initArgs.commit)
 	autometrics.SetVersion(initArgs.version)
 	autometrics.SetBranch(initArgs.branch)

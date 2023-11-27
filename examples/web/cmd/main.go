@@ -28,30 +28,31 @@ var (
 func main() {
 	rand.Seed(time.Now().UnixNano())
 
+	autometricsInitOpts := make([]autometrics.InitOption, 0, 6)
+
 	// Allow the application to use a push gateway with an environment variable
 	// In production, you would do it with a command-line flag.
-	var pushConfiguration *autometrics.PushConfiguration
 	if os.Getenv("AUTOMETRICS_PUSH_GATEWAY_URL") != "" {
-		pushConfiguration = &autometrics.PushConfiguration{
-			CollectorURL: os.Getenv("AUTOMETRICS_PUSH_GATEWAY_URL"),
-			JobName:      "autometrics_go_test",
-		}
+		autometricsInitOpts = append(autometricsInitOpts,
+			autometrics.WithPushCollectorURL(os.Getenv("AUTOMETRICS_PUSH_GATEWAY_URL")),
+			// NOTE: Setting the JobName is useful when you fully control the instances that will run it.
+			//   Otherwise (auto-scaling scenarii), it's better to leave this value out, and let
+			//   autometrics generate an IP-based or Ulid-based identifier for you.
+			autometrics.WithPushJobName("autometrics_go_test"),
+		)
 	}
 
-	// Everything in BuildInfo is optional.
+	// Every option customization is optional.
 	// You can also use any string variable whose value is
 	// injected at build time by ldflags.
-	shutdown, err := autometrics.Init(
-		nil,
-		autometrics.DefBuckets,
-		autometrics.BuildInfo{
-			Version: Version,
-			Commit:  Commit,
-			Branch:  Branch,
-		},
-		pushConfiguration,
-		autometrics.PrintLogger{},
+	autometricsInitOpts = append(autometricsInitOpts,
+		autometrics.WithVersion(Version),
+		autometrics.WithCommit(Commit),
+		autometrics.WithBranch(Branch),
+		autometrics.WithLogger(autometrics.PrintLogger{}),
 	)
+
+	shutdown, err := autometrics.Init(autometricsInitOpts...)
 	if err != nil {
 		log.Fatalf("Failed initialization of autometrics: %s", err)
 	}

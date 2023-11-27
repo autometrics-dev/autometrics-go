@@ -1,6 +1,8 @@
 package autometrics // import "github.com/autometrics-dev/autometrics-go/prometheus/autometrics"
 
 import (
+	"errors"
+
 	am "github.com/autometrics-dev/autometrics-go/pkg/autometrics"
 	"github.com/autometrics-dev/autometrics-go/pkg/autometrics/log"
 	"github.com/prometheus/client_golang/prometheus"
@@ -52,6 +54,7 @@ func (fn initOptionFunc) Apply(initArgs *initArguments) error {
 // prometheus default registry.
 func WithRegistry(registry *prometheus.Registry) InitOption {
 	return initOptionFunc(func(initArgs *initArguments) error {
+		initArgs.registry = registry
 		return nil
 	})
 }
@@ -62,6 +65,7 @@ func WithRegistry(registry *prometheus.Registry) InitOption {
 // autometrics-specific events.
 func WithLogger(logger log.Logger) InitOption {
 	return initOptionFunc(func(initArgs *initArguments) error {
+		initArgs.logger = logger
 		return nil
 	})
 }
@@ -71,6 +75,7 @@ func WithLogger(logger log.Logger) InitOption {
 // The default value is an empty string.
 func WithCommit(currentCommit string) InitOption {
 	return initOptionFunc(func(initArgs *initArguments) error {
+		initArgs.commit = currentCommit
 		return nil
 	})
 }
@@ -80,6 +85,7 @@ func WithCommit(currentCommit string) InitOption {
 // The default value is an empty string.
 func WithVersion(currentVersion string) InitOption {
 	return initOptionFunc(func(initArgs *initArguments) error {
+		initArgs.version = currentVersion
 		return nil
 	})
 }
@@ -89,6 +95,7 @@ func WithVersion(currentVersion string) InitOption {
 // The default value is an empty string.
 func WithBranch(currentBranch string) InitOption {
 	return initOptionFunc(func(initArgs *initArguments) error {
+		initArgs.branch = currentBranch
 		return nil
 	})
 }
@@ -98,6 +105,7 @@ func WithBranch(currentBranch string) InitOption {
 // The default value is an empty string.
 func WithService(currentService string) InitOption {
 	return initOptionFunc(func(initArgs *initArguments) error {
+		initArgs.service = currentService
 		return nil
 	})
 }
@@ -107,6 +115,7 @@ func WithService(currentService string) InitOption {
 // The default value is an empty string.
 func WithRepoURL(currentRepoURL string) InitOption {
 	return initOptionFunc(func(initArgs *initArguments) error {
+		initArgs.repoURL = currentRepoURL
 		return nil
 	})
 }
@@ -116,6 +125,7 @@ func WithRepoURL(currentRepoURL string) InitOption {
 // The default value is an empty string.
 func WithRepoProvider(currentRepoProvider string) InitOption {
 	return initOptionFunc(func(initArgs *initArguments) error {
+		initArgs.repoProvider = currentRepoProvider
 		return nil
 	})
 }
@@ -128,6 +138,7 @@ func WithRepoProvider(currentRepoProvider string) InitOption {
 // The default value is an empty string, which also disables metric pushing.
 func WithPushCollectorURL(pushCollectorURL string) InitOption {
 	return initOptionFunc(func(initArgs *initArguments) error {
+		initArgs.pushCollectorURL = pushCollectorURL
 		return nil
 	})
 }
@@ -144,6 +155,7 @@ func WithPushCollectorURL(pushCollectorURL string) InitOption {
 // The default value is an empty string, which will make autometrics generate a Ulid
 func WithPushJobName(pushJobName string) InitOption {
 	return initOptionFunc(func(initArgs *initArguments) error {
+		initArgs.pushJobName = pushJobName
 		return nil
 	})
 }
@@ -156,6 +168,10 @@ func WithPushJobName(pushJobName string) InitOption {
 // The default value is [autometrics.DefBuckets]
 func WithHistogramBuckets(histogramBuckets []float64) InitOption {
 	return initOptionFunc(func(initArgs *initArguments) error {
+		if len(histogramBuckets) == 0 {
+			return errors.New("setting histogram buckets: the buckets for the histogram must have at least one value.")
+		}
+		initArgs.histogramBuckets = histogramBuckets
 		return nil
 	})
 }

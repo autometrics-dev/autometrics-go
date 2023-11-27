@@ -26,33 +26,32 @@ var (
 func main() {
 	rand.Seed(time.Now().UnixNano())
 
-	var pushConfiguration *autometrics.PushConfiguration
+	autometricsInitOpts := make([]autometrics.InitOption, 0)
+
 	if os.Getenv("AUTOMETRICS_OTLP_URL") != "" {
-		pushConfiguration = &autometrics.PushConfiguration{
-			CollectorURL: os.Getenv("AUTOMETRICS_OTLP_URL"),
+		autometricsInitOpts = append(autometricsInitOpts,
+			autometrics.WithPushCollectorURL(os.Getenv("AUTOMETRICS_OTLP_URL")),
 			// NOTE: Setting the JobName is useful when you fully control the instances that will run it.
 			//   Otherwise (auto-scaling scenarii), it's better to leave this value out, and let
 			//   autometrics generate an IP-based or Ulid-based identifier for you.
-			// JobName:      "autometrics_go_otel_example",
-			Period:  1 * time.Second,
-			Timeout: 500 * time.Millisecond,
-		}
+			// autometrics.WithPushJobName("autometrics_go_otel_example"),
+			autometrics.WithPushPeriod(1*time.Second),
+			autometrics.WithPushTimeout(500*time.Millisecond),
+		)
 	}
 
-	// Everything in BuildInfo is optional.
+	// Every option customization is optional.
 	// You can also use any string variable whose value is
 	// injected at build time by ldflags.
-	shutdown, err := autometrics.Init(
-		"web-server-go-component",
-		autometrics.DefBuckets,
-		autometrics.BuildInfo{
-			Version: Version,
-			Commit:  Commit,
-			Branch:  Branch,
-		},
-		pushConfiguration,
-		autometrics.PrintLogger{},
+	autometricsInitOpts = append(autometricsInitOpts,
+		autometrics.WithMeterName("web-server-go-component"),
+		autometrics.WithBranch(Branch),
+		autometrics.WithCommit(Commit),
+		autometrics.WithVersion(Version),
+		autometrics.WithLogger(autometrics.PrintLogger{}),
 	)
+
+	shutdown, err := autometrics.Init(autometricsInitOpts...)
 	if err != nil {
 		log.Fatalf("Failed initialization of autometrics: %s", err)
 	}
