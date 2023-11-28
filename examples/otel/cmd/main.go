@@ -26,7 +26,7 @@ var (
 func main() {
 	rand.Seed(time.Now().UnixNano())
 
-	autometricsInitOpts := make([]autometrics.InitOption, 0)
+	autometricsInitOpts := make([]autometrics.InitOption, 0, 6)
 
 	if os.Getenv("AUTOMETRICS_OTLP_URL") != "" {
 		autometricsInitOpts = append(autometricsInitOpts,
