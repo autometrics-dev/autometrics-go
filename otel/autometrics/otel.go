@@ -114,12 +114,6 @@ func completeMeterName(meterName string) string {
 	return fmt.Sprintf("autometrics/%v", meterName)
 }
 
-// BuildInfo holds meta information about the build of the instrumented code.
-//
-// This is a reexport of the autometrics type to allow [Init] to work with only
-// the current (otel) package imported at the call site.
-type BuildInfo = autometrics.BuildInfo
-
 // Logger is an interface for logging autometrics-related events.
 //
 // This is a reexport to allow using only the current package at call site.
@@ -344,7 +338,7 @@ func initProvider(pushExporter metric.Exporter, initArgs initArguments) (*metric
 func initPushExporter(initArgs initArguments) (metric.Exporter, error) {
 	autometrics.GetLogger().Debug("opentelemetry: Init: detected push configuration")
 	if initArgs.pushCollectorURL == "" {
-		return nil, errors.New("invalid PushConfiguration: the CollectorURL must be set.")
+		return nil, errors.New("invalid Push Configuration: the CollectorURL must be set.")
 	}
 	autometrics.SetPushJobURL(initArgs.pushCollectorURL)
 

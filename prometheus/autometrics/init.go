@@ -132,10 +132,15 @@ func WithRepoProvider(currentRepoProvider string) InitOption {
 
 // WithPushCollectorURL enables Pushing metrics to a remote location, and sets the URL of the
 // collector to target.
-// You can use just host:port or ip:port as url, in which case “http://” is added automatically.
-// Alternatively, include the schema in the URL. However, do not include the “/metrics/jobs/…” part.
+//
+// Just as the prometheus library [push] configuration,
+// "You can use just host:port or ip:port as url, in which case “http://” is
+// added automatically. Alternatively, include the schema in the URL. However,
+// do not include the “/metrics/jobs/…” part."
 //
 // The default value is an empty string, which also disables metric pushing.
+//
+// [push]: https://pkg.go.dev/github.com/prometheus/client_golang/prometheus/push#New
 func WithPushCollectorURL(pushCollectorURL string) InitOption {
 	return initOptionFunc(func(initArgs *initArguments) error {
 		initArgs.pushCollectorURL = pushCollectorURL

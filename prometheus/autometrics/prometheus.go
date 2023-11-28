@@ -99,12 +99,6 @@ const (
 	parentSpanIdExemplar = "parent_id"
 )
 
-// BuildInfo holds meta information about the build of the instrumented code.
-//
-// This is a reexport of the autometrics type to allow [Init] to work with only
-// the current (prometheus) package imported at the call site.
-type BuildInfo = autometrics.BuildInfo
-
 // Logger is an interface for logging autometrics-related events.
 //
 // This is a reexport to allow using only the current package at call site.
@@ -115,19 +109,6 @@ type PrintLogger = log.PrintLogger
 
 // This is a reexport to allow using only the current package at call site.
 type NoOpLogger = log.NoOpLogger
-
-// PushConfiguration holds meta information about the push-to-collector configuration of the instrumented code.
-//
-// This is a reexport of the autometrics type to allow [Init] to work with only
-// the current (prometheus) package imported at the call site.
-//
-// For the CollectorURL part, just as the prometheus library [push] configuration,
-// "You can use just host:port or ip:port as url, in which case “http://” is
-// added automatically. Alternatively, include the schema in the URL. However,
-// do not include the “/metrics/jobs/…” part."
-//
-// [push]: https://pkg.go.dev/github.com/prometheus/client_golang/prometheus/push#New
-type PushConfiguration = autometrics.PushConfiguration
 
 // Init sets up the metrics required for autometrics' decorated functions and registers
 // them to the argument registry.
@@ -168,7 +149,7 @@ func Init(initOpts ...InitOption) (context.CancelCauseFunc, error) {
 		autometrics.GetLogger().Debug("Init: detected push configuration to %s", initArgs.pushCollectorURL)
 
 		if initArgs.pushCollectorURL == "" {
-			return nil, errors.New("invalid PushConfiguration: the CollectorURL must be set.")
+			return nil, errors.New("invalid Push Configuration: the CollectorURL must be set.")
 		}
 		autometrics.SetPushJobURL(initArgs.pushCollectorURL)
 
