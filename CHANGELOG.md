@@ -12,11 +12,19 @@ versioning](https://go.dev/doc/modules/version-numbers).
 
 ### Changed
 
+- [All] The `Init` API has changed, to use arguments of type `InitOption` instead of using
+  separate types. This means all default arguments do not need to be mentioned in the
+  call of `Init`, and for the rest `autometrics` provides `With...` functions that allow
+  customization.
+
 ### Deprecated
 
 ### Removed
 
 ### Fixed
+
+- Fix a bug where the repository provider label would overwrite the repository URL label
+  instead of using its own label.
 
 ### Security
 
