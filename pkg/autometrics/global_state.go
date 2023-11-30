@@ -26,6 +26,16 @@ const (
 	// the repository provider to use as a label. This environment variable has precedence over
 	// over hardcoding the variable directly in [BuildInfo] struct in the Init call.
 	AutometricsRepoProviderEnv = "AUTOMETRICS_REPOSITORY_PROVIDER"
+	// OTelPushPeriodEnv is the name of the environment variable to declare to change the interval
+	// between 2 metrics pushes in milliseconds.
+	//
+	// Reference: https://opentelemetry.io/docs/specs/otel/configuration/sdk-environment-variables/#periodic-exporting-metricreader
+	OTelPushPeriodEnv = "OTEL_METRIC_EXPORT_INTERVAL"
+	// OTelPushTimeoutEnv is the name of the environment variable to declare to change the timeout
+	// threshold of a single metrics push in milliseconds.
+	//
+	// Reference: https://opentelemetry.io/docs/specs/otel/configuration/sdk-environment-variables/#periodic-exporting-metricreader
+	OTelPushTimeoutEnv = "OTEL_METRIC_EXPORT_TIMEOUT"
 )
 
 var (

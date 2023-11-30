@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"strconv"
 	"sync"
 	"time"
 
@@ -314,10 +315,31 @@ func initProvider(pushExporter metric.Exporter, initArgs initArguments) (*metric
 		timeout := defaultPushTimeout
 		interval := defaultPushPeriod
 
-		if initArgs.pushPeriod > 0 {
+		readInitArgs := false
+		if pushPeriod, ok := os.LookupEnv(autometrics.OTelPushPeriodEnv); ok {
+			pushPeriodMs, err := strconv.ParseInt(pushPeriod, 10, 32)
+			if err != nil {
+				autometrics.GetLogger().Warn("opentelemetry: the push period environment variable has non-integer value, ignoring: %s", err)
+				readInitArgs = true
+			} else {
+				interval = time.Duration(pushPeriodMs) * time.Millisecond
+			}
+		}
+		if readInitArgs && initArgs.pushPeriod > 0 {
 			interval = initArgs.pushPeriod
 		}
-		if initArgs.pushTimeout > 0 {
+
+		readInitArgs = false
+		if pushTimeout, ok := os.LookupEnv(autometrics.OTelPushTimeoutEnv); ok {
+			pushTimeoutMs, err := strconv.ParseInt(pushTimeout, 10, 32)
+			if err != nil {
+				autometrics.GetLogger().Warn("opentelemetry: the push timeout environment variable has non-integer value, ignoring: %s", err)
+				readInitArgs = true
+			} else {
+				timeout = time.Duration(pushTimeoutMs) * time.Millisecond
+			}
+		}
+		if readInitArgs && initArgs.pushTimeout > 0 {
 			timeout = initArgs.pushTimeout
 		}
 

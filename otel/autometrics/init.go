@@ -175,6 +175,9 @@ func WithPushJobName(pushJobName string) InitOption {
 
 // WithPushPeriod sets the duration between consecutive metrics pushes.
 //
+// The standard `OTEL_METRIC_EXPORT_INTERVAL` environment variable overrides
+// this initialization argument.
+//
 // The default value is 10 seconds.
 func WithPushPeriod(pushPeriod time.Duration) InitOption {
 	return initOptionFunc(func(initArgs *initArguments) error {
@@ -184,6 +187,9 @@ func WithPushPeriod(pushPeriod time.Duration) InitOption {
 }
 
 // WithPushTimeout sets the timeout duration of a single metric push
+//
+// The standard `OTEL_METRIC_EXPORT_TIMEOUT` environment variable overrides
+// this initialization argument.
 //
 // The default value is 5 seconds.
 func WithPushTimeout(pushTimeout time.Duration) InitOption {
