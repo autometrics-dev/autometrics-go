@@ -6,9 +6,21 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Go module
 versioning](https://go.dev/doc/modules/version-numbers).
 
-## [Unreleased](https://github.com/autometrics-dev/autometrics-go/compare/v0.9.0...main)
+## [Unreleased](https://github.com/autometrics-dev/autometrics-go/compare/v1.0.0...main)
 
 ### Added
+
+### Changed
+
+### Deprecated
+
+### Removed
+
+### Fixed
+
+### Security
+
+## [1.0.0](https://github.com/autometrics-dev/autometrics-go/releases/tag/v1.0.0) 2023-12-01
 
 ### Changed
 
@@ -17,16 +29,10 @@ versioning](https://go.dev/doc/modules/version-numbers).
   call of `Init`, and for the rest `autometrics` provides `With...` functions that allow
   customization.
 
-### Deprecated
-
-### Removed
-
 ### Fixed
 
 - Fix a bug where the repository provider label would overwrite the repository URL label
   instead of using its own label.
-
-### Security
 
 ## [0.9.0](https://github.com/autometrics-dev/autometrics-go/releases/tag/v0.9.0) 2023-11-17
 
