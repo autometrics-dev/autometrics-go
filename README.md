@@ -93,12 +93,21 @@ import (
 And then in your main function initialize the metrics
 
 ``` go
+	shutdown, err := autometrics.Init()
+	if err != nil {
+		log.Fatalf("could not initialize autometrics: %s", err)
+	}
+	defer shutdown(nil)
+```
+
+`Init` takes optional arguments to customize the metrics. The main ones are `WithBranch`, 
+`WithService`, `WithVersion`, and `WithCommit`; it will add relevant information on the
+metrics for better intelligence:
+
+```go
 	shutdown, err := autometrics.Init(
-		nil,
-		autometrics.DefBuckets,
-		autometrics.BuildInfo{Version: "0.4.0", Commit: "anySHA", Branch: "", Service: "myApp"},
-		nil,
-		nil,
+		autometrics.WithService("myApp"),
+		autometrics.WithVersion("0.4.0"),
 	)
 	if err != nil {
 		log.Fatalf("could not initialize autometrics: %s", err)
@@ -106,8 +115,7 @@ And then in your main function initialize the metrics
 	defer shutdown(nil)
 ```
 
-Everything in `BuildInfo` is optional. It will add relevant information on the
-metrics for better intelligence. You can use any string variable whose value is
+You can use any string variable whose value is
 injected at build time by `ldflags` for example, or use environment variables.
 
 > **Note**
@@ -270,11 +278,9 @@ import (
 
 func main() {
 	shutdown, err := autometrics.Init(
-		nil,
-		autometrics.DefBuckets,
-		autometrics.BuildInfo{Version: "0.4.0", Commit: "anySHA", Branch: "", Service: "myApp"},
-		nil,
-		nil,
+		autometrics.WithVersion("0.4.0"),
+		autometrics.WithCommit("anySHA"),
+		autometrics.WithService("myApp"),
 	)
 	http.Handle("/metrics", promhttp.Handler())
 }
@@ -375,18 +381,18 @@ import (
 +	"github.com/autometrics-dev/autometrics-go/otel/autometrics"
 )
 ```
-- change the call to `autometrics.Init` to the new signature: instead of a registry,
+- maybe change the call to `autometrics.Init` to the new signature: instead of a registry,
 the `Init` function takes a meter name for the `otel_scope` label of the exported
-metric. You can use the name of the application or its version for example
+metric. That means `autometrics` won't have a `WithRegistry` option anymore, but a 
+`WithMeterName` instead.
 
 ``` patch
 	shutdown, err := autometrics.Init(
--		nil,
-+		"myApp/v2/prod",
-		autometrics.DefBuckets,
-		autometrics.BuildInfo{ Version: "2.1.37", Commit: "anySHA", Branch: "", Service: "myApp" },
-		nil,
-		nil,
+-		autometrics.WithRegistry(nil),
++		autometrics.WithMeterName("myApp/v2/prod"),
+		autometrics.WithVersion("2.1.37"),
+		autimetrics.WithCommit("anySHA"),
+		autometrics.WithService("myApp"),
 	)
 ```
 
@@ -436,21 +442,17 @@ If you have a Prometheus [push
 gateway](https://prometheus.io/docs/instrumenting/pushing/) or an OTLP
 [collector](https://opentelemetry.io/docs/collector/) setup with an accessible
 URL, then you can directly switch from metric polling to metric pushing by
-passing a non `nil` argument to `autometrics.Init` for the `pushConfiguration`:
+passing the push-related options to `autometrics.Init`:
 
 ``` patch
 	shutdown, err := autometrics.Init(
-		"myApp/v2/prod",
-		autometrics.DefBuckets,
-		autometrics.BuildInfo{ Version: "2.1.37", Commit: "anySHA", Branch: "", Service: "myApp" },
--		nil,
-+		&autometrics.PushConfiguration{
-+			CollectorURL: "https://collector.example.com",
-+			JobName: "instance_2",                         // You can leave the JobName out to let autometrics generate one
-+			Period: 1 * time.Second,                       // Period is only relevant when using OpenTelemetry implementation
-+			Timeout: 500 * time.Millisecond,               // Timeout is only relevant when using OpenTelementry implementation
-+		},
-    nil,
+		autometrics.WithMeterName("myApp/v2/prod"),
+		autometrics.WithVersion("2.1.37"),
+		autometrics.WithService("myApp"),
++		 autometrics.WithPushCollectorURL("https://collector.example.com"),
++		 autometrics.WithPushJobName("instance_2"),                         // You can leave the JobName out to let autometrics generate one
++		 autometrics.WithPushPeriod(1 * time.Second),                       // Period is only relevant (and available) when using OpenTelemetry implementation
++		 autometrics.WithPushTimeout(500 * time.Millisecond),               // Timeout is only relevant (and available) when using OpenTelementry implementation
 	)
 ```
 
@@ -480,12 +482,10 @@ the `Init` call:
 
 ``` patch
 	shutdown, err := autometrics.Init(
-		nil,
-		autometrics.DefBuckets,
-		autometrics.BuildInfo{ Version: "2.1.37", Commit: "anySHA", Branch: "", Service: "myApp" },
-		nil,
--		nil,
-+   autometrics.PrintLogger{},
+		autometrics.WithMeterName("myApp/v2/prod"),
+		autometrics.WithVersion("2.1.37"),
+		autometrics.WithService("myApp"),
++		 autometrics.WithLogger(autometrics.PrintLogger{}),
 	)
 ```
 

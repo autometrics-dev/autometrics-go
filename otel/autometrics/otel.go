@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"strconv"
 	"sync"
 	"time"
 
@@ -114,12 +115,6 @@ func completeMeterName(meterName string) string {
 	return fmt.Sprintf("autometrics/%v", meterName)
 }
 
-// BuildInfo holds meta information about the build of the instrumented code.
-//
-// This is a reexport of the autometrics type to allow [Init] to work with only
-// the current (otel) package imported at the call site.
-type BuildInfo = autometrics.BuildInfo
-
 // Logger is an interface for logging autometrics-related events.
 //
 // This is a reexport to allow using only the current package at call site.
@@ -131,56 +126,6 @@ type PrintLogger = log.PrintLogger
 // This is a reexport to allow using only the current package at call site.
 type NoOpLogger = log.NoOpLogger
 
-// PushConfiguration holds meta information about the push-to-collector configuration of the instrumented code.
-type PushConfiguration struct {
-	// URL of the collector to push to. It must be non-empty if this struct is built.
-	// You can use just host:port or ip:port as url, in which case “http://” is added automatically.
-	// Alternatively, include the schema in the URL. However, do not include the “/metrics/jobs/…” part.
-	CollectorURL string
-
-	// JobName is the name of the job to use when pushing metrics.
-	//
-	// Good values for this (taking into account replicated services) are for example:
-	// - [GetOutboundIP] to automatically populate the jobname with the IP it's coming from,
-	// - a [Uuid v1](https://pkg.go.dev/github.com/google/uuid#NewUUID)
-	//   or a [Ulid](https://github.com/oklog/ulid) to get sortable IDs and keeping
-	//   relationship to the machine generating metrics.
-	// - a Uuid v4 if you don't want metrics leaking extra information about the IPs
-	//
-	// If JobName is empty here, autometrics will use the outbound IP if readable,
-	// or a ulid here, see [DefaultJobName].
-	JobName string
-
-	// UseHttp forces the use of HTTP over GRPC as a protocol to push metrics to a
-	// collector.
-	//
-	// It defaults to false, meaning that by default, autometrics will push GRPC
-	// metrics to the collector.
-	UseHttp bool
-
-	// Headers is a map of headers to add to the payload when pushing metrics.
-	Headers map[string]string
-
-	// IsInsecure disables client transport security (such as TLS).
-	IsInsecure bool
-
-	// Period is the interval at which the metrics will be pushed to the collector.
-	//
-	// This option overrides any value set for the OTEL_METRIC_EXPORT_INTERVAL environment variable.
-	//
-	// It should be greater than Timeout, and if the Period is non-positive, a default
-	// value of 10 seconds will be used.
-	Period time.Duration
-
-	// Timeout is the timeout duration for metrics pushes to the collector.
-	//
-	// This option overrides any value set for the OTEL_METRIC_EXPORT_TIMEOUT environment variable.
-	//
-	// It should be smaller than Period, and if the Timeout is non-positive, a default
-	// value of 5 seconds will be used.
-	Timeout time.Duration
-}
-
 // Init sets up the metrics required for autometrics' decorated functions and registers
 // them to the Prometheus exporter.
 //
@@ -191,23 +136,31 @@ type PushConfiguration struct {
 // Make sure that all the latency targets you want to use for SLOs are
 // present in the histogramBuckets array, otherwise the alerts will fail
 // to work (they will never trigger).
-func Init(meterName string, histogramBuckets []float64, buildInformation BuildInfo, pushConfiguration *PushConfiguration, logger log.Logger) (context.CancelCauseFunc, error) {
+func Init(initOpts ...InitOption) (context.CancelCauseFunc, error) {
 	var err error
 	newCtx, cancelFunc := context.WithCancelCause(context.Background())
 	amCtx = newCtx
 
-	autometrics.SetCommit(buildInformation.Commit)
-	autometrics.SetVersion(buildInformation.Version)
-	autometrics.SetBranch(buildInformation.Branch)
-	if logger == nil {
-		autometrics.SetLogger(log.NoOpLogger{})
-	} else {
-		autometrics.SetLogger(logger)
+	initArgs := defaultInitArguments()
+	for _, initOpt := range initOpts {
+		if err := initOpt.Apply(&initArgs); err != nil {
+			return nil, fmt.Errorf("initializing options: %w", err)
+		}
 	}
 
+	err = initArgs.Validate()
+	if err != nil {
+		return nil, fmt.Errorf("init options validation: %w", err)
+	}
+
+	autometrics.SetCommit(initArgs.commit)
+	autometrics.SetVersion(initArgs.version)
+	autometrics.SetBranch(initArgs.branch)
+	autometrics.SetLogger(initArgs.logger)
+
 	var pushExporter metric.Exporter
-	if pushConfiguration != nil {
-		pushExporter, err = initPushExporter(pushConfiguration)
+	if initArgs.HasPushEnabled() {
+		pushExporter, err = initPushExporter(initArgs)
 		if err != nil {
 			return nil, fmt.Errorf("impossible to initialize OTLP exporter: %w", err)
 		}
@@ -217,26 +170,26 @@ func Init(meterName string, histogramBuckets []float64, buildInformation BuildIn
 		autometrics.SetService(serviceName)
 	} else if serviceName, ok := os.LookupEnv(autometrics.OTelServiceNameEnv); ok {
 		autometrics.SetService(serviceName)
-	} else if buildInformation.Service != "" {
-		autometrics.SetService(buildInformation.Service)
+	} else {
+		autometrics.SetService(initArgs.service)
 	}
 
 	if repoURL, ok := os.LookupEnv(autometrics.AutometricsRepoURLEnv); ok {
 		autometrics.SetRepositoryURL(repoURL)
-	} else if buildInformation.RepositoryURL != "" {
-		autometrics.SetRepositoryURL(buildInformation.RepositoryURL)
+	} else {
+		autometrics.SetRepositoryURL(initArgs.repoURL)
 	}
 	if repoProvider, ok := os.LookupEnv(autometrics.AutometricsRepoProviderEnv); ok {
-		autometrics.SetRepositoryURL(repoProvider)
-	} else if buildInformation.RepositoryProvider != "" {
-		autometrics.SetRepositoryURL(buildInformation.RepositoryProvider)
+		autometrics.SetRepositoryProvider(repoProvider)
+	} else {
+		autometrics.SetRepositoryProvider(initArgs.repoProvider)
 	}
 
-	provider, err := initProvider(pushExporter, pushConfiguration, meterName, histogramBuckets)
+	provider, err := initProvider(pushExporter, initArgs)
 	if err != nil {
 		return nil, err
 	}
-	meter := provider.Meter(completeMeterName(meterName))
+	meter := provider.Meter(completeMeterName(initArgs.meterName))
 
 	functionCallsCount, err = meter.Int64Counter(FunctionCallsCountName, instruments.WithDescription("The number of times the function has been called"))
 	if err != nil {
@@ -261,9 +214,9 @@ func Init(meterName string, histogramBuckets []float64, buildInformation BuildIn
 	buildInfo.Add(amCtx, 1,
 		instruments.WithAttributes(
 			[]attribute.KeyValue{
-				attribute.Key(CommitLabel).String(buildInformation.Commit),
-				attribute.Key(VersionLabel).String(buildInformation.Version),
-				attribute.Key(BranchLabel).String(buildInformation.Branch),
+				attribute.Key(CommitLabel).String(autometrics.GetCommit()),
+				attribute.Key(VersionLabel).String(autometrics.GetVersion()),
+				attribute.Key(BranchLabel).String(autometrics.GetBranch()),
 				attribute.Key(ServiceNameLabel).String(autometrics.GetService()),
 				attribute.Key(RepositoryProviderLabel).String(autometrics.GetRepositoryProvider()),
 				attribute.Key(RepositoryURLLabel).String(autometrics.GetRepositoryURL()),
@@ -298,14 +251,14 @@ func ForceFlush() error {
 	return nil
 }
 
-func initProvider(pushExporter metric.Exporter, pushConfiguration *PushConfiguration, meterName string, histogramBuckets []float64) (*metric.MeterProvider, error) {
+func initProvider(pushExporter metric.Exporter, initArgs initArguments) (*metric.MeterProvider, error) {
 	instrumentView := metric.Instrument{
 		Name:  FunctionCallsDurationName,
-		Scope: instrumentation.Scope{Name: completeMeterName(meterName)},
+		Scope: instrumentation.Scope{Name: completeMeterName(initArgs.meterName)},
 	}
 	streamView := metric.Stream{
 		Aggregation: metric.AggregationExplicitBucketHistogram{
-			Boundaries: histogramBuckets,
+			Boundaries: initArgs.histogramBuckets,
 		},
 	}
 
@@ -362,11 +315,32 @@ func initProvider(pushExporter metric.Exporter, pushConfiguration *PushConfigura
 		timeout := defaultPushTimeout
 		interval := defaultPushPeriod
 
-		if pushConfiguration.Period > 0 {
-			interval = pushConfiguration.Period
+		readInitArgs := false
+		if pushPeriod, ok := os.LookupEnv(autometrics.OTelPushPeriodEnv); ok {
+			pushPeriodMs, err := strconv.ParseInt(pushPeriod, 10, 32)
+			if err != nil {
+				autometrics.GetLogger().Warn("opentelemetry: the push period environment variable has non-integer value, ignoring: %s", err)
+				readInitArgs = true
+			} else {
+				interval = time.Duration(pushPeriodMs) * time.Millisecond
+			}
 		}
-		if pushConfiguration.Timeout > 0 {
-			timeout = pushConfiguration.Timeout
+		if readInitArgs && initArgs.pushPeriod > 0 {
+			interval = initArgs.pushPeriod
+		}
+
+		readInitArgs = false
+		if pushTimeout, ok := os.LookupEnv(autometrics.OTelPushTimeoutEnv); ok {
+			pushTimeoutMs, err := strconv.ParseInt(pushTimeout, 10, 32)
+			if err != nil {
+				autometrics.GetLogger().Warn("opentelemetry: the push timeout environment variable has non-integer value, ignoring: %s", err)
+				readInitArgs = true
+			} else {
+				timeout = time.Duration(pushTimeoutMs) * time.Millisecond
+			}
+		}
+		if readInitArgs && initArgs.pushTimeout > 0 {
+			timeout = initArgs.pushTimeout
 		}
 
 		pushPeriodicReader = metric.NewPeriodicReader(
@@ -383,30 +357,26 @@ func initProvider(pushExporter metric.Exporter, pushConfiguration *PushConfigura
 	}
 }
 
-func initPushExporter(pushConfiguration *PushConfiguration) (metric.Exporter, error) {
+func initPushExporter(initArgs initArguments) (metric.Exporter, error) {
 	autometrics.GetLogger().Debug("opentelemetry: Init: detected push configuration")
-	if pushConfiguration.CollectorURL == "" {
-		return nil, errors.New("invalid PushConfiguration: the CollectorURL must be set.")
+	if initArgs.pushCollectorURL == "" {
+		return nil, errors.New("invalid Push Configuration: the CollectorURL must be set.")
 	}
-	autometrics.SetPushJobURL(pushConfiguration.CollectorURL)
+	autometrics.SetPushJobURL(initArgs.pushCollectorURL)
 
-	if pushConfiguration.JobName == "" {
-		autometrics.SetPushJobName(autometrics.DefaultJobName())
-	} else {
-		autometrics.SetPushJobName(pushConfiguration.JobName)
-	}
+	autometrics.SetPushJobName(initArgs.pushJobName)
 
-	if pushConfiguration.UseHttp {
+	if initArgs.pushUseHTTP {
 		options := []otlpmetrichttp.Option{
 			otlpmetrichttp.WithEndpoint(autometrics.GetPushJobURL()),
 		}
 
-		if pushConfiguration.IsInsecure {
+		if initArgs.pushInsecure {
 			options = append(options, otlpmetrichttp.WithInsecure())
 		}
 
-		if pushConfiguration.Headers != nil {
-			options = append(options, otlpmetrichttp.WithHeaders(pushConfiguration.Headers))
+		if initArgs.pushHeaders != nil {
+			options = append(options, otlpmetrichttp.WithHeaders(initArgs.pushHeaders))
 		}
 
 		return otlpmetrichttp.New(
@@ -422,12 +392,12 @@ func initPushExporter(pushConfiguration *PushConfiguration) (metric.Exporter, er
 		otlpmetricgrpc.WithEndpoint(autometrics.GetPushJobURL()),
 	}
 
-	if pushConfiguration.IsInsecure {
+	if initArgs.pushInsecure {
 		options = append(options, otlpmetricgrpc.WithInsecure())
 	}
 
-	if pushConfiguration.Headers != nil {
-		options = append(options, otlpmetricgrpc.WithHeaders(pushConfiguration.Headers))
+	if initArgs.pushHeaders != nil {
+		options = append(options, otlpmetricgrpc.WithHeaders(initArgs.pushHeaders))
 	}
 
 	return otlpmetricgrpc.New(
