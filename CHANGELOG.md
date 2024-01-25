@@ -18,6 +18,9 @@ versioning](https://go.dev/doc/modules/version-numbers).
 
 ### Fixed
 
+- [All] Fixes an issue where the caller function name is badly reported as a random slice of the
+  current function name (#85)
+
 ### Security
 
 ## [1.0.0](https://github.com/autometrics-dev/autometrics-go/releases/tag/v1.0.0) 2023-12-01
