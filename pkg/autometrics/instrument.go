@@ -66,7 +66,7 @@ func callerInfo(ctx context.Context) (callInfo CallInfo) {
 				")", ""),
 				"*", "")
 
-			callInfo.Parent.Function = functionName[index+1:]
+			callInfo.Parent.Function = parentFrameFunctionName[index+1:]
 		}
 
 		return
