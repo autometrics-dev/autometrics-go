@@ -6,7 +6,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Go module
 versioning](https://go.dev/doc/modules/version-numbers).
 
-## [Unreleased](https://github.com/autometrics-dev/autometrics-go/compare/v1.0.0...main)
+## [Unreleased](https://github.com/autometrics-dev/autometrics-go/compare/v1.1.0...main)
 
 ### Added
 
@@ -18,10 +18,15 @@ versioning](https://go.dev/doc/modules/version-numbers).
 
 ### Fixed
 
+### Security
+
+## [1.1.0](https://github.com/autometrics-dev/autometrics-go/releases/tag/v1.1.0) 2024-01-25
+
+### Fixed
+
 - [All] Fixes an issue where the caller function name is badly reported as a random slice of the
   current function name (#85)
 
-### Security
 
 ## [1.0.0](https://github.com/autometrics-dev/autometrics-go/releases/tag/v1.0.0) 2023-12-01
 
